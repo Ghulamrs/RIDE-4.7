@@ -42,7 +42,21 @@ enum Key {
     KEY_SHIFT_PAGE_DOWN,
 
     KEY_CTRL_UP,
-    KEY_CTRL_DOWN
+    KEY_CTRL_DOWN,
+
+    // A mouse event: Terminal::mouse() says what and where.
+    KEY_MOUSE
+};
+
+// **The mouse**, as xterm's SGR reporting (?1006) gives it on every box - macOS's and Linux's terminals
+// send it, Windows Terminal sends it, and the Windows console's own mouse records are turned into it.
+// Rows and columns count from 1, as the escape sequences that draw the screen do.
+struct MouseEvent {
+    enum Kind { Press, Release, Drag, WheelUp, WheelDown };
+    Kind kind = Press;
+    int button = 0;          // 0 left, 1 middle, 2 right
+    int row = 0, col = 0;
+    bool shift = false, ctrl = false;
 };
 
 bool isShiftedMove(int key);
@@ -66,11 +80,20 @@ public:
 
     static void write(const std::string& s);
 
+    // The last KEY_MOUSE readKey returned.
+    const MouseEvent& mouse() const { return mouse_; }
+    // Mouse reporting on or off - off before anything else is given the terminal, and on the way out.
+    void mouseReporting(bool on);
+
     bool eof() const { return eof_; }
 
 private:
 
     bool readByte(char& c) const;
+    int readMouse() const;
+
+    mutable MouseEvent mouse_;
+    bool mouseOn_ = false;
 
 #ifdef _WIN32
 
@@ -81,6 +104,10 @@ private:
     unsigned long inMode_;
     unsigned long outMode_;
     unsigned int codePage_;
+    // Windows' console reports the mouse as records, not text: each is turned into the SGR text the
+    // other boxes send and read from here. The buttons held, so a release can be told from a press.
+    mutable std::string pending_;
+    mutable unsigned long buttons_ = 0;
 #else
     struct termios original_;
 #endif

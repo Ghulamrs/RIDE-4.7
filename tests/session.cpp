@@ -854,6 +854,50 @@ void pickingACcsWorkspaceProject(const std::string& ride) {
     file::remove_all(dir);
 }
 
+// **The mouse** (RIDE 4.7): the SGR reports a terminal sends, piped in as keys are, against the screen the
+// suite always gets - 80 by 24, the tree 22 wide, a gutter of 4, so the text begins at column 29 on row 3.
+std::string click(int col, int row) {
+    return "\x1b[<0;" + std::to_string(col) + ";" + std::to_string(row) + "M" +
+           "\x1b[<0;" + std::to_string(col) + ";" + std::to_string(row) + "m";
+}
+
+void theMouse(const std::string& ride) {
+    std::printf("the mouse\n");
+    file::path dir = file::temp_directory_path() / "ride-session-mouse";
+    file::remove_all(dir);
+    file::create_directories(dir);
+    const file::path text = dir / "words.txt";
+    const std::string here = "\"" + text.string() + "\"";
+
+    // A menu title clicked opens it; an item clicked does it: Project is the third title, Open... its second item.
+    writeFile(text, "alpha\nbeta\ngamma\n");
+    Screen menu = drive(ride, here, click(17, 1) + click(18, 4) + ctrl('q'), dir);
+    check(onScreen(menu, "Open project in"), "clicking Project, then Open..., asks where");
+
+    // A click puts the cursor there: line 3, column 4 - and what is typed goes in at it.
+    Screen typed = drive(ride, here, click(32, 5) + "X" + ctrl('s') + ctrl('q'), dir);
+    checkEqual(readFile(text), std::string("alpha\nbeta\ngamXma\n"), "a click moves the cursor, and typing goes in there");
+    check(onScreen(typed, "col 5"), "and the status line follows it");
+
+    // A double click takes the word, and typing replaces it.
+    writeFile(text, "alpha\nbeta\ngamma\n");
+    drive(ride, here, click(30, 4) + click(30, 4) + "Z" + ctrl('s') + ctrl('q'), dir);
+    checkEqual(readFile(text), std::string("alpha\nZ\ngamma\n"), "a double click selects the word");
+
+    // A click in the gutter is a breakpoint on that line.
+    writeFile(text, "alpha\nbeta\ngamma\n");
+    Screen gutter = drive(ride, here, click(26, 4) + ctrl('q'), dir);
+    check(wasShown(gutter, "breakpoint on line 2"), "a click in the gutter sets a breakpoint there");
+
+    // A drag selects, and Ctrl-X takes what it covered.
+    writeFile(text, "alpha\nbeta\ngamma\n");
+    std::string drag = "\x1b[<0;29;3M\x1b[<32;31;3M\x1b[<32;32;3M\x1b[<0;32;3m";
+    drive(ride, here, drag + ctrl('x') + ctrl('s') + ctrl('q'), dir);
+    checkEqual(readFile(text), std::string("ha\nbeta\ngamma\n"), "a drag selects from the press to where it ends");
+
+    file::remove_all(dir);
+}
+
 // Which project a named file belongs to, which is not which directory it is in. A project keeps
 // its sources a directory down, so looking only beside the file meant `RIDE src/alpha.c` found no
 // project and fell through to the last one opened, or the demo: the pane filled with somebody else's files while the edit view held yours.
@@ -2671,6 +2715,7 @@ int main(int argc, char** argv) {
     thePicker(ride);
     pickingAProject(ride);
     pickingACcsWorkspaceProject(ride);
+    theMouse(ride);
     closingTheProject(ride);
     findingAndReplacing(ride);
     leavingWithChanges(ride);

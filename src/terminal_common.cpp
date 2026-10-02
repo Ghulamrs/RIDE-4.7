@@ -112,6 +112,51 @@ int unshifted(int key) {
     }
 }
 
+// ESC [ < b ; x ; y M (press or drag) or m (release), the [ < already read.
+int Terminal::readMouse() const {
+    std::string params;
+    char final = 0;
+    for (int i = 0; i < 24; ++i) {
+        char b = 0;
+        if (!readByte(b)) return '\x1b';
+        if ((b >= '0' && b <= '9') || b == ';') { params += b; continue; }
+        final = b;
+        break;
+    }
+    if (final != 'M' && final != 'm') return '\x1b';
+    int field[3] = {0, 0, 0};
+    size_t at = 0;
+    for (int i = 0; i < 3; ++i) {
+        field[i] = std::atoi(params.c_str() + at);
+        size_t semi = params.find(';', at);
+        if (semi == std::string::npos) { if (i < 2) return '\x1b'; break; }
+        at = semi + 1;
+    }
+    const int code = field[0];
+    MouseEvent m;
+    m.col = field[1];
+    m.row = field[2];
+    m.shift = (code & 4) != 0;
+    m.ctrl = (code & 16) != 0;
+    m.button = code & 3;
+    if (code & 64) {
+        m.kind = (code & 1) ? MouseEvent::WheelDown : MouseEvent::WheelUp;
+    } else if (final == 'm') {
+        m.kind = MouseEvent::Release;
+    } else {
+        m.kind = (code & 32) ? MouseEvent::Drag : MouseEvent::Press;
+    }
+    mouse_ = m;
+    return KEY_MOUSE;
+}
+
+void Terminal::mouseReporting(bool on) {
+    if (!raw_ || on == mouseOn_) return;
+    // 1000 presses and releases, 1002 drags with a button held, 1006 the SGR form, whose coordinates have no limit.
+    write(on ? "\x1b[?1000h\x1b[?1002h\x1b[?1006h" : "\x1b[?1006l\x1b[?1002l\x1b[?1000l");
+    mouseOn_ = on;
+}
+
 int Terminal::readKey() const {
     char c = 0;
     if (!readByte(c)) return KEY_NONE;
@@ -129,10 +174,14 @@ int Terminal::readKey() const {
     if (next != '[') return '\x1b';
 
     std::string params;
+    char first0 = 0;
+    if (!readByte(first0)) return '\x1b';
+    if (first0 == '<') return readMouse();
     char final = 0;
     for (int i = 0; i < 16; ++i) {
         char b = 0;
-        if (!readByte(b)) return '\x1b';
+        if (i == 0) b = first0;
+        else if (!readByte(b)) return '\x1b';
         if ((b >= '0' && b <= '9') || b == ';') {
             params += b;
             continue;

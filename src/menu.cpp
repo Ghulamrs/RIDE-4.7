@@ -235,6 +235,25 @@ bool Menu::selectable(const MenuItem& item) const {
     return !item.rule && !disabled(item.action);
 }
 
+void Menu::openColumn(size_t index) {
+    if (index >= columns_.size()) return;
+    column_ = index;
+    open();
+}
+
+Action Menu::choose(size_t index) {
+    if (!active_ || index >= columns_[column_].items.size()) return ActionNone;
+    const MenuItem& item = columns_[column_].items[index];
+    if (!selectable(item)) return ActionNone;
+    Action chosen = item.action;
+    close();
+    return chosen;
+}
+
+void Menu::hover(size_t index) {
+    if (active_ && index < columns_[column_].items.size() && selectable(columns_[column_].items[index])) item_ = index;
+}
+
 Action Menu::key(int k) {
     if (!active_) return ActionNone;
 

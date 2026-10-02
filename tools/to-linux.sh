@@ -50,7 +50,7 @@ KEY="${ED1_LINUX_KEY:-$HOME/Documents/Claude/myMorningWalk.pem}"
 BOX="${ED1_LINUX_BOX:-ec2-user@52.202.164.123}"
 # Its own directory, ~/ride-4.5, well away from ~/RIDE, that box's clone,
 # and from ~/ride (the 3.5 and 4.0 relay): this one is this script's to empty.
-DIR="${ED1_LINUX_DIR:-ride-4.5}"
+DIR="${ED1_LINUX_DIR:-ride-4.7}"
 WHAT="${1:-check}"
 # A directory of its own: to-windows.sh and to-linux.sh name their archives
 # alike, and run at once they overwrote each other's (a truncated tar).
@@ -84,7 +84,7 @@ pack() {  # pack <name> <directory> <what...>
         -czf "$TMP/$name-src.tgz" "$@" ) || exit 2
 }
 pack c90   ../VM6747/Compiler-Ci   src lib tools tests examples Makefile README.md
-pack cpp11  ../VM6747/Compiler-Cppi src include lib tools tests Makefile README.md
+pack cpp11  ../VM6747/Compiler-Cppi src include lib tools tests ide Makefile README.md
 pack shalimar   ../VM6747/Compiler-Si   src runtime tests examples Makefile README.md
 pack vm6747 ../VM6747/Emulator      src tests Makefile README.md
 # asm6x's run.sh rechecks the review's probes against the oracle's recorded objects

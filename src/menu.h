@@ -150,6 +150,11 @@ public:
     size_t barWidth() const;
 
     Action key(int k);
+    // The mouse's two: a column's title clicked opens it, an item clicked is chosen - ActionNone, and
+    // the menu left open, for a rule or a disabled item. hover moves the highlight without choosing.
+    void openColumn(size_t index);
+    Action choose(size_t index);
+    void hover(size_t index);
 
     void disable(const std::vector<Action>& actions);
     // Relabel the item carrying an action - the recent projects, by name.

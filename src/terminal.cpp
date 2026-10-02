@@ -28,6 +28,7 @@ Terminal::Terminal() : original_(), raw_(false), eof_(false) {
 }
 
 Terminal::~Terminal() {
+    mouseReporting(false);
     if (raw_) tcsetattr(STDIN_FILENO, TCSAFLUSH, &original_);
 }
 

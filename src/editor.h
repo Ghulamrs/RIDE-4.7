@@ -1,6 +1,7 @@
 #ifndef EDITOR_EDITOR_H
 #define EDITOR_EDITOR_H
 
+#include <chrono>
 #include <cstddef>
 #include <map>
 #include <set>
@@ -130,6 +131,21 @@ private:
     void present(const std::vector<std::string>& rows);
 
     void processKey(int key);
+    // **The mouse** (terminal.h's MouseEvent): what is under a click, by the same arithmetic the screen
+    // is drawn with - menu bar, open menu, file tabs, project tree, gutter, text, panel tabs, panel.
+    void processMouse(const MouseEvent& m);
+    // In a prompt's dialog: a choice clicked is highlighted, double-clicked is taken; the wheel moves it.
+    // True when the double click took it.
+    bool promptMouse(const MouseEvent& m);
+    // A press in the same cell as the last, within half a second: terminals report presses, not doubles.
+    bool doubleClick(const MouseEvent& m);
+    void dropdownBox(size_t& at, size_t& width) const;
+    size_t menuTitleUnder(int col) const;
+    size_t byteAtColumn(size_t row, size_t column) const;
+    void cursorTo(int screenRow, int screenCol);
+    std::chrono::steady_clock::time_point lastClick_;
+    int lastClickRow_ = -1, lastClickCol_ = -1;
+    bool dragging_ = false;
     void perform(Action action);
     void moveCursor(int key);
     void moveTree(int key);

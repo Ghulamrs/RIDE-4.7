@@ -13,6 +13,7 @@
 #include "ccs/ccsworkspace.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cstdio>
 #include <cstdlib>
 #include <system_error>
@@ -1058,23 +1059,28 @@ bool Editor::menuItemIsCurrent(Action action) const {
     }
 }
 
+// Where the open menu's box is: its left edge, 0-based, and the width inside its two sides. The mouse asks the same.
+void Editor::dropdownBox(size_t& at, size_t& width) const {
+    const MenuColumn& col = menu_.columns()[menu_.column()];
+    width = 0;
+    for (size_t i = 0; i < col.items.size(); ++i) {
+        if (col.items[i].rule) continue;
+        size_t w = col.items[i].label.size() + col.items[i].key.size() + 5;
+        if (w > width) width = w;
+    }
+    at = menu_.titleAt(menu_.column());
+    if (at > 0) --at;
+    if (at + width + 3 > static_cast<size_t>(screenCols_))
+        at = static_cast<size_t>(screenCols_) - width - 3;
+}
+
 void Editor::drawDropdown(std::string& out, std::vector<size_t>& covered) const {
     if (!menu_.dropped()) return;
 
     const MenuColumn& col = menu_.columns()[menu_.column()];
 
-    size_t width = 0;
-    for (size_t i = 0; i < col.items.size(); ++i) {
-        if (col.items[i].rule) continue;
-
-        size_t w = col.items[i].label.size() + col.items[i].key.size() + 5;
-        if (w > width) width = w;
-    }
-
-    size_t at = menu_.titleAt(menu_.column());
-    if (at > 0) --at;
-    if (at + width + 3 > static_cast<size_t>(screenCols_))
-        at = static_cast<size_t>(screenCols_) - width - 3;
+    size_t at = 0, width = 0;
+    dropdownBox(at, width);
 
     out += "\x1b[2;" + number(at + 1) + "H\x1b[m";
     out += frame_->topLeft;
@@ -3540,6 +3546,14 @@ std::string Editor::prompt(const std::string& text, bool& cancelled,
         refresh();
 
         int key = term_.readKey();
+        if (key == KEY_MOUSE) {
+            // A double click on a choice is Enter on it.
+            if (promptMouse(term_.mouse()) && askChoice_ < askShown_.size()) {
+                answer = askShown_[askChoice_];
+                done = true;
+            }
+            continue;
+        }
         if (key == KEY_NONE) {
             if (!term_.eof()) continue;
             cancelled = true;
@@ -3576,6 +3590,243 @@ std::string Editor::prompt(const std::string& text, bool& cancelled,
     askShown_.clear();
     askChoice_ = 0;
     return cancelled ? std::string() : answer;
+}
+
+// ---- the mouse ---------------------------------------------------------------
+
+bool Editor::doubleClick(const MouseEvent& m) {
+    std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+    bool twice = m.row == lastClickRow_ && m.col == lastClickCol_ &&
+                 now - lastClick_ < std::chrono::milliseconds(500);
+    lastClick_ = now;
+    lastClickRow_ = twice ? -1 : m.row;   // a third press starts again
+    lastClickCol_ = m.col;
+    return twice;
+}
+
+// The menu title a column of the bar falls in, a space either side included; the count of columns for none.
+size_t Editor::menuTitleUnder(int col) const {
+    const size_t x = static_cast<size_t>(col > 0 ? col - 1 : 0);
+    for (size_t i = 0; i < menu_.columns().size(); ++i) {
+        size_t at = menu_.titleAt(i), len = menu_.columns()[i].title.size();
+        if (x + 1 >= at && x <= at + len) return i;
+    }
+    return menu_.columns().size();
+}
+
+// The byte of a line drawn at a render column - renderCol turned round, a tab or a wide character taken whole.
+size_t Editor::byteAtColumn(size_t row, size_t column) const {
+    const std::string& line = buf_.line(row);
+    size_t r = 0, i = 0;
+    while (i < line.size()) {
+        size_t w = line[i] == '\t' ? kTabStop - (r % kTabStop) : utf8::widthOf(utf8::codePointAt(line, i));
+        if (r + w > column) break;
+        r += w;
+        size_t step = line[i] == '\t' ? i + 1 : utf8::next(line, i);
+        i = (step > i) ? step : i + 1;
+    }
+    return i;
+}
+
+// The text cursor to a screen cell of the body, held inside the text: a cell past a line's end is its end.
+void Editor::cursorTo(int screenRow, int screenCol) {
+    const int textLeft = 2 + (treeOpen_ ? treeCols_ + 1 : 0) + gutterCols_;
+    int y = screenRow - 3;
+    if (y < 0) y = 0;
+    if (y >= bodyRows_) y = bodyRows_ - 1;
+    size_t row = rowoff_ + static_cast<size_t>(y);
+    if (row >= buf_.lineCount()) row = buf_.lineCount() - 1;
+    int x = screenCol - textLeft;
+    cy_ = row;
+    cx_ = byteAtColumn(row, coloff_ + static_cast<size_t>(x < 0 ? 0 : x));
+}
+
+bool Editor::promptMouse(const MouseEvent& m) {
+    if (m.kind == MouseEvent::WheelDown) {
+        if (!askShown_.empty() && askChoice_ + 1 < askShown_.size()) ++askChoice_;
+        return false;
+    }
+    if (m.kind == MouseEvent::WheelUp) {
+        if (askChoice_ > 0 && askChoice_ != static_cast<size_t>(-1)) --askChoice_;
+        return false;
+    }
+    if (m.kind != MouseEvent::Press || m.button != 0) return false;
+    int at = 0, top = 0, wide = 0;
+    dialogBox(at, top, wide);
+    // The box's rows: its top, the answer, then the choices; its columns at+1 to at+wide+2.
+    int i = m.row - (top + 2);
+    if (m.col < at + 1 || m.col > at + wide + 2 || i < 0 || i >= static_cast<int>(askShown_.size())) return false;
+    bool twice = doubleClick(m);
+    askChoice_ = static_cast<size_t>(i);
+    return twice;
+}
+
+void Editor::processMouse(const MouseEvent& m) {
+    if (m.kind == MouseEvent::Release) { dragging_ = false; return; }
+
+    // An open menu takes every click: an item chooses, a title moves to its column, anywhere else closes it.
+    if (menu_.active()) {
+        if (m.kind != MouseEvent::Press && m.kind != MouseEvent::Drag) return;
+        if (m.row == 1) {
+            size_t c = menuTitleUnder(m.col);
+            if (c >= menu_.columns().size()) { if (m.kind == MouseEvent::Press) menu_.close(); return; }
+            if (c != menu_.column()) menu_.openColumn(c);
+            else if (m.kind == MouseEvent::Press) menu_.close();
+            return;
+        }
+        if (menu_.dropped()) {
+            size_t at = 0, width = 0;
+            dropdownBox(at, width);
+            int index = m.row - 3;
+            const size_t items = menu_.columns()[menu_.column()].items.size();
+            if (index >= 0 && static_cast<size_t>(index) < items &&
+                m.col >= static_cast<int>(at) + 2 && m.col <= static_cast<int>(at + width) + 1) {
+                if (m.kind == MouseEvent::Drag) menu_.hover(static_cast<size_t>(index));
+                else perform(menu_.choose(static_cast<size_t>(index)));
+                return;
+            }
+        }
+        if (m.kind == MouseEvent::Press) menu_.close();
+        return;
+    }
+
+    const int treeRight = treeOpen_ ? treeCols_ + 1 : 0;              // last column of the tree
+    const int textLeft = 2 + (treeOpen_ ? treeCols_ + 1 : 0);         // first column of the gutter or text
+    const int bodyTop = 3, bodyBottom = 2 + bodyRows_;
+    const int panelHead = bodyBottom + 1, panelTop = panelHead + 1, panelBottom = panelHead + panelRows_;
+    const bool inBody = m.row >= bodyTop && m.row <= bodyBottom;
+    const bool inPanel = panelOpen_ && m.row >= panelTop && m.row <= panelBottom;
+
+    // The wheel scrolls what is under it, three lines a notch; the text's cursor goes with the view.
+    if (m.kind == MouseEvent::WheelUp || m.kind == MouseEvent::WheelDown) {
+        const bool down = m.kind == MouseEvent::WheelDown;
+        if (inPanel) {
+            for (int i = 0; i < 3; ++i) movePanel(down ? KEY_ARROW_DOWN : KEY_ARROW_UP);
+        } else if (inBody && treeOpen_ && m.col >= 2 && m.col <= treeRight) {
+            for (int i = 0; i < 3; ++i) moveTree(down ? KEY_ARROW_DOWN : KEY_ARROW_UP);
+        } else if (inBody) {
+            size_t last = buf_.lineCount() - 1;
+            for (int i = 0; i < 3; ++i) {
+                if (down && rowoff_ + static_cast<size_t>(bodyRows_) <= last) { ++rowoff_; if (cy_ < last) ++cy_; }
+                if (!down && rowoff_ > 0) { --rowoff_; if (cy_ > 0) --cy_; }
+            }
+            clampCursor();
+        }
+        return;
+    }
+
+    // A drag carries on the selection the press began.
+    if (m.kind == MouseEvent::Drag) {
+        if (dragging_ && m.button == 0) cursorTo(m.row, m.col);
+        return;
+    }
+    if (m.kind != MouseEvent::Press) return;
+    const bool twice = doubleClick(m);
+
+    if (m.row == 1) {                                   // the menu bar
+        size_t c = menuTitleUnder(m.col);
+        if (c < menu_.columns().size()) menu_.openColumn(c);
+        return;
+    }
+
+    if (m.row == 2) {                                   // the open files: drawFrameTop's arithmetic
+        int room = screenCols_ - 2 - (treeOpen_ ? treeCols_ + 1 : 0);
+        int x = textLeft + 1, wide = 0;
+        for (size_t i = 0; i < docs_.size(); ++i) {
+            const Buffer& b = (i == doc_) ? buf_ : docs_[i].buf;
+            std::string name = b.path().empty() ? std::string("[no name]") : baseName(b.path());
+            if (b.dirty()) name += "*";
+            std::string cell = " " + name + " ";
+            int cellWide = static_cast<int>(utf8::columns(cell, cell.size()));
+            if (wide + cellWide + 2 > room) break;
+            if (m.col >= x && m.col < x + cellWide) { if (i != doc_) switchTo(i); focus_ = FocusText; return; }
+            x += cellWide + 1;
+            wide += cellWide + 1;
+        }
+        return;
+    }
+
+    if (panelOpen_ && m.row == panelHead) {             // the panel's tabs: drawPanel's arithmetic
+        const char* names[TabCount] = {" Console ", " Debug ", " Assembly "};
+        int x = textLeft + 1;
+        for (int i = 0; i < TabCount; ++i) {
+            int w = static_cast<int>(std::string(names[i]).size());
+            if (m.col >= x && m.col < x + w) {
+                if (tab_ != static_cast<Tab>(i)) { tab_ = static_cast<Tab>(i); panelOff_ = 0; }
+                focus_ = FocusPanel;
+                return;
+            }
+            x += w + 1;
+        }
+        return;
+    }
+
+    if (inPanel) {                                      // a panel line: a double click goes to it
+        focus_ = FocusPanel;
+        if (!twice) return;
+        // Which line is under the click, wrapped lines counted as the rows they take.
+        const std::vector<std::string>& lines = panelLines();
+        size_t cols = static_cast<size_t>(screenCols_ > 2 ? screenCols_ - 2 : 1);
+        int y = m.row - panelTop;
+        size_t line = panelOff_;
+        while (line < lines.size()) {
+            int rows = static_cast<int>(rowsForLine(lines[line], cols));
+            if (y < rows) break;
+            y -= rows;
+            ++line;
+        }
+        if (line >= lines.size()) return;
+        if (tab_ == TabConsole) goToProblem();
+        else if (tab_ == TabDebug) { panelOff_ = line; goToFrame(); }
+        return;
+    }
+
+    if (!inBody) return;
+
+    if (treeOpen_ && m.col >= 2 && m.col <= treeRight) {   // the project tree
+        size_t row = treeOff_ + static_cast<size_t>(m.row - bodyTop);
+        if (row >= tree_.size()) return;
+        const TreeEntry& e = tree_.entries()[row];
+        treeSel_ = row;
+        focus_ = FocusTree;
+        // The + or - before a folder opens or closes it at once; anything else wants a double click.
+        const int marker = 2 + e.depth * 2;
+        if (twice || (e.directory && m.col == marker)) openSelected();
+        return;
+    }
+
+    if (m.col < textLeft) return;
+    focus_ = FocusText;
+    if (numbers_ && m.col < textLeft + gutterCols_) {   // the gutter: a breakpoint on that line
+        size_t row = rowoff_ + static_cast<size_t>(m.row - bodyTop);
+        if (row >= buf_.lineCount()) return;
+        cy_ = row;
+        cx_ = 0;
+        marked_ = false;
+        toggleBreak();
+        return;
+    }
+
+    // The text: the cursor to the click; shift extends the selection, a double click takes the word.
+    const size_t wasRow = cy_, wasCol = cx_;
+    cursorTo(m.row, m.col);
+    if (m.shift) {
+        if (!marked_) { marked_ = true; markRow_ = wasRow; markCol_ = wasCol; }
+        return;
+    }
+    if (twice) {
+        const std::string& line = buf_.line(cy_);
+        auto word = [](char c) { return std::isalnum(static_cast<unsigned char>(c)) || c == '_'; };
+        size_t from = cx_, to = cx_;
+        while (from > 0 && word(line[from - 1])) --from;
+        while (to < line.size() && word(line[to])) ++to;
+        if (from < to) { marked_ = true; markRow_ = cy_; markCol_ = from; cx_ = to; }
+        return;
+    }
+    marked_ = true;                                     // empty until a drag moves the cursor away
+    markRow_ = cy_;
+    markCol_ = cx_;
+    dragging_ = m.button == 0;
 }
 
 void Editor::processKey(int key) {
@@ -3737,6 +3988,7 @@ bool Editor::askNativeTools(const std::string& question) {
 
 void Editor::run() {
     starting_ = false;
+    term_.mouseReporting(true);
     setAskNative(askNativeOnConsole, this);
     if (message_.empty()) say("F10 menu  Ctrl-B build  Ctrl-Z undo  Ctrl-F find  F1 keys  Ctrl-Q quit");
 
@@ -3756,7 +4008,10 @@ void Editor::run() {
         }
 
         int key = term_.readKey();
-        if (key != KEY_NONE) {
+        if (key == KEY_MOUSE) {
+            processMouse(term_.mouse());
+            needsDraw_ = true;
+        } else if (key != KEY_NONE) {
             processKey(key);
 
             term_.reclaim();
@@ -3768,6 +4023,7 @@ void Editor::run() {
     // Leaving ends a debugging session as Stop debugging does: the destructor stops the debugger but cannot remove the program F8 built, which a quit mid-session left in the temporary directory, .dSYM and all.
     if (debugging()) debugStop();
 
+    term_.mouseReporting(false);
     Terminal::write("\x1b[2J\x1b[H");
 }
 

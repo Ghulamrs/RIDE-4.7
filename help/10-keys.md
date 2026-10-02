@@ -29,6 +29,31 @@ line goes back.
 `Ctrl+PageUp` move between files there, because `F2` and `F3` are Rename and
 Find next in a Windows application and pretending otherwise would be worse.
 
+## The mouse
+
+The console editor takes the mouse on every machine - macOS's Terminal and
+iTerm, a Linux terminal or an ssh session, Windows Terminal and the Windows
+console. Every key above still works; the mouse is a second way in.
+
+- **Menu bar** - a click opens a menu, a click on an item does it, a click
+  anywhere else closes it.
+- **File tabs** - a click brings that file to the front.
+- **Project pane** - a click picks an entry, a double click opens a file or
+  folds a folder; a click on a folder's `+` or `-` folds it at once.
+- **Gutter** - a click sets or clears a breakpoint on that line.
+- **Text** - a click puts the cursor there, Shift-click extends the selection,
+  a double click takes the word, a drag selects.
+- **Panel** - a click on Console, Debug or Assembly shows it; a double click
+  on a line goes to the error, or to the frame.
+- **Lists** (Project > Open and the other questions) - a click picks, a double
+  click takes it.
+- **The wheel** scrolls the text, the project pane or the panel, whichever is
+  under it.
+
+While RIDE has the mouse, the terminal's own text selection wants a modifier:
+Shift in Windows Terminal and most Linux terminals, Option in macOS's Terminal
+and iTerm.
+
 ## The menus
 
 **File** — New, Open, Save, Save As, Close, Next file, Previous file, Quit.
