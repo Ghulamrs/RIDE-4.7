@@ -1913,6 +1913,32 @@ static NSColor* ColourOf(unsigned char kind) {
 
 // ---- Project --------------------------------------------------------------------
 
+// One project of a CCS workspace, picked from a list, and its <workspace>/<project>.pro - workspace
+// and project and nothing else - written if it is not there. Nil when cancelled or there is none.
+- (NSString*)chooseWorkspaceProject:(NSString*)workspace {
+    NSString* names = Str(ride_ccs_workspace_projects(Utf8(workspace)));
+    if (names.length == 0) {
+        [self say:[workspace.lastPathComponent stringByAppendingString:@" is a CCS workspace with no project RIDE can build"]];
+        return nil;
+    }
+    NSPopUpButton* pick = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(0, 0, 300, 26) pullsDown:NO];
+    [pick addItemsWithTitles:[names componentsSeparatedByString:@"\n"]];
+    NSAlert* alert = [[NSAlert alloc] init];
+    alert.messageText = @"Open CCS project";
+    alert.informativeText = [workspace.lastPathComponent stringByAppendingString:@" is a CCS workspace - one of its projects opens"];
+    alert.accessoryView = pick;
+    [alert addButtonWithTitle:@"Open"];
+    [alert addButtonWithTitle:@"Cancel"];
+    if ([alert runModal] != NSAlertFirstButtonReturn) { [self say:@"no project opened"]; return nil; }
+
+    char file[1024] = {0}, why[512] = {0};
+    if (!ride_ccs_workspace_pro(Utf8(workspace), Utf8(pick.titleOfSelectedItem), file, (int)sizeof file, why, (int)sizeof why)) {
+        [self say:Str(why)];
+        return nil;
+    }
+    return Str(file);
+}
+
 - (void)loadProject:(NSString*)where {
     // A build reads the project on its own thread; one is not replaced under it (H1).
     if (busy_) {
@@ -1921,6 +1947,12 @@ static NSColor* ColourOf(unsigned char kind) {
     }
     BOOL isDirectory = NO;
     [NSFileManager.defaultManager fileExistsAtPath:where isDirectory:&isDirectory];
+    // A CCS workspace is a folder of projects, never one: which of them, then its .pro.
+    if (isDirectory && ride_ccs_is_workspace(Utf8(where))) {
+        where = [self chooseWorkspaceProject:where];
+        if (where == nil) return;
+        isDirectory = NO;
+    }
     NSString* directory = isDirectory ? where : where.stringByDeletingLastPathComponent;
     projectDirectory_ = directory;
 
@@ -2006,7 +2038,7 @@ static NSColor* ColourOf(unsigned char kind) {
     NSOpenPanel* pick = [NSOpenPanel openPanel];
     pick.canChooseFiles = YES;
     pick.canChooseDirectories = YES;
-    pick.message = @"Choose a project's .pro file, or the directory it is in";
+    pick.message = @"Choose a project's .pro file, the directory it is in, or a CCS workspace";
     pick.directoryURL = [NSURL fileURLWithPath:[self madeUnder:@"projects"]];
     if ([pick runModal] != NSModalResponseOK) { [self say:@"no project opened"]; return; }
     [self loadProject:pick.URL.path];

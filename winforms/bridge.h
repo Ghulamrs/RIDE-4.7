@@ -93,6 +93,15 @@ const char* ride_project_arch(RIDEProject* project);
    (lines '\n' apart, the first for Messages), the mapping the dialog's text, and the
    configuration the one settings.json remembers for it (-1 unsaid), which the window keeps there. */
 int ride_project_is_ccs(RIDEProject* project);
+/* **A CCS workspace** (src/ccs/ccsworkspace.h) is a folder of projects and never one: a window asks
+   which, then opens <workspace>/<project>.pro, which holds the workspace and the project and nothing
+   else. is_workspace says whether a folder is one; workspace_projects names its CCS projects, one per
+   line ("" for none), valid until the next call; workspace_pro writes that .pro unless it is there and
+   puts its path in file - 0, with the reason in error, when it cannot. */
+int ride_ccs_is_workspace(const char* directory);
+const char* ride_ccs_workspace_projects(const char* directory);
+int ride_ccs_workspace_pro(const char* workspace, const char* project,
+                           char* file, int fileSize, char* error, int errorSize);
 const char* ride_project_ccs_report(RIDEProject* project, int config);
 const char* ride_project_ccs_mapping(RIDEProject* project, int config);
 int ride_project_ccs_configuration(RIDEProject* project);

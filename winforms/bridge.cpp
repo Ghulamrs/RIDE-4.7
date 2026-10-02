@@ -40,6 +40,7 @@
 #include "settings.h"
 #include "options.h"
 #include "workspace.h"
+#include "ccs/ccsworkspace.h"
 
 namespace {
 
@@ -583,6 +584,28 @@ const char* ride_project_arch(RIDEProject* project) {
     if (!project) return "";
     project->answer = project->project.arch();
     return project->answer.c_str();
+}
+
+int ride_ccs_is_workspace(const char* directory) {
+    return directory && editor::ccs::isWorkspace(directory) ? 1 : 0;
+}
+
+const char* ride_ccs_workspace_projects(const char* directory) {
+    scratch().clear();
+    editor::ccs::Workspace ws;
+    std::string why;
+    if (directory && editor::ccs::readWorkspace(directory, ws, why))
+        for (size_t i = 0; i < ws.projects.size(); ++i) scratch() += (i ? "\n" : "") + ws.projects[i].name;
+    return scratch().c_str();
+}
+
+int ride_ccs_workspace_pro(const char* workspace, const char* project,
+                           char* file, int fileSize, char* error, int errorSize) {
+    std::string pro, why;
+    bool made = workspace && project && editor::ccs::writePro(workspace, project, pro, why);
+    if (file && fileSize > 0) copyOut(file, fileSize, made ? pro : std::string());
+    if (error && errorSize > 0) copyOut(error, errorSize, made ? std::string() : (why.empty() ? std::string("no workspace or project named") : why));
+    return made ? 1 : 0;
 }
 
 int ride_project_is_ccs(RIDEProject* project) {

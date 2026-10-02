@@ -1402,16 +1402,18 @@ void projects() {
 #ifdef _WIN32
             editor::settings::rememberAssembler("bin/masm.exe");
             editor::settings::rememberLinker(ours);
+            // What our own masm or link leaves when it fails an x86_64-windows build - since 4.51 only that asks.
+            const std::string winFailed = "masm: something it could not do\nc90.exe: the assembler or linker failed\n";
             if (editor::nativeToolsAvailable("x86_64-windows")) {
-                check(editor::nativeFallbackWanted(false, false, "x86_64-windows", failed, q) &&
+                check(editor::nativeFallbackWanted(false, false, "x86_64-windows", winFailed, q) &&
                           q.find("masm and link") != std::string::npos && q.find("ml64 and link.exe") != std::string::npos,
                       "a Windows build ours failed asks, naming masm and link and what would stand in");
                 editor::settings::rememberLinker(std::string());
-                check(editor::nativeFallbackWanted(false, false, "x86_64-windows", failed, q) &&
+                check(editor::nativeFallbackWanted(false, false, "x86_64-windows", winFailed, q) &&
                           q.find("own masm ") != std::string::npos && q.find("link.exe") == std::string::npos,
                       "with only the assembler named, the question names only it");
             } else {
-                check(!editor::nativeFallbackWanted(false, false, "x86_64-windows", failed, q) &&
+                check(!editor::nativeFallbackWanted(false, false, "x86_64-windows", winFailed, q) &&
                           q.find("no Visual Studio") != std::string::npos,
                       "with no Visual Studio, nothing asks - the line says so");
             }

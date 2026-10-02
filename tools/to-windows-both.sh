@@ -34,7 +34,7 @@ leg_win() {
 leg_ti() {
     ED1_WINDOWS_ROOT="$TI_ROOT" ./tools/to-windows.sh solution > "$LOGS/ti-build.log" 2>&1 || return 1
     local t; t=$(fwd "$TI_ROOT")
-    BOXLAB="$t/VM6747/TriLab" BOXRIDE="$t/RIDE-4.5/bin/RIDEConsole.exe" BOXVM="$t/RIDE-4.5/bin/vm6747.exe" \
+    BOXLAB="$t/VM6747/TriLab" BOXRIDE="$t/RIDE-4.7/bin/RIDEConsole.exe" BOXVM="$t/RIDE-4.7/bin/vm6747.exe" \
         OUT="$LOGS/trilab" sh "$TRILAB/trilab.sh" ccs > "$LOGS/ti.log" 2>&1
 }
 

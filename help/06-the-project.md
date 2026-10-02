@@ -59,6 +59,27 @@ afresh every time the project is opened or built, so an edit made in CCS is
 seen at once. What it remembers - which configuration you built last - goes
 into `settings.json` under the project's path, never into the project.
 
+**From a CCS workspace, one project at a time.** A CCS workspace - the folder
+CCS keeps its `.metadata` in, `workspace_v7` say - is a folder of projects,
+not a project, and RIDE opens one of its projects at a time. Open the
+workspace folder: `Project ▸ Open...` on the console lists one `.pro` per
+project, and the window's `Project ▸ Open CCS workspace...` lists the projects.
+Picking one writes `<workspace>/<project>.pro`, which holds only
+
+```json
+{ "ccs": { "workspace": ".", "project": "Sample" } }
+```
+
+and opens that project. From then on the `.pro` is the project - open it, find
+it under recent projects, or give it on the console: `ride workspace_v7/Sample.pro --run`.
+No switch is needed for it. The project may be in the workspace folder or
+imported from elsewhere without copying: RIDE finds it where CCS registered it.
+Read from its workspace, `${workspace_loc}` is the workspace,
+`${workspace_loc:/P/x}` is project P's folder, and the workspace's path
+variables and build variables are used. A project that depends on another
+builds as itself alone - build the other in CCS first. Opening a project's
+folder inside a workspace writes and opens its `.pro` the same way.
+
 **3. Pick Debug or Release.** CCS's two configurations are RIDE's two:
 `Ctrl-D` or **Build ▸ Debug / Release**, `--config debug|release` on the
 console. Each takes its own defines, optimisation level and link options from

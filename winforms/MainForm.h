@@ -817,6 +817,8 @@ private:
                                     gcnew EventHandler(this, &MainForm::OnNewProject));
         project->DropDownItems->Add("Open...", nullptr,
                                     gcnew EventHandler(this, &MainForm::OnOpenProjectFile));
+        project->DropDownItems->Add("Open CCS workspace...", nullptr,
+                                    gcnew EventHandler(this, &MainForm::OnOpenCcsWorkspace));
         project->DropDownItems->Add("Save as...", nullptr,
                                     gcnew EventHandler(this, &MainForm::OnSaveProjectAs));
         project->DropDownItems->Add("Close", nullptr,
@@ -1425,6 +1427,99 @@ private:
 
         if (box->ShowDialog(this) != System::Windows::Forms::DialogResult::OK) return nullptr;
         return entry->Text;
+    }
+
+    // One of a list, or null when cancelled: the CCS workspace's projects, for now.
+    String^ Pick(String^ title, String^ note, array<String^>^ choices) {
+        msclr::auto_handle<Form> box(gcnew Form());
+        box->Text = title;
+        box->FormBorderStyle = System::Windows::Forms::FormBorderStyle::FixedDialog;
+        box->StartPosition = System::Windows::Forms::FormStartPosition::CenterParent;
+        box->MinimizeBox = false;
+        box->MaximizeBox = false;
+        box->ClientSize = System::Drawing::Size(480, 300);
+
+        Label^ says = gcnew Label();
+        says->Text = note;
+        says->AutoEllipsis = true;
+        says->ForeColor = System::Drawing::Color::FromArgb(90, 90, 90);
+        says->SetBounds(12, 12, 456, 20);
+
+        ListBox^ list = gcnew ListBox();
+        list->SetBounds(12, 36, 456, 212);
+        list->Font = gcnew System::Drawing::Font("Consolas", 10.0f);
+        list->Items->AddRange(choices);
+        if (choices->Length > 0) list->SelectedIndex = 0;
+
+        Button^ yes = gcnew Button();
+        yes->Text = "Open";
+        yes->DialogResult = System::Windows::Forms::DialogResult::OK;
+        yes->SetBounds(306, 260, 78, 28);
+        Button^ no = gcnew Button();
+        no->Text = "Cancel";
+        no->DialogResult = System::Windows::Forms::DialogResult::Cancel;
+        no->SetBounds(390, 260, 78, 28);
+        // A double click is a choice, as Enter is.
+        list->DoubleClick += gcnew EventHandler(this, &MainForm::OnPickDoubleClick);
+
+        box->Controls->Add(says);
+        box->Controls->Add(list);
+        box->Controls->Add(yes);
+        box->Controls->Add(no);
+        box->AcceptButton = yes;
+        box->CancelButton = no;
+
+        if (box->ShowDialog(this) != System::Windows::Forms::DialogResult::OK || list->SelectedItem == nullptr) return nullptr;
+        return safe_cast<String^>(list->SelectedItem);
+    }
+
+    void OnPickDoubleClick(Object^ sender, EventArgs^) {
+        Form^ box = safe_cast<Control^>(sender)->FindForm();
+        if (box == nullptr) return;
+        box->DialogResult = System::Windows::Forms::DialogResult::OK;
+    }
+
+    // **A CCS workspace is a folder of projects, never one**: which of them, and then its
+    // <workspace>/<project>.pro - workspace and project and nothing else - written if it is not there.
+    String^ ChooseWorkspaceProject(String^ workspace) {
+        Utf8 dir(workspace);
+        String^ names = FromUtf8(ride_ccs_workspace_projects(dir.c()));
+        if (names->Length == 0) {
+            what_->Text = System::IO::Path::GetFileName(workspace) + " is a CCS workspace with no project RIDE can build";
+            return nullptr;
+        }
+        array<String^>^ choices = names->Split(gcnew array<wchar_t>{ L'\n' });
+        String^ chosen = Pick("Open CCS project", System::IO::Path::GetFileName(workspace) +
+                              " is a CCS workspace - one of its projects opens", choices);
+        if (chosen == nullptr) { what_->Text = "no project opened"; return nullptr; }
+
+        Utf8 name(chosen);
+        array<Byte>^ file = gcnew array<Byte>(1024);
+        pin_ptr<Byte> filePin = &file[0];
+        array<Byte>^ why = gcnew array<Byte>(512);
+        pin_ptr<Byte> whyPin = &why[0];
+        if (ride_ccs_workspace_pro(dir.c(), name.c(), reinterpret_cast<char*>(filePin), file->Length,
+                                   reinterpret_cast<char*>(whyPin), why->Length) == 0) {
+            what_->Text = FromUtf8(reinterpret_cast<const char*>(whyPin));
+            return nullptr;
+        }
+        return FromUtf8(reinterpret_cast<const char*>(filePin));
+    }
+
+    void OnOpenCcsWorkspace(Object^, EventArgs^) {
+        msclr::auto_handle<FolderBrowserDialog> pick(gcnew FolderBrowserDialog());
+        pick->Description = "A CCS workspace: the folder holding .metadata";
+        pick->ShowNewFolderButton = false;
+        if (pick->ShowDialog(this) != System::Windows::Forms::DialogResult::OK) {
+            what_->Text = "no project opened";
+            return;
+        }
+        Utf8 dir(pick->SelectedPath);
+        if (ride_ccs_is_workspace(dir.c()) == 0) {
+            what_->Text = pick->SelectedPath + " is not a CCS workspace (no .metadata) - Project > Open... takes a .pro";
+            return;
+        }
+        LoadProject(pick->SelectedPath);
     }
 
     // ---- one line at a time ------------------------------------------------------
@@ -2448,6 +2543,14 @@ private:
     // A .pro file, or a directory with one in it. Tried on a project of its own, so a load that
     // fails leaves the one already open exactly as it was.
     void LoadProject(String^ where) {
+        // A CCS workspace, however it arrived - the recent list, a dropped folder: a project of it.
+        if (System::IO::Directory::Exists(where)) {
+            Utf8 dir(where);
+            if (ride_ccs_is_workspace(dir.c()) != 0) {
+                where = ChooseWorkspaceProject(where);
+                if (where == nullptr) return;
+            }
+        }
         bool named = System::IO::File::Exists(where);
         String^ directory = named ? System::IO::Path::GetDirectoryName(where) : where;
 
