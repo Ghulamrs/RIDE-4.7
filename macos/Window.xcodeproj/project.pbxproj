@@ -33,6 +33,7 @@
 		2A623B64F21FC5CF618D6E9A /* ccsproject.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E1049745E08E5CD9A09083C3 /* ccsproject.cpp */; };
 		C6793654D5304DBB1C5212C9 /* ccsoptions.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 817A73279C46E2F67BF41496 /* ccsoptions.cpp */; };
 		763B16418BD01FA3E462650C /* ccsxml.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DC36FBFD733031A0993BAAD1 /* ccsxml.cpp */; };
+		62BCA86C62358D87D9463E2E /* ccsworkspace.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3D775AABD9B2C8A7055DA039 /* ccsworkspace.cpp */; };
 		83ACF32D4DEE929C2C31F2CE /* channel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 93AE13615387F689377864EB /* channel.cpp */; };
 		DB18F031C6B0E086C313D7B9 /* session.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 918EEAF9AA1BE04310008519 /* session.cpp */; };
 		E1508A0CE98C207EE9D93680 /* bridge.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F80F66892DBDBEFEE6E25237 /* bridge.cpp */; };
@@ -71,6 +72,7 @@
 		E1049745E08E5CD9A09083C3 /* ccsproject.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = ccsproject.cpp; path = "../src/ccs/ccsproject.cpp"; sourceTree = "<group>"; };
 		817A73279C46E2F67BF41496 /* ccsoptions.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = ccsoptions.cpp; path = "../src/ccs/ccsoptions.cpp"; sourceTree = "<group>"; };
 		DC36FBFD733031A0993BAAD1 /* ccsxml.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = ccsxml.cpp; path = "../src/ccs/ccsxml.cpp"; sourceTree = "<group>"; };
+		3D775AABD9B2C8A7055DA039 /* ccsworkspace.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = ccsworkspace.cpp; path = "../src/ccs/ccsworkspace.cpp"; sourceTree = "<group>"; };
 		93AE13615387F689377864EB /* channel.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = channel.cpp; path = "../src/shalimar/channel.cpp"; sourceTree = "<group>"; };
 		918EEAF9AA1BE04310008519 /* session.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = session.cpp; path = "../src/shalimar/session.cpp"; sourceTree = "<group>"; };
 		F80F66892DBDBEFEE6E25237 /* bridge.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = bridge.cpp; path = "../winforms/bridge.cpp"; sourceTree = "<group>"; };
@@ -141,6 +143,7 @@
 				E1049745E08E5CD9A09083C3 /* ccsproject.cpp */,
 				817A73279C46E2F67BF41496 /* ccsoptions.cpp */,
 				DC36FBFD733031A0993BAAD1 /* ccsxml.cpp */,
+				3D775AABD9B2C8A7055DA039 /* ccsworkspace.cpp */,
 				93AE13615387F689377864EB /* channel.cpp */,
 				918EEAF9AA1BE04310008519 /* session.cpp */,
 				F80F66892DBDBEFEE6E25237 /* bridge.cpp */,
@@ -271,6 +274,7 @@
 				2A623B64F21FC5CF618D6E9A /* ccsproject.cpp in Sources */,
 				C6793654D5304DBB1C5212C9 /* ccsoptions.cpp in Sources */,
 				763B16418BD01FA3E462650C /* ccsxml.cpp in Sources */,
+				62BCA86C62358D87D9463E2E /* ccsworkspace.cpp in Sources */,
 				83ACF32D4DEE929C2C31F2CE /* channel.cpp in Sources */,
 				DB18F031C6B0E086C313D7B9 /* session.cpp in Sources */,
 				E1508A0CE98C207EE9D93680 /* bridge.cpp in Sources */,
