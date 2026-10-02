@@ -187,7 +187,7 @@ no way to watch it here.
 | 27 | not a fault | Eclipse keeps project names unique within a workspace |
 | 28 | fixed | quitting during a build waits for it (up to 10 s, NSTerminateLater); Built |
 | 29 | fixed | saving writes where a link points and keeps the permissions; Built |
-| 30 | left | the in-window menu row is the product's design, shared with the Windows window - a decision for the user |
+| 30 | fixed | the in-window menu row removed at the user's request; the menus are the Mac menu bar's |
 | 31 | withdrawn | accessibility lists the window's buttons, tabs and text once the window is on the current Space |
 | 32 | fixed | it was finding 5: Remove and Move are enabled for the open project file; Checked |
 | 33 | left | one UTI for every RIDE version's .pro is right; Qt's claim is Launch Services' to rank |

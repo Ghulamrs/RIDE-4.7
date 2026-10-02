@@ -137,10 +137,10 @@ and Next Compiler Command-Option-K. Bigger Font is Command-= (Command-+ works
 too). Re-indent keeps Control-I and the panel tabs Control-1 to 3, which nothing
 in a text view uses.
 
-**The menu row inside the window is kept on purpose.** It repeats the menu bar,
-one button per menu popping up the bar's own menu, because RIDE is used on
-Windows and Linux too and its users look for the menus in the window. It was
-asked for; the review's L1 suggestion to drop it is declined.
+**The menus are the Mac's menu bar alone.** Until 02-10-2026 a row inside the
+window repeated them, one button per menu, for users coming from Windows and
+Linux; it was removed at the user's request with the 4.7 audit (finding 30), as
+the 27-09 review's L1 had suggested.
 
 ## Signing
 
