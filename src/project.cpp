@@ -251,6 +251,19 @@ bool Project::load(const std::string& dir, std::string& error) {
         if (path.empty()) return false;
     } else {
 
+        // <workspace>/<project>.pro not written yet - named on a command line, where nothing lists them:
+        // the workspace has that project, so the .pro is written and read.
+        if (!path::exists(base) && namedPro(path::filename(base)) && ccs::isWorkspace(path::parent(base))) {
+            std::string name = path::filename(base), pro;
+            name.resize(name.size() - std::string(suffix()).size());
+            ccs::Workspace ws;
+            if (ccs::readWorkspace(path::parent(base), ws, error) && ws.project(name)) {
+                if (!ccs::writePro(ws.dir, name, pro, error)) return false;
+            } else if (error.empty()) {
+                error = path::filename(path::parent(base)) + " is a CCS workspace with no project " + name;
+                return false;
+            }
+        }
         if (!path::exists(base)) return false;
         path = base;
         base = path::parent(base);

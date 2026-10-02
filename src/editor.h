@@ -98,6 +98,9 @@ public:
     void setBatch(bool b) { batch_ = b; }
     bool setArchNamed(const std::string& name);
     void buildProjectBatch(bool andRun) { buildProject(andRun); }
+    // For --build and --run, which draw no screen: whether a project opened, and the line that said why not.
+    bool projectLoaded() const { return project_.loaded(); }
+    const std::string& lastMessage() const { return message_; }
     const std::vector<std::string>& consoleLines() const { return console_; }
     bool lastBuildOk() const { return lastBuildOk_; }
     int lastRunStatus() const { return lastRunStatus_; }

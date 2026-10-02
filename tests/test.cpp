@@ -5852,6 +5852,12 @@ void ccsWorkspacesOneProjectAtATime() {
         check(!file::exists(ws / "K6747c.pro"), "K6747c has no .pro yet");
         check(project.load(wsDir + "/K6747c", error) && project.isCcs() && project.name() == "K6747c", "its folder opens, switch off: " + error);
         check(file::exists(ws / "K6747c.pro") && editor::path::same(project.file(), wsDir + "/K6747c.pro"), "through the .pro it writes beside the others");
+        check(project.load(wsDir + "/K6747cpp.pro", error) && project.name() == "K6747cpp", "an existing .pro named on its own: " + error);
+        file::remove_all(ws / "K6747cpp.pro");
+        check(project.load(wsDir + "/K6747cpp.pro", error) && file::exists(ws / "K6747cpp.pro") && project.name() == "K6747cpp",
+              "a .pro not yet written, named on a command line, is written for the workspace's project: " + error);
+        check(!project.load(wsDir + "/Nobody.pro", error) && error.find("no project Nobody") != std::string::npos && !file::exists(ws / "Nobody.pro"),
+              "and one the workspace has no project for is refused, writing nothing: " + error);
         std::string bad;
         editor::ccs::writePro(wsDir, "Gone", bad, error);
         check(!project.load(bad, error) && error.find("has no CCS project Gone") != std::string::npos, "a .pro naming no member says so: " + error);

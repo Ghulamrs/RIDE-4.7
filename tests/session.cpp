@@ -842,6 +842,12 @@ void pickingACcsWorkspaceProject(const std::string& ride) {
               readFile(ws / "K6747cpp.pro").find("\"workspace\": \".\"") != std::string::npos,
           "the .pro names the workspace and the project: " + readFile(ws / "K6747cpp.pro"));
 
+    // --build on the workspace builds nothing and says why, where it used to build an empty project.
+    Screen batch = driveIn(ride, here + " --build", "", stage, ws);
+    check(batch.raw.find("is a CCS workspace, not a project") != std::string::npos &&
+              batch.raw.find("does not say what it builds") == std::string::npos,
+          "--build on the workspace says it is one and builds nothing");
+
     // The .pro opens it again by itself.
     Screen again = driveIn(ride, "--project \"" + (ws / "K6747cpp.pro").string() + "\"", ctrl('q'), stage, ws);
     check(onScreen(again, "K6747cpp") && onScreen(again, "main.cpp"), "and the .pro, named, opens the same project");

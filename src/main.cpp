@@ -255,6 +255,11 @@ int main(int argc, char** argv) {
             std::fprintf(stderr, "%s: unknown target %s\n", me.c_str(), arch.c_str());
             return 2;
         }
+        // A project that did not open - a CCS workspace, say, which is a folder of projects - is said, not built.
+        if (!ed.projectLoaded()) {
+            std::fprintf(stderr, "%s: %s\n", me.c_str(), ed.lastMessage().empty() ? "no project there" : ed.lastMessage().c_str());
+            return 2;
+        }
         ed.buildProjectBatch(runIt);
         const std::vector<std::string>& lines = ed.consoleLines();
         for (size_t i = 0; i < lines.size(); ++i) std::printf("%s\n", lines[i].c_str());
