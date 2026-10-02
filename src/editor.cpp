@@ -9,6 +9,8 @@
 #include "workspace.h"
 #include "path.h"
 #include "settings.h"
+#include "ccs/ccsproject.h"
+#include "ccs/ccsworkspace.h"
 
 #include <algorithm>
 #include <cstdio>
@@ -1748,7 +1750,21 @@ std::vector<std::string> Editor::projectsIn(const std::string& directory) const 
     std::vector<std::string> named = Project::projectFilesIn(directory);
     for (size_t i = 0; i < named.size(); ++i) found.push_back(path::filename(named[i]));
 
-    if (named.empty() && !Project::fileIn(directory).empty()) found.push_back("./");
+    // A CCS workspace offers one .pro per project, the ones not yet written as well: choosing one writes it.
+    if (ccs::isWorkspace(directory)) {
+        ccs::Workspace ws;
+        std::string error;
+        if (ccs::readWorkspace(directory, ws, error))
+            for (size_t i = 0; i < ws.projects.size(); ++i) {
+                std::string pro = ws.projects[i].name + Project::suffix();
+                if (std::find(found.begin(), found.end(), pro) == found.end()) found.push_back(pro);
+            }
+        std::sort(found.begin(), found.end());
+        named = found;
+    }
+
+    // Inside a CCS project folder, "./" opens it.
+    if (named.empty() && ccs::isProject(directory)) found.push_back("./");
 
     std::vector<path::Entry> here = path::entries(directory);
     for (size_t i = 0; i < here.size(); ++i) {
@@ -1816,12 +1832,26 @@ void Editor::openProjectPrompt() {
                 openProject(named);
                 return;
             }
+            // A workspace's project with no .pro yet: written now, workspace and project and nothing else.
+            const std::string suffix = Project::suffix();
+            if (ccs::isWorkspace(where) && name.size() > suffix.size() &&
+                name.compare(name.size() - suffix.size(), suffix.size(), suffix) == 0) {
+                ccs::Workspace ws;
+                std::string error, pro;
+                if (ccs::readWorkspace(where, ws, error) && ws.project(name.substr(0, name.size() - suffix.size()))) {
+                    if (!ccs::writePro(where, name.substr(0, name.size() - suffix.size()), pro, error)) { say(error); return; }
+                    openProject(pro);
+                    return;
+                }
+            }
         }
 
         if (name[name.size() - 1] == '/') {
             std::string into = path::join(where, name.substr(0, name.size() - 1));
 
-            if (!Project::fileIn(into).empty()) {
+            // A folder with a .pro, or a CCS project's: opened rather than walked into.
+            if (!Project::fileIn(into).empty() ||
+                (ccs::isProject(into) && (settings::ccsEnabled() || !ccs::workspaceOf(into).empty()))) {
                 openProject(into);
                 return;
             }

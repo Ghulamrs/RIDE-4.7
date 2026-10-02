@@ -52,7 +52,7 @@ CORE_SRC := src/buffer.cpp src/compile.cpp src/convert.cpp \
        src/toolchain.cpp src/json.cpp src/project.cpp src/find.cpp \
        src/utf8.cpp src/workspace.cpp src/symbols.cpp src/demangle_win.cpp \
        src/path.cpp src/process.cpp src/debugger.cpp src/settings.cpp src/options.cpp src/about.cpp \
-       src/ccs/ccsproject.cpp src/ccs/ccsoptions.cpp src/ccs/ccsxml.cpp
+       src/ccs/ccsproject.cpp src/ccs/ccsoptions.cpp src/ccs/ccsxml.cpp src/ccs/ccsworkspace.cpp
 
 # The terminal's own half. src/help.cpp is here rather than in the core because
 # only this front end shows the manual - the window's Help menu has Keys and
@@ -75,13 +75,13 @@ SHM_SRC := src/shalimar/channel.cpp src/shalimar/session.cpp
 # The objects go under obj/ rather than beside the sources they came from,
 # so that a listing of src/ is the code and nothing else.
 # Objects are built OUTSIDE the checkout, in a build directory beside the four
-# projects: ../build/RIDE-4.5/obj. Nothing intermediate is ever written next
+# projects: ../build/RIDE-4.7/obj. Nothing intermediate is ever written next
 # to the sources, so `tar` on this repository carries source and nothing else,
 # and a clean is a directory removal that cannot reach a tracked file.
 #
 # Overridable, and `?=` on purpose: workspace.mk names one place for all four,
 # and a command line beats both.
-OBJDIR ?= ../build/RIDE-4.5/obj
+OBJDIR ?= ../build/RIDE-4.7/obj
 OBJ := $(patsubst src/%.cpp,$(OBJDIR)/%.o,$(SRC) $(SHM_SRC))
 
 # Where the finished program goes. `.` is this directory, which is what every
@@ -197,8 +197,8 @@ tests/test: tests/test.cpp src/compile.cpp src/indent.cpp src/syntax.cpp \
             src/toolchain.cpp src/json.cpp src/project.cpp src/find.cpp \
        src/utf8.cpp src/workspace.cpp src/symbols.cpp src/demangle_win.cpp \
             src/path.cpp src/process.cpp src/debugger.cpp src/settings.cpp src/options.cpp src/about.cpp src/help.cpp \
-            src/buffer.cpp src/ccs/ccsproject.cpp src/ccs/ccsoptions.cpp src/ccs/ccsxml.cpp \
-            src/ccs/ccsproject.h src/ccs/ccsoptions.h src/ccs/ccsxml.h \
+            src/buffer.cpp src/ccs/ccsproject.cpp src/ccs/ccsoptions.cpp src/ccs/ccsxml.cpp src/ccs/ccsworkspace.cpp \
+            src/ccs/ccsproject.h src/ccs/ccsoptions.h src/ccs/ccsxml.h src/ccs/ccsworkspace.h \
             winforms/bridge.cpp winforms/bridge.h src/compile.h src/convert.h \
             src/indent.h src/syntax.h \
             src/json.h src/project.h src/path.h src/buffer.h
@@ -207,7 +207,7 @@ tests/test: tests/test.cpp src/compile.cpp src/indent.cpp src/syntax.cpp \
 	    src/syntax.cpp src/toolchain.cpp src/json.cpp src/project.cpp src/find.cpp \
        src/utf8.cpp src/workspace.cpp src/symbols.cpp src/demangle_win.cpp \
 	    src/path.cpp src/process.cpp src/debugger.cpp src/settings.cpp src/options.cpp src/about.cpp src/help.cpp \
-	    src/buffer.cpp src/ccs/ccsproject.cpp src/ccs/ccsoptions.cpp src/ccs/ccsxml.cpp $(SHM_SRC)
+	    src/buffer.cpp src/ccs/ccsproject.cpp src/ccs/ccsoptions.cpp src/ccs/ccsxml.cpp src/ccs/ccsworkspace.cpp $(SHM_SRC)
 
 # The other half of the checking: the editor itself, driven by keystrokes.
 # CC1, CXX1 and SHC name compilers for the build cases, and C2S the converter

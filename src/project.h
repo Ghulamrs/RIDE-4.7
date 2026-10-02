@@ -124,6 +124,8 @@ public:
     // build, never written - save() keeps RIDE's own state in settings.json - and its options
     // read-only. isCcs() says so; the rest answer what was read.
     bool isCcs() const { return ccs_; }
+    // The CCS workspace the project was opened from through <workspace>/<project>.pro, or "".
+    const std::string& ccsWorkspace() const { return ccsWorkspace_; }
     const ccs::Reading& ccsReading() const { return ccsReading_; }
     // The Messages lines for a configuration: the options line, then the sources line when there is one.
     std::vector<std::string> ccsReport(Configuration config) const;
@@ -181,7 +183,10 @@ private:
     options::Store options_;
     bool ccs_ = false;
     ccs::Reading ccsReading_;
-    bool loadCcs(const std::string& dir, std::string& error);
+    std::string ccsWorkspace_;
+    bool loadCcs(const std::string& dir, std::string& error, const std::string& workspace = std::string());
+    // A .pro of one CCS workspace project: { "ccs": { "workspace": ".", "project": "<name>" } }.
+    bool loadWorkspacePro(const std::string& pro, const Json& ccs, std::string& error);
 };
 
 }

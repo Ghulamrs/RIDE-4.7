@@ -44,9 +44,11 @@
       "src/ccs/ccsproject.cpp",
       "src/ccs/ccsoptions.cpp",
       "src/ccs/ccsxml.cpp",
+      "src/ccs/ccsworkspace.cpp",
       "src/ccs/ccsproject.h",
       "src/ccs/ccsoptions.h",
-      "src/ccs/ccsxml.h"
+      "src/ccs/ccsxml.h",
+      "src/ccs/ccsworkspace.h"
     ],
     "Shalimar debugging": [
       "src/shalimar/channel.cpp",

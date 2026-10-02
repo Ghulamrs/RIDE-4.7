@@ -54,7 +54,13 @@ struct Reading {
     std::vector<std::string> linked;      // linked resources' absolute paths, files only
     std::vector<std::string> notBuilt;    // sources of a kind RIDE does not build: .asm, .sa, .lib, .obj
     std::vector<std::string> notes;       // anything else worth a line: a macro left unresolved, definitions missing
-    std::map<std::string, std::string> macros;   // build variables, per project (the first configuration's)
+    std::map<std::string, std::string> macros;   // build variables, per project (the first configuration's), then the workspace's
+    // The workspace the project was opened from (ccsworkspace.h), or "" for a folder opened alone,
+    // where WORKSPACE_LOC is taken to be the folder's parent as before.
+    std::string workspace;
+    std::map<std::string, std::string> pathVariables;   // the workspace's, for a linked resource's locationURI
+    std::map<std::string, std::string> projects;        // the workspace's projects, name to folder, for ${workspace_loc:/P}
+    std::vector<std::string> references;                // .project's referenced projects, which RIDE does not build
 
     Reading() : elf(true) {}
     const Config* config(Configuration which) const;
@@ -67,7 +73,9 @@ bool isProjectFile(const std::string& file);
 
 // Reads the three files. False with the reason - a device that is not a C674x, a COFF project,
 // big endian, a file that will not parse - and the reader's word is final: no half-read project.
-bool read(const std::string& dir, Reading& out, std::string& error);
+// With a workspace, the project is read as a member of it: its locations and macros resolve there.
+struct Workspace;
+bool read(const std::string& dir, Reading& out, std::string& error, const Workspace* workspace = 0);
 
 // The Messages line for one configuration: "CCS project K6747c (Release): 2 options not
 // supported, using RIDE's defaults: --opt_for_speed=5, -ms3; RIDE's own instead of: ...".

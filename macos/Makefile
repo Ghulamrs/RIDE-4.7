@@ -2,7 +2,7 @@
 # core: the terminal editor is ../Makefile's, the Windows Forms window is
 # ../winforms/RIDEGui.vcxproj, and this is AppKit through Objective-C++.
 #
-#     make            build ../../build/RIDE-4.5/RIDE.app
+#     make            build ../../build/RIDE-4.7/RIDE.app
 #     make run        build it and open it
 #     make clean
 #
@@ -42,14 +42,14 @@ CORE_SRC := src/buffer.cpp src/compile.cpp src/convert.cpp \
        src/toolchain.cpp src/json.cpp src/project.cpp src/find.cpp \
        src/utf8.cpp src/workspace.cpp src/symbols.cpp src/demangle_win.cpp \
        src/path.cpp src/process.cpp src/debugger.cpp src/settings.cpp src/options.cpp src/about.cpp \
-       src/ccs/ccsproject.cpp src/ccs/ccsoptions.cpp src/ccs/ccsxml.cpp
+       src/ccs/ccsproject.cpp src/ccs/ccsoptions.cpp src/ccs/ccsxml.cpp src/ccs/ccsworkspace.cpp
 SHM_SRC := src/shalimar/channel.cpp src/shalimar/session.cpp
 BRIDGE_SRC := winforms/bridge.cpp
 MAC_SRC := main.mm WindowController.mm CodeView.mm LineNumbers.mm
 
 # Outside the checkout, beside the terminal editor's objects, so that a
 # listing of the repository is source and nothing else.
-BUILD ?= ../../build/RIDE-4.5
+BUILD ?= ../../build/RIDE-4.7
 OBJDIR ?= $(BUILD)/mac-obj
 APP ?= $(BUILD)/RIDE.app
 

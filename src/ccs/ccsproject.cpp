@@ -6,6 +6,7 @@
 #include "../path.h"
 #include "../settings.h"
 #include "ccsoptions.h"
+#include "ccsworkspace.h"
 #include "ccsxml.h"
 
 namespace editor {
@@ -128,6 +129,11 @@ std::vector<std::string> splitOn(const std::string& text, char sep) {
     }
 }
 
+// WORKSPACE_LOC: the workspace the project was opened from, else the folder's parent.
+std::string workspaceDir(const Reading& reading) {
+    return reading.workspace.empty() ? path::parent(reading.dir) : reading.workspace;
+}
+
 // Eclipse's locationURI: PROJECT_LOC/x, PARENT-n-PROJECT_LOC/x, WORKSPACE_LOC/x, file:/...
 std::string locationOf(const XmlNode& link, const Reading& reading) {
     const XmlNode* location = link.child("location");
@@ -145,12 +151,16 @@ std::string locationOf(const XmlNode& link, const Reading& reading) {
     std::string variable = text.substr(0, slash), rest = slash == std::string::npos ? std::string() : text.substr(slash + 1);
     std::string base;
     if (variable == "PROJECT_LOC") base = reading.dir;
-    else if (variable == "WORKSPACE_LOC") base = path::parent(reading.dir);
+    else if (variable == "WORKSPACE_LOC") base = workspaceDir(reading);
     else if (variable.compare(0, 7, "PARENT-") == 0 && endsWith(variable, "-PROJECT_LOC")) {
         long up = std::strtol(variable.c_str() + 7, 0, 10);
         base = reading.dir;
         for (long i = 0; i < up; ++i) base = path::parent(base);
-    } else return path::withSlashes(text);
+    } else {
+        std::map<std::string, std::string>::const_iterator it = reading.pathVariables.find(variable);
+        if (it == reading.pathVariables.end()) return path::withSlashes(text);
+        base = it->second;
+    }
     return rest.empty() ? base : path::join(base, rest);
 }
 
@@ -204,11 +214,17 @@ std::string resolveMacros(const std::string& text, const Reading& reading) {
         else if (macro == "CG_CLEAN_CMD") value = "DEL /F";
         else if (macro == "BuildArtifactFileName") value = reading.name + ".out";
         else if (macro == "BuildDirectory") value = reading.dir;
-        else if (macro == "workspace_loc") value = path::parent(reading.dir);
+        else if (macro == "workspace_loc") value = workspaceDir(reading);
         else if (macro.compare(0, 14, "workspace_loc:") == 0) {
+            // ${workspace_loc:/P/x}: P is a project of the workspace, wherever its folder is.
             std::string rest = macro.substr(14);
             if (!rest.empty() && rest[0] == '/') rest.erase(0, 1);
-            value = path::join(path::parent(reading.dir), rest);
+            size_t slash = rest.find('/');
+            std::string first = rest.substr(0, slash);
+            std::map<std::string, std::string>::const_iterator member = reading.projects.find(first);
+            if (member != reading.projects.end())
+                value = slash == std::string::npos ? member->second : path::join(member->second, rest.substr(slash + 1));
+            else value = path::join(workspaceDir(reading), rest);
         } else {
             std::map<std::string, std::string>::const_iterator it = reading.macros.find(macro);
             if (it != reading.macros.end()) value = it->second;
@@ -352,7 +368,7 @@ void perFileOptions(const XmlNode& fileInfo, const std::vector<Stored>& folder, 
 
 }
 
-bool read(const std::string& where, Reading& out, std::string& error) {
+bool read(const std::string& where, Reading& out, std::string& error, const Workspace* workspace) {
     out = Reading();
     error.clear();
     std::string dir = path::withSlashes(path::absolute(where));
@@ -360,6 +376,11 @@ bool read(const std::string& where, Reading& out, std::string& error) {
     while (!dir.empty() && dir[dir.size() - 1] == '/') dir.resize(dir.size() - 1);
     if (!isProject(dir)) { error = dir + " is not a CCS project (no .project and .ccsproject)"; return false; }
     out.dir = dir;
+    if (workspace) {
+        out.workspace = workspace->dir;
+        out.pathVariables = workspace->pathVariables;
+        for (size_t i = 0; i < workspace->projects.size(); ++i) out.projects[workspace->projects[i].name] = workspace->projects[i].location;
+    }
 
     XmlNode project, ccsproject, cproject;
     if (!readXmlFile(path::join(dir, ".project"), project, error)) return false;
@@ -370,6 +391,16 @@ bool read(const std::string& where, Reading& out, std::string& error) {
     const XmlNode* name = project.child("name");
     out.name = name ? name->text : path::filename(dir);
     if (out.name.empty()) out.name = path::filename(dir);
+
+    // .project's referenced projects: CCS builds them first, and RIDE builds one project only.
+    std::vector<const XmlNode*> referenced;
+    if (const XmlNode* projects = project.child("projects")) {
+        referenced = projects->all("project");
+        for (size_t i = 0; i < referenced.size(); ++i)
+            if (!referenced[i]->text.empty()) out.references.push_back(referenced[i]->text);
+    }
+    for (size_t i = 0; i < out.references.size(); ++i)
+        out.notes.push_back("depends on project " + out.references[i] + ", which RIDE does not build - build it in CCS, or open it in RIDE first");
 
     // .ccsproject: the device, and the compiler version ${CG_TOOL_ROOT} stands for.
     std::vector<const XmlNode*> options;
@@ -446,6 +477,10 @@ bool read(const std::string& where, Reading& out, std::string& error) {
         for (size_t m = 0; m < macros.size(); ++m)
             if (out.macros.find(macros[m]->attribute("name")) == out.macros.end())
                 out.macros[macros[m]->attribute("name")] = macros[m]->attribute("value");
+        // The workspace's build macros, for the names this project does not define itself.
+        if (workspace)
+            for (std::map<std::string, std::string>::const_iterator it = workspace->macros.begin(); it != workspace->macros.end(); ++it)
+                if (out.macros.find(it->first) == out.macros.end()) out.macros[it->first] = it->second;
         config.prebuild = resolveMacros(configuration.attribute("prebuildStep"), out);
         config.postbuild = resolveMacros(configuration.attribute("postbuildStep"), out);
 

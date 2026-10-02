@@ -7,6 +7,7 @@
 #include "json.h"
 #include "path.h"
 #include "settings.h"
+#include "ccs/ccsworkspace.h"
 
 namespace editor {
 
@@ -94,6 +95,7 @@ void Project::begin(const std::string& dir, const std::string& name) {
     options_ = options::Store();
     options::setActive(&options_);
     ccs_ = false;
+    ccsWorkspace_.clear();
     indentSaid_ = false;
     indent_.width = settings::indentWidth();
     indent_.tabs = settings::indentTabs();
@@ -209,12 +211,38 @@ bool Project::load(const std::string& dir, std::string& error) {
 
     std::string base = path::absolute(dir);
     ccs_ = false;
+    ccsWorkspace_.clear();
 
-    // **A CCS project folder, with the switch on** - or one of its three files named outright.
-    // A .pro beside them wins: that is RIDE's own, and the folder was chosen for it before.
-    if (settings::ccsEnabled()) {
+    // **A CCS project folder** - or one of its three files named outright. A .pro beside them wins:
+    // that is RIDE's own. One registered in the workspace it sits in opens through
+    // <workspace>/<project>.pro, written if it is not there, and needs no switch; one alone needs "ccs" on.
+    {
         std::string folder = path::isDirectory(base) ? base : ccs::isProjectFile(base) ? path::parent(base) : std::string();
-        if (!folder.empty() && ccs::isProject(folder) && fileIn(folder).empty()) return loadCcs(folder, error);
+        if (!folder.empty() && ccs::isProject(folder) && fileIn(folder).empty()) {
+            std::string workspace = ccs::workspaceOf(folder);
+            if (!workspace.empty()) {
+                ccs::Workspace ws;
+                if (!ccs::readWorkspace(workspace, ws, error)) return false;
+                for (size_t i = 0; i < ws.projects.size(); ++i) {
+                    if (!path::same(ws.projects[i].location, folder)) continue;
+                    std::string pro;
+                    if (!ccs::writePro(workspace, ws.projects[i].name, pro, error)) return false;
+                    return load(pro, error);
+                }
+            }
+            if (settings::ccsEnabled()) return loadCcs(folder, error);
+        }
+    }
+
+    // **A CCS workspace is not a project**, even with .pro files in it: one of its projects is opened, through its .pro.
+    if (path::isDirectory(base) && ccs::isWorkspace(base)) {
+        ccs::Workspace ws;
+        if (!ccs::readWorkspace(base, ws, error)) return false;
+        std::string names;
+        for (size_t i = 0; i < ws.projects.size(); ++i) names += (i ? ", " : "") + ws.projects[i].name;
+        error = path::filename(base) + " is a CCS workspace, not a project - open one of its projects: " +
+                (names.empty() ? std::string("it has none RIDE can build") : names);
+        return false;
     }
 
     std::string path;
@@ -247,6 +275,9 @@ bool Project::load(const std::string& dir, std::string& error) {
         error = path::filename(path) + ": the file should hold one object";
         return false;
     }
+
+    // One project of a CCS workspace: the .pro names it, and the project is read as CCS keeps it.
+    if (root.get("ccs").is(Json::Object)) return loadWorkspacePro(path, root.get("ccs"), error);
 
     root_ = base;
     file_ = path;
@@ -521,6 +552,7 @@ void Project::close() {
     options::release(&options_);
     loaded_ = false;
     ccs_ = false;
+    ccsWorkspace_.clear();
     root_.clear();
     file_.clear();
     name_.clear();
@@ -862,11 +894,35 @@ std::string Project::targetProgram() const {
 // **The CCS project, as read** - groups, target, options and includes filled from the reading
 // and nothing of it written back. Files the folder holds go in Sources by their relative
 // names, linked ones in Linked by their absolute ones, and what every configuration excludes in Excluded, which the target does not build.
-bool Project::loadCcs(const std::string& folder, std::string& error) {
+bool Project::loadWorkspacePro(const std::string& pro, const Json& ccs, std::string& error) {
+    std::string where = withSlashes(ccs.get("workspace").text("."));
+    std::string name = ccs.get("project").text(std::string());
+    std::string beside = path::parent(withSlashes(path::absolute(pro)));
+    bool rooted = !where.empty() && (where[0] == '/' || (where.size() > 1 && where[1] == ':'));
+    std::string workspace = rooted ? where : where == "." || where.empty() ? beside : path::join(beside, where);
+    if (name.empty()) { error = path::filename(pro) + ": \"ccs\" names no project"; return false; }
+    ccs::Workspace ws;
+    if (!ccs::readWorkspace(workspace, ws, error)) { error = path::filename(pro) + ": " + error; return false; }
+    const ccs::Member* member = ws.project(name);
+    if (!member) {
+        error = path::filename(pro) + ": the workspace " + ws.dir + " has no CCS project " + name;
+        for (size_t i = 0; i < ws.notes.size(); ++i) if (ws.notes[i].compare(0, name.size(), name) == 0) error += " (" + ws.notes[i] + ")";
+        return false;
+    }
+    if (!loadCcs(member->location, error, ws.dir)) return false;
+    file_ = withSlashes(path::absolute(pro));
+    return true;
+}
+
+bool Project::loadCcs(const std::string& folder, std::string& error, const std::string& workspace) {
     ccs::Reading reading;
-    if (!ccs::read(folder, reading, error)) return false;
+    ccs::Workspace ws;
+    if (!workspace.empty() && !ccs::readWorkspace(workspace, ws, error)) return false;
+    if (!ccs::read(folder, reading, error, workspace.empty() ? 0 : &ws)) return false;
+    for (size_t i = 0; i < ws.notes.size(); ++i) reading.notes.push_back("workspace: " + ws.notes[i]);
     ccsReading_ = reading;
     ccs_ = true;
+    ccsWorkspace_ = workspace.empty() ? std::string() : ws.dir;
     root_ = reading.dir;
     file_ = path::join(root_, ".ccsproject");
     name_ = reading.name;
@@ -974,8 +1030,9 @@ bool Project::rememberConfiguration(Configuration config) {
 bool Project::reloadIfCcs(std::string& error) {
     error.clear();
     if (!ccs_) return true;
-    std::string open = open_, folder = root_;
-    if (!loadCcs(folder, error)) return false;
+    std::string open = open_, folder = root_, file = file_, workspace = ccsWorkspace_;
+    if (!loadCcs(folder, error, workspace)) return false;
+    file_ = file;
     open_ = open;
     return true;
 }

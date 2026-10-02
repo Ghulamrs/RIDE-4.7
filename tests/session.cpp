@@ -802,6 +802,52 @@ void pickingAProject(const std::string& ride) {
     file::remove_all(parent);
 }
 
+// **A CCS workspace in Project > Open** (RIDE 4.7): the workspace folder offers one .pro per CCS project,
+// and picking one writes it - workspace and project and nothing else - and opens that project alone.
+void pickingACcsWorkspaceProject(const std::string& ride) {
+    std::printf("opening one project of a CCS workspace\n");
+    const std::string examples = editor::path::absolute("examples/ccs");
+    if (!file::exists(file::path(examples) / "K6747c")) { std::printf("  (no examples/ccs here, so nothing is opened)\n"); return; }
+
+    file::path dir = file::temp_directory_path() / "ride-session-ccs-workspace";
+    file::remove_all(dir);
+    file::path ws = dir / "workspace_v7", stage = dir / "stage";
+    file::create_directories(ws / ".metadata" / ".plugins" / "org.eclipse.core.resources" / ".projects" / "K6747c");
+    file::create_directories(ws / ".metadata" / ".plugins" / "org.eclipse.core.resources" / ".projects" / "K6747cpp");
+    file::create_directories(stage);
+    const char* names[2] = { "K6747c", "K6747cpp" };
+    for (int n = 0; n < 2; ++n) {
+        file::path from = file::path(examples) / names[n], to = ws / names[n];
+        const char* each[5] = { ".project", ".cproject", ".ccsproject", "C6747.cmd", "main.c" };
+        file::create_directories(to);
+        for (int i = 0; i < 5; ++i)
+            if (file::exists(from / each[i])) writeFile(to / each[i], readFile(from / each[i]));
+        if (file::exists(from / "main.cpp")) writeFile(to / "main.cpp", readFile(from / "main.cpp"));
+    }
+
+    // Project > Open project... is the second item; with no project open, it asks where the editor stands.
+    const std::string toOpenProject = kF10 + times(kRight, 2) + kDown + kEnter;
+    const std::string here = "--project \"" + ws.string() + "\"";
+
+    Screen listed = driveIn(ride, here, toOpenProject + ctrl('q'), stage, ws);
+    check(wasShown(listed, "is a CCS workspace, not a project"), "the workspace itself is not opened, and says so");
+    check(onScreen(listed, "K6747c.pro") && onScreen(listed, "K6747cpp.pro"), "Project > Open offers one .pro per project");
+    check(!file::exists(ws / "K6747c.pro") && !file::exists(ws / "K6747cpp.pro"), "and has written none of them yet");
+
+    // The list is in name order, so Down once is K6747cpp.pro.
+    Screen opened = driveIn(ride, here, toOpenProject + kDown + kEnter + ctrl('q'), stage, ws);
+    check(file::exists(ws / "K6747cpp.pro") && !file::exists(ws / "K6747c.pro"), "picking one writes its .pro and only its");
+    check(onScreen(opened, "K6747cpp"), "and opens that project");
+    check(readFile(ws / "K6747cpp.pro").find("\"project\": \"K6747cpp\"") != std::string::npos &&
+              readFile(ws / "K6747cpp.pro").find("\"workspace\": \".\"") != std::string::npos,
+          "the .pro names the workspace and the project: " + readFile(ws / "K6747cpp.pro"));
+
+    // The .pro opens it again by itself.
+    Screen again = driveIn(ride, "--project \"" + (ws / "K6747cpp.pro").string() + "\"", ctrl('q'), stage, ws);
+    check(onScreen(again, "K6747cpp") && onScreen(again, "main.cpp"), "and the .pro, named, opens the same project");
+    file::remove_all(dir);
+}
+
 // Which project a named file belongs to, which is not which directory it is in. A project keeps
 // its sources a directory down, so looking only beside the file meant `RIDE src/alpha.c` found no
 // project and fell through to the last one opened, or the demo: the pane filled with somebody else's files while the edit view held yours.
@@ -2618,6 +2664,7 @@ int main(int argc, char** argv) {
     aProjectFileOpenedTwoWays(ride);
     thePicker(ride);
     pickingAProject(ride);
+    pickingACcsWorkspaceProject(ride);
     closingTheProject(ride);
     findingAndReplacing(ride);
     leavingWithChanges(ride);

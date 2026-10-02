@@ -28,6 +28,7 @@
 // run the GUI is the one machine that cannot exercise what it calls.
 #include "bridge.h"
 #include "ccs/ccsoptions.h"
+#include "ccs/ccsworkspace.h"
 #include "ccs/ccsproject.h"
 #include "compile.h"
 #include "convert.h"
@@ -5752,6 +5753,110 @@ void ccsProjectsBuiltAndRun() {
     file::remove_all(dir);
 }
 
+// **A CCS workspace, one project at a time** (RIDE 4.7): a workspace laid out as CCS 7.4 left one on the
+// Windows box on 02-10-2026 - a project copied in, one registered where it was through a .location, a
+// project that is not CCS's, a path variable and a build macro - opened through <workspace>/<project>.pro.
+void ccsWorkspacesOneProjectAtATime() {
+    std::printf("CCS workspaces, one project at a time\n");
+    const std::string reference = ccsReference();
+    if (reference.empty()) { std::printf("  (no docs/ccs-reference beside the suite, so nothing is read)\n"); return; }
+    const std::string k74c = editor::path::join(editor::path::join(reference, "ccs74"), "K6747c");
+    const std::string k74cpp = editor::path::join(editor::path::join(reference, "ccs74"), "K6747cpp");
+
+    file::path dir = file::temp_directory_path() / "ride-ccs-workspace-test";
+    file::remove_all(dir);
+    file::path ws = dir / "workspace_v7", away = dir / "else where";
+    file::path registry = ws / ".metadata" / ".plugins" / "org.eclipse.core.resources" / ".projects";
+    file::path prefs = ws / ".metadata" / ".plugins" / "org.eclipse.core.runtime" / ".settings";
+    file::create_directories(registry / "K6747c");
+    file::create_directories(registry / "K6747cpp");
+    file::create_directories(registry / "RemoteSystemsTempFiles");
+    file::create_directories(ws / "RemoteSystemsTempFiles");
+    file::create_directories(prefs);
+    file::create_directories(away);
+    copyTree(k74c, (ws / "K6747c").string());
+    copyTree(k74cpp, (away / "K6747cpp").string());
+    {
+        // The .location CCS 7.4 wrote, its 16-byte marker and writeUTF of the URI; the space as %20.
+        std::string where = editor::path::withSlashes((away / "K6747cpp").string());
+        std::string uri = "URI//file:" + std::string(where[0] == '/' ? "" : "/");
+        for (size_t i = 0; i < where.size(); ++i) uri += where[i] == ' ' ? std::string("%20") : std::string(1, where[i]);
+        std::string record("\x40\xB1\x8B\x81\x23\xBC\x00\x14\x1A\x25\x96\xE7\xA3\x93\xBE\x1E", 16);
+        record += static_cast<char>(uri.size() >> 8);
+        record += static_cast<char>(uri.size() & 0xFF);
+        record += uri + std::string(14, '\0') + "\xC0\x58\xFB\xF3\x23\xBC\x00\x14\x1A\x51\xF3\x8C\x7B\xBB\x77\xC6";
+        std::ofstream((registry / "K6747cpp" / ".location").string(), std::ios::binary) << record;
+        std::ofstream((prefs / "org.eclipse.core.resources.prefs").string(), std::ios::binary)
+            << "eclipse.preferences.version=1\r\npathvariable.PROBE_ROOT=C\\:/Users/GRA/ws47src\r\n";
+        std::ofstream((prefs / "org.eclipse.cdt.core.prefs").string(), std::ios::binary)
+            << "eclipse.preferences.version=1\r\nmacros/workspace=<?xml version\\=\"1.0\" encoding\\=\"UTF-8\" standalone\\=\"no\"?>\\r\\n"
+               "<macros>\\r\\n<stringMacro name\\=\"PROBE_ROOT\" type\\=\"VALUE_PATH_DIR\" value\\=\"C\\:/Users/GRA/ws47src\"/>\\r\\n</macros>\\r\\n\r\n";
+    }
+    const std::string wsDir = editor::path::withSlashes(ws.string());
+    const std::string awayDir = editor::path::withSlashes((away / "K6747cpp").string());
+
+    // -- the reading
+    check(editor::ccs::isWorkspace(wsDir) && !editor::ccs::isWorkspace(k74c), "a folder with .metadata is a workspace, a project folder is not");
+    editor::ccs::Workspace read;
+    std::string error;
+    check(editor::ccs::readWorkspace(wsDir, read, error), "the workspace reads: " + error);
+    check(read.projects.size() == 2 && read.projects[0].name == "K6747c" && read.projects[1].name == "K6747cpp",
+          "its two CCS projects, by name; RemoteSystemsTempFiles is not CCS's");
+    check(read.projects.size() == 2 && read.projects[0].inside && editor::path::same(read.projects[0].location, wsDir + "/K6747c"),
+          "the copied one is in the workspace folder");
+    check(read.projects.size() == 2 && !read.projects[1].inside && editor::path::same(read.projects[1].location, awayDir),
+          "the other where its .location says, %20 a space: " + (read.projects.size() == 2 ? read.projects[1].location : std::string()));
+    checkEqual(read.pathVariables["PROBE_ROOT"], "C:/Users/GRA/ws47src", "a path variable, its escapes undone");
+    checkEqual(read.macros["PROBE_ROOT"], "C:/Users/GRA/ws47src", "a workspace build macro, out of the XML in the preference");
+    checkEqual(editor::ccs::workspaceOf(wsDir + "/K6747c"), wsDir, "a project folder knows the workspace it is registered in");
+    checkEqual(editor::ccs::workspaceOf(awayDir), "", "one imported from elsewhere cannot tell, and opens alone");
+
+    // -- the .pro: workspace and project and nothing else
+    std::string pro;
+    check(editor::ccs::writePro(wsDir, "K6747cpp", pro, error) && pro == wsDir + "/K6747cpp.pro", "the .pro is <workspace>/<project>.pro: " + error);
+    {
+        std::ifstream in(pro, std::ios::binary);
+        std::stringstream text;
+        text << in.rdbuf();
+        std::string why;
+        editor::Json root = editor::Json::parse(text.str(), why);
+        check(root.size() == 1 && root.get("ccs").size() == 2 && root.get("ccs").get("workspace").text() == "." &&
+                  root.get("ccs").get("project").text() == "K6747cpp", "and holds only the workspace and the project: " + text.str());
+    }
+
+    // -- opened through it, with the switch off: the .pro is RIDE's own word
+    editor::settings::rememberCcs(false, std::string());
+    const std::string before = ccsFingerprint(awayDir);
+    {
+        editor::Project project;
+        check(project.load(pro, error), "the .pro opens its project: " + error);
+        check(project.isCcs() && project.name() == "K6747cpp" && editor::path::same(project.root(), awayDir), "the one registered elsewhere, where it is");
+        check(editor::path::same(project.ccsWorkspace(), wsDir) && editor::path::same(project.file(), pro),
+              "remembered as its .pro, a member of its workspace");
+        const editor::ccs::Reading& r = project.ccsReading();
+        checkEqual(editor::ccs::resolveMacros("${workspace_loc}", r), wsDir, "${workspace_loc} is the workspace, not the folder's parent");
+        checkEqual(editor::ccs::resolveMacros("${workspace_loc:/K6747c/inc}", r), wsDir + "/K6747c/inc", "${workspace_loc:/P/x} a member's, by name");
+        checkEqual(editor::ccs::resolveMacros("${PROBE_ROOT}/lib", r), "C:/Users/GRA/ws47src/lib", "and a workspace build macro resolves");
+        check(project.reloadIfCcs(error) && editor::path::same(project.file(), pro) && editor::path::same(project.ccsWorkspace(), wsDir),
+              "read again for a build, it stays the workspace's: " + error);
+    }
+    checkEqual(ccsFingerprint(awayDir), before, "and nothing of CCS's is written");
+
+    // -- a workspace is not a project; a member's folder opens through its .pro
+    {
+        editor::Project project;
+        check(!project.load(wsDir, error) && error.find("is a CCS workspace") != std::string::npos &&
+                  error.find("K6747c, K6747cpp") != std::string::npos, "a workspace opened says it is one and names its projects: " + error);
+        check(!file::exists(ws / "K6747c.pro"), "K6747c has no .pro yet");
+        check(project.load(wsDir + "/K6747c", error) && project.isCcs() && project.name() == "K6747c", "its folder opens, switch off: " + error);
+        check(file::exists(ws / "K6747c.pro") && editor::path::same(project.file(), wsDir + "/K6747c.pro"), "through the .pro it writes beside the others");
+        std::string bad;
+        editor::ccs::writePro(wsDir, "Gone", bad, error);
+        check(!project.load(bad, error) && error.find("has no CCS project Gone") != std::string::npos, "a .pro naming no member says so: " + error);
+    }
+    file::remove_all(dir);
+}
+
 int main(int argc, char** argv) {
     // The flags the suite expects are the defaults, not what this machine's settings.json has chosen
     // in Compiler Options: an empty store stands in for the installation's for the whole run.
@@ -5811,6 +5916,7 @@ int main(int argc, char** argv) {
     theWindowStoppingShalimar();
     theWindowsProjectDebug();
     ccsProjectsAsTheyAre();
+    ccsWorkspacesOneProjectAtATime();
     ccsProjectsBuiltAndRun();
 
     std::printf("\n%d checks, %d failed\n", checks, failures);
