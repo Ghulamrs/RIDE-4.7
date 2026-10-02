@@ -338,7 +338,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_HARDENED_RUNTIME = NO;
 				INFOPLIST_FILE = Info.plist;
-				PRODUCT_BUNDLE_IDENTIFIER = com.ghulamrs.ride451;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ghulamrs.ride47;
 				PRODUCT_NAME = RIDE;
 			};
 			name = Debug;
@@ -351,7 +351,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_HARDENED_RUNTIME = NO;
 				INFOPLIST_FILE = Info.plist;
-				PRODUCT_BUNDLE_IDENTIFIER = com.ghulamrs.ride451;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ghulamrs.ride47;
 				PRODUCT_NAME = RIDE;
 			};
 			name = Release;

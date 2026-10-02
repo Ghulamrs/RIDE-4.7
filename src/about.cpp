@@ -20,7 +20,7 @@ namespace about {
 
 const char* name() { return product::kName; }
 
-const char* version() { return "4.51"; }
+const char* version() { return "4.7"; }
 
 namespace {
 

@@ -156,7 +156,7 @@ def main():
     }
     common_target = {
         "PRODUCT_NAME": "RIDE",
-        "PRODUCT_BUNDLE_IDENTIFIER": "com.ghulamrs.ride451",
+        "PRODUCT_BUNDLE_IDENTIFIER": "com.ghulamrs.ride47",
         "INFOPLIST_FILE": "Info.plist",
         "CODE_SIGN_IDENTITY": "\"-\"",
         "CODE_SIGN_STYLE": "Manual",

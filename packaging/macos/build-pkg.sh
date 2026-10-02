@@ -11,9 +11,10 @@
 #                               the newest - all but link, which macOS already
 #                               has as /usr/bin/link
 #
-# Its own package identifier, app name and directory: 4.51 installs beside
-# 4.5 (com.ghulamrs.ride, /Applications/RIDE.app, /usr/local/ride) and touches
-# none of it but the plain command names, which now point here.
+# Its own package identifier, app name and directory: 4.7 installs beside
+# 4.5 and 4.51 (com.ghulamrs.ride and ride451, their RIDE apps,
+# /usr/local/ride and ride-4.51) and touches none of it but the plain
+# command names, which now point here.
 #
 #   packaging/macos/build-pkg.sh [version]        -> dist/RIDE-<ver>-macos.pkg
 #
@@ -27,7 +28,7 @@
 # Mac asks the user to open it from Finder's context menu the first time.
 set -eu
 
-VER=${1:-4.51}
+VER=${1:-4.7}
 HERE=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$HERE/../.." && pwd)
 CPP=${CPP:-$ROOT/../VM6747/Compiler-Cppi}
