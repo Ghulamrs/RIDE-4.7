@@ -243,6 +243,11 @@ struct RIDEProject {
 
     editor::DebugPlan plan;
     std::string whyNot;
+
+    // ride_project_target_ready, called on the window's thread just before a build, read the project
+    // (a CCS one afresh): the build thread then builds what was read rather than reading it again
+    // while the window looks at the same strings and vectors.
+    bool prepared = false;
 };
 
 namespace {
@@ -1497,6 +1502,7 @@ int ride_project_builds(RIDEProject* project) {
 
 int ride_project_target_ready(RIDEProject* project) {
     if (!project) return 0;
+    project->prepared = false;
 
     // A CCS project is read again for every build, so an edit made in CCS is what is built.
     if (project->project.isCcs() && !project->project.reloadIfCcs(project->why)) {
@@ -1516,6 +1522,7 @@ int ride_project_target_ready(RIDEProject* project) {
                             ? static_cast<int>(project->parts[0].lang)
                             : static_cast<int>(editor::LangPlain);
     project->program = ok ? project->project.targetProgram() : std::string();
+    project->prepared = ok;
     return ok ? 1 : 0;
 }
 
@@ -1612,7 +1619,10 @@ const char* ride_project_blind_group(RIDEProject* project, int index) {
 
 RIDEBuild* ride_build_target(RIDEProject* project, const char* cc1, const char* cl, const char* shc, const char* cxx1,
                            int kind, const char* arch, int config) {
-    if (!ride_project_target_ready(project)) return 0;
+    if (!project) return 0;
+    // What the window prepared, never a second reading on this thread; prepared here only when it was not.
+    if (!project->prepared && !ride_project_target_ready(project)) return 0;
+    project->prepared = false;
 
     editor::Toolchain tool = toolFrom(project, cc1, cl, shc, cxx1, config);
 

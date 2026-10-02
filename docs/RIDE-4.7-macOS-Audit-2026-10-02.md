@@ -151,3 +151,46 @@ closing a background file.
 4. Items 7-10 - holding project changes during a build, the context menu, CCS-aware menus, Open while
    running.
 5. The LOW items, 12-18 first: they are what a user meets in the first ten minutes.
+
+## State after the fixes, 02-10-2026 evening
+
+The findings above stay as written; this is what became of them. **Checked** means watched in the
+4.7 window built on the Mac, on scratch copies; **Built** means compiled and reasoned through, with
+no way to watch it here.
+
+| # | State | How |
+| --- | --- | --- |
+| 1 | fixed | the build thread builds what the main thread prepared and never reloads (bridge `prepared`); Built |
+| 2 | fixed | the name column takes the pane's width and follows it, names cut at the tail; Checked |
+| 3 | fixed | Close Project rebuilds the navigator and resets folder, target, compiler, configuration, indentation; Checked on a CCS project and a .pro |
+| 4 | fixed | output collected under a lock, drained ~25 times a second, Output capped near 2 MB; Checked: 5.8 M lines in 10 s, memory flat at ~228 MB, Stop at once |
+| 5 | fixed | path comparisons try again with links resolved (`path::same`, `relativeTo`); Checked under /tmp: 1 file closed with its project |
+| 6 | fixed | a load is tried on a project of its own, as in the Windows window; Checked with a broken .pro |
+| 7 | fixed | Save As during a build adds the file afterwards; Option-menu settings items disabled while building; Built |
+| 8 | fixed | a clicked row that is not a file is no target; Built |
+| 9 | fixed | for a CCS project, Target, Compiler, include paths, libraries and file add/move/remove are disabled; Built |
+| 10 | fixed | Open and Open Recent allowed while a program runs, not while a build reads; Built |
+| 11 | fixed | the suite sets HOME to a scratch directory; the user's settings put back by hand |
+| 12 | by design | the editor shows what the compiler said, banner included - decided 11-09-2026 and pinned by tests/test.cpp ("the banner is in the console, as cxx1 wrote it"); a filter written today failed that check on both boxes and was taken out |
+| 13 | fixed | whole pasted lines go to the program; Checked: "hello Ghulam" |
+| 14, 15 | fixed | the input line takes the keyboard, and the status line says "running", when the program first prints; Checked |
+| 16 | fixed, Escape unconfirmed | Go to Line closes the find bar (Checked); Escape is caught by a key monitor, but the test tool's Escape never reaches the app, so a press by hand confirms it |
+| 17 | fixed | modified means "differs from the text last on disk"; Checked: undo clears the dot |
+| 18 | fixed | Compiler Options is a sheet on the window; Checked |
+| 19, 20 | fixed | the CCS tab no longer shifts the preview; an unlisted stored value is added as a choice; Built |
+| 21 | fixed | Environment and Show Tools append under a running program; Built |
+| 22 | withdrawn | a short window's last Output line scrolls into view normally; it was the resize, not a fault |
+| 23 | fixed | a background file changed on disk is reloaded in place; Built |
+| 24 | fixed | an open, unmodified file changed on disk is read again when opened; Built |
+| 25 | fixed | the surviving file keeps its caret; Checked |
+| 26 | fixed | Recent menus show the name and its two folders; Checked |
+| 27 | not a fault | Eclipse keeps project names unique within a workspace |
+| 28 | fixed | quitting during a build waits for it (up to 10 s, NSTerminateLater); Built |
+| 29 | fixed | saving writes where a link points and keeps the permissions; Built |
+| 30 | left | the in-window menu row is the product's design, shared with the Windows window - a decision for the user |
+| 31 | withdrawn | accessibility lists the window's buttons, tabs and text once the window is on the current Space |
+| 32 | fixed | it was finding 5: Remove and Move are enabled for the open project file; Checked |
+| 33 | left | one UTI for every RIDE version's .pro is right; Qt's claim is Launch Services' to rank |
+| new | fixed | a .ccsproject, .cproject or .project opened from Finder opens its project, not the XML; Built |
+| M1 | fixed | the status bar's column is the compilers' (UTF-8 bytes) |
+| L10 | fixed | folded groups stay folded when the tree is rebuilt |

@@ -12,6 +12,19 @@
     __weak NSTextStorage* indexed_;
 }
 
+- (BOOL)hideFindBar {
+    if (!self.enclosingScrollView.findBarVisible) return NO;
+    NSMenuItem* hide = [[NSMenuItem alloc] init];
+    hide.tag = NSTextFinderActionHideFindInterface;
+    [self performTextFinderAction:hide];
+    return YES;
+}
+
+// Escape in the text closes the find bar before it does anything else.
+- (void)cancelOperation:(id)sender {
+    if (![self hideFindBar]) [super cancelOperation:sender];
+}
+
 - (instancetype)initWithFrame:(NSRect)frame textContainer:(NSTextContainer*)container {
     self = [super initWithFrame:frame textContainer:container];
     if (self) {

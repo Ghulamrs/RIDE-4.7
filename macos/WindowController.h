@@ -27,6 +27,10 @@
 
 // Ends the program running and any build, and waits a moment for them: the application is going.
 - (void)stopEverything;
+// Whether a build is still on its thread after stopEverything; when it comes back, the quit asked for
+// goes ahead (replyToApplicationShouldTerminate) - quitting under it freed what the build was reading.
+- (BOOL)stillBuilding;
+- (void)quitWhenIdle;
 
 // The main menu, built once: File, Edit, View, Project, Build, Target, Option, Help, with the application and Window menus macOS expects around them.
 - (NSMenu*)makeMainMenu;

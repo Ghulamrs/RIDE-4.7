@@ -39,7 +39,12 @@
     for (NSString* path in paths) {
         BOOL directory = NO;
         [NSFileManager.defaultManager fileExistsAtPath:path isDirectory:&directory];
-        BOOL project = directory || (suffix.length > 0 && [path hasSuffix:suffix]);
+        // One of a CCS project's three files stands for the project, as it does on the console: the
+        // core opens its folder (src/project.cpp). Shown as XML it was a project nobody could build.
+        NSString* leaf = path.lastPathComponent;
+        BOOL ccsFile = [leaf isEqualToString:@".project"] || [leaf isEqualToString:@".cproject"] ||
+                       [leaf isEqualToString:@".ccsproject"];
+        BOOL project = directory || ccsFile || (suffix.length > 0 && [path hasSuffix:suffix]);
         if (self.window.window.isVisible) {
             if (project) [self.window loadProject:path];
             else [self.window openPath:path];
@@ -57,7 +62,9 @@
     (void)sender;
     if (![self.window mayClose]) return NSTerminateCancel;
     [self.window stopEverything];
-    return NSTerminateNow;
+    if (![self.window stillBuilding]) return NSTerminateNow;
+    [self.window quitWhenIdle];
+    return NSTerminateLater;
 }
 
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication*)sender {

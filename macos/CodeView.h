@@ -25,6 +25,9 @@
 
 @property(nonatomic, weak) id<CodeViewHost> host;
 
+// The find bar closed, if it is open: Escape and Go to Line, which left the text greyed under it.
+- (BOOL)hideFindBar;
+
 // Rows are the core's, ending at '\n' only (M2), from an index kept as the text is edited (H3).
 - (NSInteger)caretRow;
 // The caret's column in characters, and in bytes of UTF-8 - which is what compilers count.

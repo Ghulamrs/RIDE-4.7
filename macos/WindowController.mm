@@ -1,6 +1,7 @@
 #import "WindowController.h"
 
 #include <cstring>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -16,6 +17,9 @@
 @property(nonatomic, strong) NSTextStorage* storage;
 @property(nonatomic, strong) NSUndoManager* undo;
 @property(nonatomic) BOOL modified;
+// The text as it last was on the disk (or empty for a new file): modified is "differs from this", so
+// undoing back to it clears the dot - a flag set on the first keystroke and never unset did not.
+@property(nonatomic, copy) NSString* savedText;
 @property(nonatomic) NSRange selection;
 @property(nonatomic) NSPoint scrolled;
 @property(nonatomic) int language;  // RIDE_LANG_*, or -1: by the name
@@ -328,7 +332,13 @@ static void RunOutput(void* user, const char* bytes, int size, int stream);
     for (NSString* identifier in controls_) {
         NSControl* control = controls_[identifier];
         NSString* value = Str(ride_options_value(project_, config_, Utf8(identifier)));
-        if ([control isKindOfClass:NSPopUpButton.class]) [(NSPopUpButton*)control selectItemWithTitle:value];
+        if ([control isKindOfClass:NSPopUpButton.class]) {
+            // A value the choices do not hold - a hand-edited "-O3" - is shown as one more choice,
+            // not quietly replaced by whatever was selected before at the next edit or OK.
+            NSPopUpButton* pick = (NSPopUpButton*)control;
+            if (value.length > 0 && [pick indexOfItemWithTitle:value] < 0) [pick addItemWithTitle:value];
+            [pick selectItemWithTitle:value];
+        }
         else if ([control isKindOfClass:NSButton.class]) ((NSButton*)control).state = [value isEqualToString:@"1"] ? NSControlStateValueOn : NSControlStateValueOff;
         else control.stringValue = value;
     }
@@ -348,6 +358,8 @@ static void RunOutput(void* user, const char* bytes, int size, int stream);
 
 - (void)showPreview {
     NSInteger tab = tabs_.selectedTabViewItem ? [tabs_ indexOfTabViewItem:tabs_.selectedTabViewItem] : 0;
+    // The bridge's table is General, c90, cpp11, shalimar; a CCS project's tab stands in front of them.
+    if (ccsText_ != nil) tab = tab > 0 ? tab - 1 : 0;
     preview_.stringValue = Str(ride_options_preview(project_, config_, (int)tab, Utf8(arch_)));
 }
 
@@ -368,9 +380,12 @@ static void RunOutput(void* user, const char* bytes, int size, int stream);
 - (void)ok:(id)sender { (void)sender; if (ccsText_ == nil) [self pull]; answer_ = NSModalResponseOK; [NSApp stopModal]; }
 
 - (BOOL)run:(NSWindow*)parent {
-    (void)parent;
-    [panel_ center];
+    // A sheet on the window it belongs to, run modally as before: a free panel looked pasted onto
+    // the editor, and opened while the window was on another Space it appeared nowhere at all.
+    if (parent != nil) [parent beginSheet:panel_ completionHandler:nil];
+    else [panel_ center];
     [NSApp runModalForWindow:panel_];
+    if (parent != nil) [parent endSheet:panel_];
     [panel_ orderOut:nil];
     return answer_ == NSModalResponseOK && ride_options_commit(project_) != 0;
 }
@@ -384,6 +399,10 @@ static void RunOutput(void* user, const char* bytes, int size, int stream);
 
 @interface WindowController ()
 - (void)runSaid:(const std::string&)piece stream:(int)stream;
+- (void)queueOutput:(const char*)bytes size:(int)size stream:(int)stream;
+- (void)drainOutput;
+- (void)showInOutput:(NSString*)text;
+- (BOOL)escapeFromFindBar;
 - (void)runEnded;
 @end
 
@@ -454,7 +473,19 @@ static const CGFloat kMenuRowHeight = 26;
     // A program running while the window watches it (bridge.h, README.md "Input, and Stop"):
     // its output arrives in pieces, a cut character kept in pending_ until the rest comes.
     RIDERunning* running_;
+    // Whether the program itself has said anything yet, as against its compile: the input line takes
+    // the keyboard then, and the status line says it is running.
+    BOOL programSpoke_;
+    // A quit is waiting for the build thread to come back (main.mm's NSTerminateLater).
+    BOOL quitWhenIdle_;
+    // Escape typed into the find bar's own field: the field keeps it, so the window watches for it.
+    id escapeMonitor_;
     std::string pending_[3];
+    // What the program's thread has said and the main thread not yet shown: one lock, a few bytes
+    // queued per stream, and one drain at a time scheduled - not one main-queue block per chunk.
+    std::mutex inboxLock_;
+    std::string inbox_[3];
+    bool drainQueued_;
     NSTextField* inputLine_;
     NSInteger untitledCount_;
     NSInteger staleRows_;  // how many rows from current_.staleFrom an edit reached
@@ -529,6 +560,15 @@ static NSString* FoundCompiler(NSString* variable, NSString* name) {
         started_ = NO;
 
         codeFont_ = [self rememberedFont];
+        // Escape in the find bar closes it and gives the text back the keyboard. The bar's field
+        // swallows the key - pressed there it did nothing, and the editor stayed greyed under it.
+        __weak WindowController* weakSelf = self;
+        escapeMonitor_ = [NSEvent addLocalMonitorForEventsMatchingMask:NSEventMaskKeyDown
+                                                               handler:^NSEvent*(NSEvent* event) {
+            WindowController* strong = weakSelf;
+            if (strong == nil || event.keyCode != 53 || event.window != strong.window) return event;
+            return [strong escapeFromFindBar] ? nil : event;
+        }];
         sheets_ = [NSMutableArray array];
         issues_ = [NSMutableArray array];
         navRoots_ = [NSMutableArray array];
@@ -723,7 +763,11 @@ static NSScrollView* Scroller(NSRect frame) {
 
     NSScrollView* scroll = Scroller(navigatorPane_.bounds);
     navigator_ = [[NSOutlineView alloc] initWithFrame:scroll.bounds];
+    // The one column is the pane's width and follows it: left at NSTableColumn's default of about a
+    // hundred points it cut "account.c" to "acc…t.c" with the pane half empty.
+    navigator_.autoresizingMask = NSViewWidthSizable;
     NSTableColumn* column = [[NSTableColumn alloc] initWithIdentifier:@"name"];
+    column.width = scroll.contentSize.width;
     column.resizingMask = NSTableColumnAutoresizingMask;
     [navigator_ addTableColumn:column];
     navigator_.outlineTableColumn = column;
@@ -731,7 +775,7 @@ static NSScrollView* Scroller(NSRect frame) {
     navigator_.style = NSTableViewStyleSourceList;
     navigator_.floatsGroupRows = NO;
     navigator_.rowSizeStyle = NSTableViewRowSizeStyleDefault;
-    navigator_.columnAutoresizingStyle = NSTableViewUniformColumnAutoresizingStyle;
+    navigator_.columnAutoresizingStyle = NSTableViewFirstColumnOnlyAutoresizingStyle;
     navigator_.dataSource = self;
     navigator_.delegate = self;
     navigator_.target = self;
@@ -1022,9 +1066,11 @@ static NSScrollView* Scroller(NSRect frame) {
         statusWhere_.stringValue = @"";
         return;
     }
+    // The column the compilers count - bytes of UTF-8 - so "Col" agrees with an error's 16:15 on a
+    // line holding non-ASCII text, where UTF-16 units did not (M1).
     statusWhere_.stringValue = [NSString stringWithFormat:@"Ln %ld, Col %ld",
                                                           (long)[code_ caretRow] + 1,
-                                                          (long)[code_ caretColumn] + 1];
+                                                          (long)[code_ caretByteColumn] + 1];
 }
 
 // ---- CodeViewHost ------------------------------------------------------------
@@ -1192,8 +1238,11 @@ static NSColor* ColourOf(unsigned char kind) {
 - (void)textDidChange:(NSNotification*)note {
     (void)note;
     if (current_ == nil) return;
-    if (!current_.modified) {
-        current_.modified = YES;
+    NSString* now = current_.storage.string;
+    NSString* saved = current_.savedText ?: @"";
+    BOOL differs = now.length != saved.length || ![now isEqualToString:saved];
+    if (differs != current_.modified) {
+        current_.modified = differs;
         [self refreshTitle];
         [self refreshOpenFiles];
     }
@@ -1223,6 +1272,7 @@ static NSColor* ColourOf(unsigned char kind) {
     if (path == nil) sheet.untitled = ++untitledCount_;
     sheet.storage = [[NSTextStorage alloc] initWithString:text ?: @""
                                                attributes:[self codeAttributes]];
+    sheet.savedText = path != nil ? (text ?: @"") : @"";
     [sheets_ addObject:sheet];
     return sheet;
 }
@@ -1326,6 +1376,11 @@ static NSColor* ColourOf(unsigned char kind) {
     }
     Sheet* already = [self sheetFor:path];
     if (already != nil) {
+        // Open already and changed on the disk since - a second Convert writes its file again -
+        // with nothing unsaved here: read again, or the old text is what is shown.
+        NSDate* now = [self stampOf:path];
+        if (!already.modified && now != nil && already.stamp != nil && ![now isEqualToDate:already.stamp])
+            [self reload:already];
         [self showSheet:already];
         return;
     }
@@ -1338,6 +1393,7 @@ static NSColor* ColourOf(unsigned char kind) {
     }
     sheet.path = path;
     sheet.storage = [[NSTextStorage alloc] initWithString:contents attributes:[self codeAttributes]];
+    sheet.savedText = contents;
     [sheets_ addObject:sheet];
     [self showSheet:sheet];
     code_.selectedRange = NSMakeRange(0, 0);
@@ -1374,11 +1430,18 @@ static NSColor* ColourOf(unsigned char kind) {
     }
     [all appendData:data];
     NSError* problem = nil;
-    if (![all writeToFile:path options:NSDataWritingAtomic error:&problem]) {
+    // Written where a link points rather than over the link, and with the permissions it had: an
+    // atomic write replaces the file, which turned a link into a copy and dropped an executable bit.
+    NSString* destination = path.stringByResolvingSymlinksInPath;
+    NSNumber* permissions = [NSFileManager.defaultManager attributesOfItemAtPath:destination error:nil][NSFilePosixPermissions];
+    if (![all writeToFile:destination options:NSDataWritingAtomic error:&problem]) {
         [self say:problem.localizedDescription ?: @"not written"];
         return NO;
     }
+    if (permissions != nil)
+        [NSFileManager.defaultManager setAttributes:@{NSFilePosixPermissions : permissions} ofItemAtPath:destination error:nil];
     sheet.modified = NO;
+    sheet.savedText = sheet.storage.string;
     sheet.stamp = [self stampOf:path];
     return YES;
 }
@@ -1404,7 +1467,18 @@ static NSColor* ColourOf(unsigned char kind) {
     NSString* problem = nil;
     NSString* contents = [self read:sheet.path into:sheet problem:&problem];
     if (contents == nil) { [self say:problem]; return NO; }
-    if (sheet != current_) [self showSheet:sheet];
+    sheet.savedText = contents;
+    sheet.modified = NO;
+    if (sheet != current_) {
+        // In place, behind the file in front: coming back to the window used to switch to whichever
+        // file had changed on the disk. Its colouring is redone when it is next shown.
+        [sheet.storage setAttributedString:[[NSAttributedString alloc] initWithString:contents
+                                                                           attributes:[self codeAttributes]]];
+        sheet.staleFrom = 0;
+        [sheet.undo removeAllActions];
+        [self refreshOpenFiles];
+        return YES;
+    }
     [code_ replaceRange:NSMakeRange(0, current_.storage.length) with:contents];
     [code_ breakUndoCoalescing];
     current_.modified = NO;
@@ -1447,7 +1521,10 @@ static NSColor* ColourOf(unsigned char kind) {
 
     // Saved into the project's directory is saved into the project.
     NSString* said = [sheet.path.lastPathComponent stringByAppendingString:@" written"];
-    if (ride_adopt_saved(project_, Utf8(sheet.path)) != 0)
+    // A build is reading the project's groups: the file joins it once the build is done, not under it.
+    if (busy_ && running_ == NULL && ride_project_loaded(project_))
+        said = [said stringByAppendingString:@" - it joins the project after the build"];
+    else if (ride_adopt_saved(project_, Utf8(sheet.path)) != 0)
         said = Str(ride_outcome_message(project_));
     ride_remember_file(Utf8(sheet.path));
     [self say:said];
@@ -1570,6 +1647,13 @@ static NSColor* ColourOf(unsigned char kind) {
 // The whole navigator, made again: when the project arrives, goes or changes what it holds. A file
 // shown or closed only touches OPEN FILES, so groups folded by hand stay folded (L10).
 - (void)fillNavigator {
+    // What the user had folded stays folded: the tree is rebuilt on every Save As, Add, Rename and
+    // Move, and opening every group again each time undid them (L10).
+    NSMutableSet<NSString*>* folded = [NSMutableSet set];
+    for (NavItem* root in navRoots_)
+        for (NavItem* child in root.children)
+            if (child.children.count > 0 && ![navigator_ isItemExpanded:child])
+                [folded addObject:[NSString stringWithFormat:@"%@/%@", root.title, child.title]];
     [navRoots_ removeAllObjects];
 
     if (ride_project_loaded(project_)) {
@@ -1602,9 +1686,12 @@ static NSColor* ColourOf(unsigned char kind) {
     [self fillOpenFiles:open];
 
     [navigator_ reloadData];
+    [navigator_ sizeLastColumnToFit];
     for (NavItem* root in navRoots_) {
         [navigator_ expandItem:root];
-        for (NavItem* child in root.children) [navigator_ expandItem:child];
+        for (NavItem* child in root.children)
+            if (![folded containsObject:[NSString stringWithFormat:@"%@/%@", root.title, child.title]])
+                [navigator_ expandItem:child];
     }
     [self selectCurrentInNavigator];
 }
@@ -1687,7 +1774,8 @@ static NSColor* ColourOf(unsigned char kind) {
         cell = [[NSTableCellView alloc] initWithFrame:NSMakeRect(0, 0, 200, 20)];
         cell.identifier = identifier;
         NSTextField* text = [NSTextField labelWithString:@""];
-        text.lineBreakMode = NSLineBreakByTruncatingMiddle;
+        // What does not fit loses its end, so files still read apart by how their names begin.
+        text.lineBreakMode = NSLineBreakByTruncatingTail;
         text.translatesAutoresizingMaskIntoConstraints = NO;
         [cell addSubview:text];
         cell.textField = text;
@@ -1760,8 +1848,10 @@ static NSColor* ColourOf(unsigned char kind) {
     NSInteger row = navigator_.clickedRow;
     if (row < 0 && self.window.firstResponder == navigator_) row = navigator_.selectedRow;
     if (row >= 0) {
+        // A clicked group, section or unsaved file is not a file to act on - never the one in the
+        // editor instead, which Remove from Project on "Sources" used to remove unasked.
         NavItem* item = [navigator_ itemAtRow:row];
-        if (item.path != nil) return item.path;
+        return item.path;
     }
     return current_.path;
 }
@@ -1954,19 +2044,30 @@ static NSColor* ColourOf(unsigned char kind) {
         isDirectory = NO;
     }
     NSString* directory = isDirectory ? where : where.stringByDeletingLastPathComponent;
-    projectDirectory_ = directory;
 
+    // Tried on a project of its own, as the Windows window does: a load that fails leaves the one
+    // already open exactly as it was, rather than on screen with nothing loaded behind it.
+    RIDEProject* trying = ride_project_new();
     char why[512] = {0};
-    int loaded = ride_project_load(project_, Utf8(where), why, (int)sizeof why);
-    if (!loaded) {
-        NSString* reason = Str(why);
-        if (reason.length == 0 && ride_begin_from_what_is_there(project_, Utf8(directory))) {
-            [self projectArrived:where];
-            [self say:Str(ride_outcome_message(project_))];
-            return;
+    int loaded = ride_project_load(trying, Utf8(where), why, (int)sizeof why);
+    NSString* reason = Str(why);
+    BOOL begun = !loaded && reason.length == 0 && ride_begin_from_what_is_there(trying, Utf8(directory));
+    if (!loaded && !begun) {
+        ride_project_free(trying);
+        // With nothing open, the directory asked for is where a new file would go.
+        if (!ride_project_loaded(project_)) {
+            projectDirectory_ = directory;
+            ride_project_set_root(project_, Utf8(directory));
         }
-        ride_project_set_root(project_, Utf8(directory));
         [self say:reason.length > 0 ? reason : @"no .pro project in that directory"];
+        return;
+    }
+    ride_project_free(project_);
+    project_ = trying;
+    projectDirectory_ = directory;
+    if (begun) {
+        [self projectArrived:where];
+        [self say:Str(ride_outcome_message(project_))];
         return;
     }
     [self projectArrived:where];
@@ -2088,9 +2189,24 @@ static NSColor* ColourOf(unsigned char kind) {
         }
     [sheets_ removeObjectsInArray:theirs];
     ride_project_close(project_);
+    // A file that stays keeps its caret and scroll: showSheet stores them from current_, so current_
+    // is let go only when it was one of the project's.
     Sheet* next = [sheets_ containsObject:current_] ? current_ : sheets_.firstObject;
-    current_ = nil;
+    if (![sheets_ containsObject:current_]) current_ = nil;
+    // What the window had taken from the project goes back to the installation's - its folder, target,
+    // compiler, configuration and indentation - and the navigator loses the project's groups.
+    projectDirectory_ = nil;
+    arch_ = Str(ride_host_arch());
+    if (arch_.length == 0) arch_ = Str(ride_arch(0));
+    toolKind_ = ride_default_compiler();
+    config_ = ride_configuration();
+    indentWidth_ = ride_default_indent_width();
+    indentTabs_ = ride_default_indent_tabs();
+    indentCase_ = 0;
+    [self fillNavigator];
     [self showSheet:next];
+    [self refreshTitle];
+    [self sayBuild];
     // Every pane was the project's: Errors alone was cleared, and Progress and Output kept
     // the closed project's build and run.
     [self clearIssues];
@@ -2520,6 +2636,13 @@ static NSColor* ColourOf(unsigned char kind) {
     [view scrollRangeToVisible:NSMakeRange(view.string.length, 0)];
 }
 
+// A report shown in Output: under a running program it goes after what the program printed rather
+// than over it, which lost the program's output.
+- (void)showInOutput:(NSString*)text {
+    if (running_ != NULL) [self append:[@"\n" stringByAppendingString:text] to:output_];
+    else [self setOutput:text];
+}
+
 - (void)setOutput:(NSString*)text {
     [output_.textStorage setAttributedString:[[NSAttributedString alloc] initWithString:@""]];
     [self append:text to:output_];
@@ -2547,6 +2670,11 @@ static NSColor* ColourOf(unsigned char kind) {
 
 - (void)endWork:(NSString*)verdict ok:(BOOL)ok {
     busy_ = NO;
+    if (quitWhenIdle_) {
+        quitWhenIdle_ = NO;
+        [NSApp replyToApplicationShouldTerminate:YES];
+        return;
+    }
     [progressBar_ stopAnimation:nil];
     progressBar_.indeterminate = NO;
     progressBar_.doubleValue = progressBar_.maxValue;
@@ -2584,6 +2712,18 @@ static NSColor* ColourOf(unsigned char kind) {
 }
 
 // Stops what is running and waits for it, for the application going (main.mm).
+- (BOOL)stillBuilding { return busy_ && running_ == NULL; }
+
+- (void)quitWhenIdle {
+    quitWhenIdle_ = YES;
+    // A build that does not come back in ten seconds is not waited on for ever.
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 10 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+        if (!self->quitWhenIdle_) return;
+        self->quitWhenIdle_ = NO;
+        [NSApp replyToApplicationShouldTerminate:YES];
+    });
+}
+
 - (void)stopEverything {
     if (running_ != NULL) {
         ride_running_stop(running_);
@@ -2726,8 +2866,47 @@ static void RunOutput(void* user, const char* bytes, int size, int stream) {
         dispatch_async(dispatch_get_main_queue(), ^{ [window runEnded]; });
         return;
     }
-    std::string piece(bytes, (size_t)size);
-    dispatch_async(dispatch_get_main_queue(), ^{ [window runSaid:piece stream:stream]; });
+    [window queueOutput:bytes size:size stream:stream];
+}
+
+// The most a stream holds while the main thread is behind; past it the oldest bytes go, and Output
+// says so - a program printing without end costs this and no more.
+static const size_t kInboxMost = 1 << 20;
+// The most Output keeps; past it the oldest lines are dropped.
+static const NSUInteger kOutputMost = 2000000;
+
+// On the program's thread: into the inbox, and one drain asked for, 40 ms on - about 25 a second.
+- (void)queueOutput:(const char*)bytes size:(int)size stream:(int)stream {
+    if (stream < 0 || stream > 2) stream = 0;
+    bool schedule = false;
+    {
+        std::lock_guard<std::mutex> hold(inboxLock_);
+        std::string& box = inbox_[stream];
+        box.append(bytes, (size_t)size);
+        if (box.size() > kInboxMost) {
+            size_t cut = box.size() - kInboxMost;
+            size_t line = box.find('\n', cut);
+            box.erase(0, line == std::string::npos ? cut : line + 1);
+            box.insert(0, "[... output dropped while the window caught up ...]\n");
+        }
+        if (!drainQueued_) { drainQueued_ = true; schedule = true; }
+    }
+    if (schedule)
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 40 * NSEC_PER_MSEC), dispatch_get_main_queue(),
+                       ^{ [self drainOutput]; });
+}
+
+// On the main thread: what the inbox holds, shown in one go per stream.
+- (void)drainOutput {
+    std::string taken[3];
+    {
+        std::lock_guard<std::mutex> hold(inboxLock_);
+        for (int i = 0; i < 3; ++i) taken[i].swap(inbox_[i]);
+        drainQueued_ = false;
+    }
+    if (running_ == NULL) return;   // stopped: what was queued is not wanted
+    for (int i = 0; i < 3; ++i)
+        if (!taken[i].empty()) [self runSaid:taken[i] stream:i];
 }
 
 - (void)startRun:(RIDERunning*)running source:(NSString*)source compiler:(NSString*)compiler
@@ -2743,7 +2922,9 @@ static void RunOutput(void* user, const char* bytes, int size, int stream) {
     for (std::string& pending : pending_) pending.clear();
     inputLine_.enabled = YES;
     inputLine_.stringValue = @"";
-    [self.window makeFirstResponder:inputLine_];
+    // Not the keyboard yet: what is typed during the compile belongs to the editor (it went to the
+    // program's input). The first thing the program prints hands it over.
+    programSpoke_ = NO;
 }
 
 - (void)runSaid:(const std::string&)piece stream:(int)stream {
@@ -2753,11 +2934,26 @@ static void RunOutput(void* user, const char* bytes, int size, int stream) {
     if (text.length == 0) return;
     NSColor* colour = stream == RIDE_STREAM_ERR ? [NSColor systemRedColor]
                     : stream == RIDE_STREAM_BUILD ? [NSColor secondaryLabelColor] : nil;
+    if (stream != RIDE_STREAM_BUILD && !programSpoke_ && running_ != NULL) {
+        programSpoke_ = YES;
+        [self say:[NSString stringWithFormat:@"%@ is running - its input goes in the line under Output",
+                                             runProgram_.lastPathComponent ?: @"the program"]];
+        [self.window makeFirstResponder:inputLine_];
+    }
     [self append:text to:output_ colour:colour];
+    // Output keeps its last two million characters or so, from a line's start.
+    NSTextStorage* kept = output_.textStorage;
+    if (kept.length > kOutputMost) {
+        NSUInteger cut = kept.length - kOutputMost * 3 / 4;
+        NSRange line = [kept.string rangeOfString:@"\n" options:0 range:NSMakeRange(cut, kept.length - cut)];
+        if (line.location != NSNotFound) cut = line.location + 1;
+        [kept replaceCharactersInRange:NSMakeRange(0, cut) withString:@"[... earlier output dropped ...]\n"];
+    }
 }
 
 - (void)runEnded {
     if (running_ == NULL) return;
+    [self drainOutput];
     for (int stream = 0; stream < 3; ++stream)
         if (!pending_[stream].empty()) {
             [self append:StrLossy(pending_[stream]) to:output_];
@@ -2803,6 +2999,20 @@ static void RunOutput(void* user, const char* bytes, int size, int stream) {
     if (!ride_running_send(running_, line.data(), (int)line.size()))
         [self say:@"the program is not reading any more"];
     inputLine_.stringValue = @"";
+}
+
+// A line pasted with its newline is sent as typed and Return pressed: every whole line goes to the
+// program, what follows the last newline stays to be finished. Pasted, it used to vanish.
+- (void)controlTextDidChange:(NSNotification*)note {
+    if (note.object != inputLine_ || running_ == NULL) return;
+    NSString* text = [inputLine_.stringValue stringByReplacingOccurrencesOfString:@"\r\n" withString:@"\n"];
+    text = [text stringByReplacingOccurrencesOfString:@"\r" withString:@"\n"];
+    NSRange last = [text rangeOfString:@"\n" options:NSBackwardsSearch];
+    if (last.location == NSNotFound) return;
+    std::string lines = StdString([text substringToIndex:last.location + 1]);
+    if (!ride_running_send(running_, lines.data(), (int)lines.size()))
+        [self say:@"the program is not reading any more"];
+    inputLine_.stringValue = [text substringFromIndex:last.location + 1];
 }
 
 // Control-D on the input line ends the program's input, as at a terminal; the field editor asks
@@ -3016,7 +3226,23 @@ static void RunOutput(void* user, const char* bytes, int size, int stream) {
     NSInteger line = parts[0].integerValue;
     NSInteger column = parts.count > 1 ? parts[1].integerValue : 1;
     if (line <= 0) { [self say:@"not a line number"]; return; }
+    [code_ hideFindBar];
     [code_ goToLine:line column:column];
+    [self.window makeFirstResponder:code_];
+}
+
+// Whether the keyboard is in the find bar, open over the text: then Escape closes it.
+- (BOOL)escapeFromFindBar {
+    NSScrollView* scroll = code_.enclosingScrollView;
+    if (!scroll.findBarVisible) return NO;
+    NSResponder* first = self.window.firstResponder;
+    NSView* inside = [first isKindOfClass:NSTextView.class] && ((NSTextView*)first).isFieldEditor
+                         ? (NSView*)((NSTextView*)first).delegate
+                         : ([first isKindOfClass:NSView.class] ? (NSView*)first : nil);
+    if (inside == nil || ![inside isDescendantOf:scroll.findBarView]) return NO;
+    [code_ hideFindBar];
+    [self.window makeFirstResponder:code_];
+    return YES;
 }
 
 // The rows the selection touches, handed to `change` without their '\n's and put back as one
@@ -3331,7 +3557,7 @@ static void RunOutput(void* user, const char* bytes, int size, int stream) {
         cc1_, cxx1_, shc_, Take(ride_find_converter()), Str(ride_install_file()),
         Str(ride_include_dir()), Str(ride_lib_dir()), Str(ride_assembler()),
         Str(ride_linker()), Str(ride_tilinker()), Str(ride_ti())];
-    [self setOutput:text];
+    [self showInOutput:text];
     [self showPanel:kPanelOutput];
     [self say:@"the tools this window drives - in Output"];
 }
@@ -3369,7 +3595,7 @@ static void RunOutput(void* user, const char* bytes, int size, int stream) {
 // Help > Environment in the Output tab, whose font is fixed-width: each tool and the file it resolved to.
 - (void)showEnvironment:(id)sender {
     (void)sender;
-    [self setOutput:Take(ride_environment())];
+    [self showInOutput:Take(ride_environment())];
     [self showPanel:kPanelOutput];
 }
 
@@ -3394,6 +3620,30 @@ static void RunOutput(void* user, const char* bytes, int size, int stream) {
     SEL action = item.action;
     BOOL project = ride_project_loaded(project_) != 0;
     BOOL file = current_ != nil;
+    // A build reads the project and settings.json on its own thread; a program running after it does not.
+    BOOL building = busy_ && running_ == NULL;
+    // A CCS project is CCS's to change: RIDE reads it again at every build, so an edit made here is
+    // reported done and then lost. What it would change is offered disabled.
+    BOOL ccs = project && ride_project_is_ccs(project_) != 0;
+
+    if (ccs && (action == @selector(chooseArch:) || action == @selector(nextTarget:) ||
+                action == @selector(chooseTool:) || action == @selector(nextCompiler:) ||
+                action == @selector(addFiles:) || action == @selector(addCurrentFile:) ||
+                action == @selector(removeFromProject:) || action == @selector(moveToGroup:) ||
+                action == @selector(projectIncludes:) || action == @selector(projectLibraries:) ||
+                action == @selector(newProjectFile:) || action == @selector(saveProjectAs:))) {
+        if (action == @selector(chooseArch:))
+            item.state = [Str(ride_arch((int)(item.tag - kTagArchBase))) isEqualToString:arch_]
+                             ? NSControlStateValueOn : NSControlStateValueOff;
+        if (action == @selector(chooseTool:))
+            item.state = item.tag - kTagToolBase == toolKind_ ? NSControlStateValueOn : NSControlStateValueOff;
+        return NO;
+    }
+    if (action == @selector(headerDirectories:) || action == @selector(sharedIncludes:) ||
+        action == @selector(sharedLibraries:) || action == @selector(locateAssembler:) ||
+        action == @selector(locateLinker:) || action == @selector(locateTi:) ||
+        action == @selector(locateTiLinker:))
+        return !building;
 
     if (action == @selector(chooseArch:)) {
         item.state = [Str(ride_arch((int)(item.tag - kTagArchBase))) isEqualToString:arch_]
@@ -3459,9 +3709,9 @@ static void RunOutput(void* user, const char* bytes, int size, int stream) {
         NSString* target = [self targetFile];
         return project && target != nil && !busy_ && ride_project_holds(project_, Utf8(target));
     }
-    if (action == @selector(openDocument:) || action == @selector(openRecentProject:) ||
-        action == @selector(openRecentFile:))
-        return !busy_;
+    // A file opens while a program runs - it may be waiting on input for minutes; a project does not.
+    if (action == @selector(openDocument:) || action == @selector(openRecentFile:)) return !building;
+    if (action == @selector(openRecentProject:)) return !busy_;
     if (action == @selector(stopWork:)) return busy_ || running_ != NULL;
     if (action == @selector(renameFile:) || action == @selector(deleteFile:))
         return [self targetFile] != nil && !busy_;
@@ -3480,8 +3730,18 @@ static void RunOutput(void* user, const char* bytes, int size, int stream) {
         NSString* where = Str(projects ? ride_recent_project(i) : ride_recent_file(i));
         if (where.length == 0) break;
         if (![NSFileManager.defaultManager fileExistsAtPath:where]) continue;
+        // The name and the two folders it is in: two projects' main.c - or two copies of one project,
+        // each in a folder of the same name - read the same by name alone.
+        NSString* dir = where.stringByDeletingLastPathComponent;
+        NSString* up = dir.stringByDeletingLastPathComponent.lastPathComponent;
+        NSString* folder = up.length > 0 && ![up isEqualToString:@"/"]
+                               ? [up stringByAppendingPathComponent:dir.lastPathComponent]
+                               : dir.lastPathComponent;
+        NSString* title = folder.length > 0
+                              ? [NSString stringWithFormat:@"%@  \u2014  %@", where.lastPathComponent, folder]
+                              : where.lastPathComponent;
         NSMenuItem* item = [[NSMenuItem alloc]
-            initWithTitle:where.lastPathComponent
+            initWithTitle:title
                    action:projects ? @selector(openRecentProject:) : @selector(openRecentFile:)
             keyEquivalent:@""];
         item.target = self;

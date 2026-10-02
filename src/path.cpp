@@ -1,6 +1,7 @@
 #include "path.h"
 
 #include <cctype>
+#include <climits>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -144,7 +145,22 @@ std::string absolute(const std::string& path) {
     return out == "." ? withSlashes(path) : out;
 }
 
-std::string relativeTo(const std::string& path, const std::string& base) {
+namespace {
+
+// A path with its links resolved, where it exists; as given otherwise. On a Mac /tmp is a link to
+// /private/tmp and the window spells a file one way while the project was opened the other, so a
+// project's own file read as outside it: a comparison that fails as written is tried again this way.
+std::string resolvedPath(const std::string& path) {
+#ifdef _WIN32
+    return absolute(path);
+#else
+    char buffer[PATH_MAX];
+    if (::realpath(absolute(path).c_str(), buffer) == 0) return absolute(path);
+    return withSlashes(buffer);
+#endif
+}
+
+std::string relativeAsWritten(const std::string& path, const std::string& base) {
     Split here = split(absolute(path));
     Split from = split(absolute(base));
     if (here.root != from.root) return std::string();
@@ -163,6 +179,15 @@ std::string relativeTo(const std::string& path, const std::string& base) {
     return out.empty() ? std::string(".") : out;
 }
 
+}
+
+std::string relativeTo(const std::string& path, const std::string& base) {
+    std::string out = relativeAsWritten(path, base);
+    if (!out.empty() && out.compare(0, 2, "..") != 0) return out;
+    std::string resolved = relativeAsWritten(resolvedPath(path), resolvedPath(base));
+    return (!resolved.empty() && resolved.compare(0, 2, "..") != 0) ? resolved : out;
+}
+
 std::string oneName(const std::string& path) {
     std::string name = absolute(path);
 #ifdef _WIN32
@@ -173,7 +198,8 @@ std::string oneName(const std::string& path) {
 }
 
 bool same(const std::string& one, const std::string& other) {
-    return oneName(one) == oneName(other);
+    if (oneName(one) == oneName(other)) return true;
+    return oneName(resolvedPath(one)) == oneName(resolvedPath(other));
 }
 
 std::string parent(const std::string& path) {

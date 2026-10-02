@@ -5870,6 +5870,15 @@ int main(int argc, char** argv) {
     // in Compiler Options: an empty store stands in for the installation's for the whole run.
     editor::options::Store* none = new editor::options::Store();
     editor::options::setFallback(none);
+    // Nothing the suite does may reach the user's own files: on macOS settings.json is ~/.ride's, so a
+    // test writing a setting with no install directory pretended wrote the user's - "ccs" turned off on
+    // 02-10-2026. Home is a scratch directory for the whole run; the tests that move it put this back.
+    {
+        file::path home = file::temp_directory_path() / "ride-test-home";
+        file::remove_all(home);
+        file::create_directories(home);
+        sayWhereHomeIs(home.string());
+    }
     paths();
     whereTheProgramIs(argc > 0 ? argv[0] : 0);
     whatTheDebuggerHeard();
