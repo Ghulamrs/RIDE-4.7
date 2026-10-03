@@ -2662,8 +2662,8 @@ void Editor::compile() {
         tab_ = TabConsole;
         console_.push_back("");
         console_.push_back("[enter] here goes to the line above");
-        if (console_.size() > static_cast<size_t>(panelRows_))
-            panelOff_ = console_.size() - static_cast<size_t>(panelRows_);
+        // Rows, not lines: a long command wraps, and counting lines left the last one under the frame.
+        panelOff_ = panelTopForEnd();
         say(number(result.diag.line) + ":" + number(result.diag.col) + ": error: " +
             result.diag.message);
     } else if (!result.ok) {
@@ -2741,8 +2741,8 @@ void Editor::buildAndRun() {
         say("ran " + shownFile + " - it returned " + number(static_cast<size_t>(result.status)));
     }
 
-    if (console_.size() > static_cast<size_t>(panelRows_))
-        panelOff_ = console_.size() - static_cast<size_t>(panelRows_);
+    // Rows, not lines: a long command wraps, and counting lines left "[program returned N]" under the frame.
+    panelOff_ = panelTopForEnd();
 }
 
 bool Editor::saveEveryDirty() {
@@ -2879,8 +2879,8 @@ void Editor::buildProject(bool andRun) {
             number(static_cast<size_t>(result.status)));
     }
 
-    if (console_.size() > static_cast<size_t>(panelRows_))
-        panelOff_ = console_.size() - static_cast<size_t>(panelRows_);
+    // Rows, not lines: a long command wraps, and counting lines left "[program returned N]" under the frame.
+    panelOff_ = panelTopForEnd();
 }
 
 bool Editor::breakpointOn(size_t line) const {
