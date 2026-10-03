@@ -3702,17 +3702,15 @@ static const NSUInteger kOutputMost = 2000000;
 
 - (void)showAbout:(id)sender {
     (void)sender;
+    // A box sized to what it says, as the Windows one is: the standard panel's credits are a fixed,
+    // scrolling area, and the last lines - the time and the CRC - fell below it.
     NSString* about = Take(ride_about());
-    NSDictionary* options = @{
-        NSAboutPanelOptionApplicationName : Str(ride_product_name()),
-        NSAboutPanelOptionApplicationVersion : Str(ride_version()),
-        NSAboutPanelOptionVersion : @"",
-        NSAboutPanelOptionCredits : [[NSAttributedString alloc]
-            initWithString:about
-                attributes:@{NSFontAttributeName : [NSFont systemFontOfSize:[NSFont smallSystemFontSize]],
-                             NSForegroundColorAttributeName : [NSColor labelColor]}],
-    };
-    [NSApp orderFrontStandardAboutPanelWithOptions:options];
+    NSAlert* box = [[NSAlert alloc] init];
+    box.messageText = @"About";
+    box.informativeText = about;
+    box.icon = [NSApp applicationIconImage];
+    [box addButtonWithTitle:@"OK"];
+    [box runModal];
 }
 
 // ---- menu state -----------------------------------------------------------------

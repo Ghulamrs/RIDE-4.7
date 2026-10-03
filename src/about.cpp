@@ -215,7 +215,8 @@ std::string selfLine() {
     if (crc32Of(file, crc)) {
         char hex[16];
         std::snprintf(hex, sizeof hex, "%08lX", crc);
-        said += "  CRC32 " + std::string(hex);
+        // On a line of its own: the release and the time, then the CRC and what the record says of it.
+        said += "\nCRC32 " + std::string(hex);
         // Against the record the installer wrote beside it: the same bytes, or changed since.
         unsigned long was = 0;
         long long wasSize = 0;
@@ -322,7 +323,12 @@ std::vector<std::string> lines() {
     said.push_back("\xC2\xA9""2026 G. R. Akhtar");
     said.push_back("Islamabad, Pakistan");
     const std::string self = selfLine();
-    if (!self.empty()) { said.push_back(""); said.push_back(self); }
+    if (!self.empty()) {
+        said.push_back("");
+        const size_t cut = self.find('\n');
+        said.push_back(self.substr(0, cut));
+        if (cut != std::string::npos) said.push_back(self.substr(cut + 1));
+    }
     return said;
 }
 

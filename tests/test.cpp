@@ -5890,7 +5890,8 @@ void ccsWorkspacesOneProjectAtATime() {
 // About ends with this program's own file: its name, the PKT time it was last written, and its CRC-32.
 void aboutSelf() {
     const std::vector<std::string> said = editor::about::lines();
-    const std::string last = said.empty() ? std::string() : said.back();
+    // The last two lines: the release and the time, then the CRC and what the record says.
+    const std::string last = said.size() < 2 ? std::string() : said[said.size() - 2] + "  " + said.back();
     std::printf("about's last line: %s\n", last.c_str());
     const std::string self = editor::path::programFile();
     check(!self.empty(), "the program knows its own file");
