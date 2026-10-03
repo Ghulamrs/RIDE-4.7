@@ -1,6 +1,6 @@
 # Sample CCS 7.4 projects
 
-Four Code Composer Studio 7.4 projects for the TMS320C6747, made by CCS
+Five Code Composer Studio 7.4 projects for the TMS320C6747, made by CCS
 itself and shipped as CCS left them: `.project`, `.ccsproject`, `.cproject`,
 the linker command file and the sources. RIDE opens a CCS project folder as
 it is and writes nothing into it; they are here to try that on.
@@ -11,6 +11,7 @@ it is and writes nothing into it; they are here to try that on.
 | `K6747cpp` | C++: `main.cpp` (a class and `printf`), built with exceptions     |
 | `P7misc`   | C: `lib/util.c` in a subfolder with its own options, and `extra.c` excluded from the build |
 | `Sample`   | C++: `Math.cpp` over class templates for a vector, a matrix and a quaternion (`Vector.h`, `Matrix.h`, `Quat.h`), printed with `std::cout` |
+| `SampleExt`| C++: `Sample` extended - two 3x3 matrices multiplied, a vector's cross, dot and component products, a matrix times a vector, and a rotation about Z; the same three headers grown with the operators it uses |
 
 ## Opening one
 
@@ -38,6 +39,7 @@ the build, with RIDE's default used instead.
 | `K6747cpp` | `K6747cpp: level 0, counter 42`     | `K6747cpp: level 3, counter 42`     |
 | `P7misc`   | `K6747c: level 0, twice(21) = 42`   | `K6747c: level 0, twice(21) = 42`   |
 | `Sample`   | `Hello Math!`, then a unit quaternion `1 0 0 0`, a zero vector and a zero 3x3 matrix | the same |
+| `SampleExt`| `Sample`'s lines, then `A`, `B`, `C = A * B`, `a`, `b`, `a * b`, `a . b = 32`, `a ^ b`, `A * a`, `Rz(0.5)` and `Rz * a` | the same |
 
 LEVEL comes from each configuration's defines in `.cproject`. P7misc says
 `K6747c` because it was made from that project's sources; its `extra.c`
@@ -50,6 +52,10 @@ Sample prints through `std::cout`, and RIDE's C++ library writes it the way
 same program prints nothing: TI's own `<iostream>` emits no console output
 there, though its `printf` does. Its values are CCS 7.4's all the same,
 checked through `printf`.
+
+SampleExt is a copy of Sample's project files with its own sources, and
+its `.project` names it `SampleExt` rather than `Sample`, so the two can sit
+in one CCS workspace.
 
 The one change from the projects CCS wrote: K6747c's linked `util.c` was
 recorded with an absolute path on the machine that made it, and is written
