@@ -95,10 +95,10 @@
       "programs/projectile.c",
       "programs/rotmat.shl",
       "programs/smart.cpp",
-      "programs/table.cpp",
-      "programs/table.h",
-      "programs/vector3.cpp",
-      "programs/vector3.h"
+      "projects/cpp-table/table.cpp",
+      "projects/cpp-table/table.h",
+      "projects/cpp-vector3/vector3.cpp",
+      "projects/cpp-vector3/vector3.h"
     ],
     "Build": [
       "Makefile",

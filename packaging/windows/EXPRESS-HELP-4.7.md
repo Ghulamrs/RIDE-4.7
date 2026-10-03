@@ -99,12 +99,15 @@ editor) chooses how everything is compiled. The status bar shows which.
 Both folders are made the first time they are needed, and **filled with
 samples** when they are new or empty - nothing already there is ever replaced:
 
-- **projects** - `c-bank`, `c-stats` (C); `cpp-inventory`, `cpp-shapes`,
-  `compilerpp` (C++); `shl-primes`, `shl-matrix` (Shalimar, where a program
-  calls functions from the project's other file with nothing to declare); and
-  `thirdparty-mathx`, the third-party library template (section 7).
-- **programs** - `hello.c`, `fibonacci.c`, `hello.cpp`, `words.cpp`,
-  `hello.shl`, `table.shl`: open one and **Run File**.
+- **projects** - `c-bank`, `c-demo`, `c-example`, `c-stats` (C); `cpp-inventory`,
+  `cpp-shapes`, `cpp-table`, `cpp-vector3`, `compilerpp` (C++); `shl-primes`,
+  `shl-matrix` (Shalimar, where a program calls functions from the project's
+  other file with nothing to declare); `thirdparty-mathx`, the third-party
+  library template (section 7); and `ccs` - Hello, Sample and SampleExt, three
+  CCS 7.4 projects for the C6747.
+- **programs** - `hello.c`, `fibonacci.c`, `projectile.c`, `hello.cpp`,
+  `smart.cpp`, `words.cpp`, `hello.shl`, `gcd.shl`, `primes.shl`, `rotmat.shl`,
+  `table.shl`: open one and **Run File**.
 
 --------------------------------------------------------------------------
 ## 5. Making and building a project
