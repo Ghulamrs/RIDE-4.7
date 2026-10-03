@@ -750,16 +750,8 @@ private:
         ToolStripMenuItem^ file = gcnew ToolStripMenuItem("&File");
         live_->Add(file->DropDownItems->Add("New", nullptr,
                                             gcnew EventHandler(this, &MainForm::OnNewBuffer)));
-        // Here as well as on the Project menu: File is where somebody making something new looks.
-        ToolStripMenuItem^ newFile = gcnew ToolStripMenuItem(
-            "New file...", nullptr, gcnew EventHandler(this, &MainForm::OnNewFile));
-        newFile->ShortcutKeyDisplayString = "Ctrl+N";
-        file->DropDownItems->Add(newFile);
-        file->DropDownItems->Add("New project...", nullptr,
-                                 gcnew EventHandler(this, &MainForm::OnNewProject));
-
-        file->DropDownItems->Add(gcnew ToolStripSeparator());
-        file->DropDownItems->Add("Open file...", nullptr,
+        // A new file in a project and a new project are the Project menu's, and only there.
+        file->DropDownItems->Add("Open...", nullptr,
                                  gcnew EventHandler(this, &MainForm::OnOpenFile));
         ToolStripMenuItem^ save = gcnew ToolStripMenuItem(
             "Save", nullptr, gcnew EventHandler(this, &MainForm::OnSave));
@@ -3420,7 +3412,7 @@ private:
 
         paneMode_ = PaneMode::PaneFiles;
         msclr::auto_handle<OpenFileDialog> pick(gcnew OpenFileDialog());
-        pick->Filter = "Sources|*.c;*.h;*.cpp;*.hpp;*.cc;*.cxx;*.shl;*.s;*.json;*.pro"
+        pick->Filter = "Sources|*.c;*.h;*.cpp;*.hpp;*.cc;*.cxx;*.shl;*.s;*.json"
                        "|C and C++|*.c;*.h;*.cpp;*.hpp;*.cc;*.cxx|Shalimar|*.shl|All files|*.*";
         pick->InitialDirectory = ProgramsDir();
         if (pick->ShowDialog() != System::Windows::Forms::DialogResult::OK) {

@@ -1315,10 +1315,10 @@ ten reasons above. Only `Tab` is written by hand there, since it belongs to
 the text box rather than to a menu.
 
 **The project operations** are on the Project menu: new project, save project,
-add this file, new file, rename, move to group and delete. New file and new
-project are on the File menu as well, because that is where somebody who wants
-to make something new looks first; the Project menu is where they are filed by
-what they change, and both are true. None of them is
+add this file, new file, rename, move to group and delete, and only there: the
+window's File menu is New, Open, Save, Save as and Close, for a file on its own
+(the user's decision of 03-10-2026, after an audit had put new file and new
+project on File as well). None of them is
 written twice - `src/workspace.cpp` holds what changing a project actually
 involves (check the rule, do the disk work, keep the list in step, write the
 project back), and both front ends call it. The terminal asks its questions on
