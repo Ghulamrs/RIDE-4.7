@@ -118,7 +118,8 @@ Libraries…. The file items act on the open
 project's files and are offered only while a project is open.
 
 **Build** menu: Compile File (Ctrl-B), Run File (F5), Build Project (F4), Run
-Project, Debug / Release Configuration, Convert C ⇄ Shalimar, Jump to Next
+Project, Stop, Clean (removes the program, its .pdb, .ilk, .out, .dSYM and .vm,
+and empties the panes - never a source or the .pro), Debug / Release Configuration, Convert C ⇄ Shalimar, Jump to Next
 Issue, Clear Issues.
 
 The bottom panel shows **Errors**, **Progress** and **Output**. The title bar

@@ -63,6 +63,7 @@ Name: "{group}\{#MyName} (console)"; Filename: "{app}\bin\{#PRODUCT}Console.exe"
 Name: "{group}\Express Help"; Filename: "{app}\EXPRESS-HELP.html"; WorkingDir: "{app}"
 Name: "{group}\Manual"; Filename: "{app}\help\manual.html"; WorkingDir: "{app}"
 Name: "{group}\User Guide"; Filename: "{app}\help\guide.html"; WorkingDir: "{app}"
+Name: "{group}\Resources"; Filename: "{app}\help\resources.html"; WorkingDir: "{app}"
 Name: "{group}\Uninstall {#MyName}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#MyName}"; Filename: "{app}\bin\{#PRODUCT}.exe"; WorkingDir: "{userdocs}"; Tasks: desktopicon
 

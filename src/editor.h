@@ -188,6 +188,7 @@ private:
     void convertFile();
 
     void buildProject(bool andRun);
+    void clean();
     bool saveEveryDirty();
 
     void toggleBreak();

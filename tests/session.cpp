@@ -1340,6 +1340,15 @@ void buildingTheProject(const std::string& ride, const std::string& cc1,
     check(onScreen(ran, "answer 42"), "running the project runs the linked program");
     check(onScreen(ran, "returned 0"), "and reports what it returned");
 
+    // Build > Clean, the last item: the program the build made goes, the sources and the .pro stay,
+    // and the console says so.
+    Screen cleaned = drive(ride, arguments, kF10 + times(kRight, 3) + times(kDown, 6) + kEnter + ctrl('q'), dir);
+    check(wasShown(cleaned, "Clean succeeded: sums"), "Build > Clean says it ran, and for which project");
+    check(!file::exists(dir / "sums") && !file::exists(dir / "sums.exe"), "the program the build made is gone");
+    check(file::exists(dir / "src" / "main.c") && file::exists(dir / "project.pro"), "the sources and the .pro are not");
+    Screen again = drive(ride, arguments, kF10 + times(kRight, 3) + times(kDown, 6) + kEnter + ctrl('q'), dir);
+    check(wasShown(again, "nothing was left to remove"), "and a second Clean finds nothing left");
+
 #ifdef _WIN32
     // Nothing to stop inside here: cc1 writes MASM for this target and MASM
     // carries no line table. The single-file case above already checks that

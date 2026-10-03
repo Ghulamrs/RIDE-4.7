@@ -41,8 +41,8 @@ Remove / Rename / Delete - the last three act on the file in front, or on the on
 picked in the project pane, and the project follows the file - then Include Paths /
 Libraries, the project's own in its `.pro`; each is offered only while a project
 is open, and Open takes a CCS project's `.project` or a file of a CCS workspace
-as well as a `.pro`; there is no Save, since every change is written as it is made), Build (Compile / Run / Build project / Run project / Debug /
-Release), Debug, View (Project pane / Bottom panel / Console / Debug / Assembly
+as well as a `.pro`; there is no Save, since every change is written as it is made), Build (Compile / Run / Build project / Run project / Stop / Clean / Debug /
+Release - Clean removes what a build made and empties the panes; in the console it is the last item), Debug, View (Project pane / Bottom panel / Console / Debug / Assembly
 / Line numbers / Plain frame), Language (By extension / C / C++ / Shalimar /
 JSON / Plain text / Convert), Tools (By language / c90 / cpp11 / shalimar / MSVC (cl)
 / C++ (host), then Header directories, the *shared* include paths and libraries

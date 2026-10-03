@@ -1,7 +1,7 @@
 ©2026 G. R. Akhtar - RIDE 4.7, the editor
 Release seal, version 4.7, sealed 03-10-2026
 Written by tools/seal; check it with `tools/seal check`.
-CRC32  size  file - 97 files, seal A2D56B0C
+CRC32  size  file - 97 files, seal 054FA14F
 ------------------------------------------------------------------
 06F11F39     18706  Makefile
 3A1FF49C      3207  RIDE.pro
@@ -14,12 +14,12 @@ E30F8F6C      3997  RIDEConsole.vcxproj
 8528B8CC       612  macos/LineNumbers.h
 A7F98CCC      5957  macos/LineNumbers.mm
 C19D715B      5827  macos/Makefile
-9EBD6C1C      8753  macos/README.md
+804521C3      8760  macos/README.md
 A2B21358    971341  macos/RIDE.icns
 7E2C43FD      2767  macos/Text.h
 E818B9F2     22370  macos/Window.xcodeproj/project.pbxproj
 AEF649AE      1693  macos/WindowController.h
-5C3759F0    186421  macos/WindowController.mm
+6BFE70D2    186664  macos/WindowController.mm
 18F9EFDC      4599  macos/main.mm
 07969C88      3339  macos/make-icon.swift
 5ED755F0     12349  macos/make-xcodeproj.py
@@ -43,8 +43,8 @@ E5744BBB       644  src/convert.h
 0007F760     34825  src/debugger.cpp
 EDA5FB1A      4293  src/debugger.h
 DA6DC095       811  src/demangle_win.cpp
-7716A686    150089  src/editor.cpp
-659EDF8F     11284  src/editor.h
+54362A6B    151096  src/editor.cpp
+4CB2D902     11302  src/editor.h
 94F415BD      2273  src/find.cpp
 BCA6BAC7       589  src/find.h
 FEE59884      2728  src/help.cpp
@@ -54,8 +54,8 @@ DC8B18AF      1891  src/indent.h
 C644F94E      9211  src/json.cpp
 D12A8855      1365  src/json.h
 B15A4E45     13559  src/main.cpp
-9F55238B     12482  src/menu.cpp
-CEF1421A      4091  src/menu.h
+45F21E26     12643  src/menu.cpp
+3E29C965      4108  src/menu.h
 DD59BAFA      8601  src/options.cpp
 26E451F0      3026  src/options.h
 1B661B57     12699  src/path.cpp
@@ -88,7 +88,7 @@ CC9C965F      7196  src/toolchain.h
 D93038C5       572  src/utf8.h
 1DD9DC1C     12808  src/workspace.cpp
 F35C52A2      2086  src/workspace.h
-05651184    232464  winforms/MainForm.h
+0CCC3887    233168  winforms/MainForm.h
 6BA8DA64      2289  winforms/Marshal.h
 3D89F3C4      6415  winforms/Program.cpp
 1F889F5F       157  winforms/RIDEGui.rc

@@ -1069,6 +1069,11 @@ private:
                                  gcnew EventHandler(this, &MainForm::OnHelpContents));
         help->DropDownItems->Add(Item("Keys", Keys::F1,
                                       gcnew EventHandler(this, &MainForm::OnKeys)));
+        // As the macOS window has them: the language reference, and the one page of everything installed.
+        help->DropDownItems->Add("Shalimar Language Reference", nullptr,
+                                 gcnew EventHandler(this, &MainForm::OnHelpShalimar));
+        help->DropDownItems->Add("Resources", nullptr,
+                                 gcnew EventHandler(this, &MainForm::OnHelpResources));
         help->DropDownItems->Add("Environment", nullptr,
                                  gcnew EventHandler(this, &MainForm::OnEnvironment));
         help->DropDownItems->Add("About", nullptr,
@@ -4678,8 +4683,8 @@ private:
         ForgetError();
         String^ name = ride_project_loaded(project_) != 0 ? FromUtf8(ride_project_name(project_)) : "no project";
         String^ head = "Clean succeeded: " + name + " - " +
-                       (files->Length == 0 ? "nothing was left to remove"
-                                           : files->Length + (files->Length == 1 ? " removed" : " removed"));
+                       (files->Length == 0 ? gcnew String("nothing was left to remove")
+                                           : files->Length.ToString() + " removed");
         Say("========== " + head + " ==========\n");
         for each (String^ f in files) Say(f + "\n");
         panel_->SelectedIndex = 0;
@@ -5180,25 +5185,29 @@ private:
     }
 
     // The manual, in the browser: help\manual.html from the installation, or from the tree it was built in.
-    void OnHelpContents(Object^, EventArgs^) {
+    void OnHelpContents(Object^, EventArgs^) { OpenHelpPage("manual.html", "the manual"); }
+    void OnHelpShalimar(Object^, EventArgs^) { OpenHelpPage("shalimar-language.html", "the Shalimar language reference"); }
+    void OnHelpResources(Object^, EventArgs^) { OpenHelpPage("resources.html", "RIDE's resources"); }
+
+    void OpenHelpPage(String^ leaf, String^ said) {
         array<String^>^ places = gcnew array<String^>{
             System::IO::Path::Combine(AppDir(), "help"),
             System::IO::Path::Combine(Application::StartupPath, "help"),
             System::IO::Path::Combine(System::IO::Path::Combine(AppDir(), ".."), "help")};
         for each (String^ place in places) {
-            String^ page = System::IO::Path::Combine(place, "manual.html");
+            String^ page = System::IO::Path::Combine(place, leaf);
             if (!System::IO::File::Exists(page)) continue;
             try {
                 System::Diagnostics::ProcessStartInfo^ start = gcnew System::Diagnostics::ProcessStartInfo(page);
                 start->UseShellExecute = true;
                 delete System::Diagnostics::Process::Start(start);
-                what_->Text = "the manual - " + page;
+                what_->Text = said + " - " + page;
             } catch (Exception^ problem) {
                 what_->Text = "could not open " + page + " - " + problem->Message;
             }
             return;
         }
-        what_->Text = "the manual is not beside this editor - help\\manual.html";
+        what_->Text = said + " is not beside this editor - help\\" + leaf;
     }
 
     void OnLangC(Object^, EventArgs^) { ChooseLanguage(RIDE_LANG_C, "language: C"); }

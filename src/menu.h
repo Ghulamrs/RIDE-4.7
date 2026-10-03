@@ -49,6 +49,7 @@ enum Action {
 
     ActionBuildProject,
     ActionRunProject,
+    ActionClean,
     ActionToggleBreak,
     ActionDebug,
     ActionDebugProject,

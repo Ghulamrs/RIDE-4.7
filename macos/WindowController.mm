@@ -3657,6 +3657,7 @@ static const NSUInteger kOutputMost = 2000000;
 
 - (void)showHelp:(id)sender { (void)sender; [self openHelpPage:@"manual.html"]; }
 - (void)showShalimarReference:(id)sender { (void)sender; [self openHelpPage:@"shalimar-language.html"]; }
+- (void)showResources:(id)sender { (void)sender; [self openHelpPage:@"resources.html"]; }
 - (void)showKeys:(id)sender { (void)sender; [self openHelpPage:@"keys.html"]; }
 // Help > Environment in the Output tab, whose font is fixed-width: each tool and the file it resolved to.
 - (void)showEnvironment:(id)sender {
@@ -4039,6 +4040,8 @@ static NSString* Key(unichar c) { return [NSString stringWithCharacters:&c lengt
     [self add:[product stringByAppendingString:@" Help"] to:help action:@selector(showHelp:) key:@"?"];
     [self add:@"Keys" to:help action:@selector(showKeys:) key:@""];
     [self add:@"Shalimar Language Reference" to:help action:@selector(showShalimarReference:) key:@""];
+    // The one page of everything installed, as the Windows window has it.
+    [self add:@"Resources" to:help action:@selector(showResources:) key:@""];
     [self add:@"Environment" to:help action:@selector(showEnvironment:) key:@""];
     // About RIDE lives in the application menu, where macOS puts it, and not here too.
     NSApp.helpMenu = help;

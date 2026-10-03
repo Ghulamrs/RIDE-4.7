@@ -64,7 +64,7 @@ frame.
 File. No item here repeats the word "project": the column says it. The five
 above the rule are the project itself; the three below are its list of files,
 and none of those three touches the disk except New File, which makes one.
-**Build** — Compile file, Run file, Build project, Run project, Debug, Release,
+**Build** — Compile file, Run file, Build project, Run project, Debug, Release, Clean,
 Console, Debug, Assembly.
 **Debug** — Start / continue, Debug project, Toggle breakpoint, Step over, Step
 into, Step out, Up the stack, Down the stack, Watch expression, Stop debugging.

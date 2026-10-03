@@ -2776,6 +2776,25 @@ std::string Editor::compilersNamed(const std::vector<Part>& parts) const {
     return all;
 }
 
+// **Build > Clean**, as the windows have it: what the build made removed (compile.h's cleanBuilt), the
+// Console emptied, and the result said in so many words.
+void Editor::clean() {
+    std::vector<std::string> removed =
+        cleanBuilt(project_.loaded() ? project_.targetProgram() : std::string(), project_.loaded() && project_.isCcs());
+    const std::string name = project_.loaded() ? project_.name() : std::string("no project");
+    const std::string head = "Clean succeeded: " + name + " - " +
+                             (removed.empty() ? std::string("nothing was left to remove")
+                                              : number(removed.size()) + " removed");
+    console_.clear();
+    console_.push_back("========== " + head + " ==========");
+    for (size_t i = 0; i < removed.size(); ++i) console_.push_back(removed[i]);
+    lastDiag_ = Diagnostic();
+    panelOpen_ = true;
+    tab_ = TabConsole;
+    panelOff_ = 0;
+    say(head);
+}
+
 void Editor::buildProject(bool andRun) {
     std::vector<Part> parts;
     std::string why, detail;
@@ -3412,6 +3431,7 @@ void Editor::perform(Action action) {
         case ActionRun:          buildAndRun(); break;
         case ActionBuildProject: buildProject(false); break;
         case ActionRunProject:   buildProject(true); break;
+        case ActionClean:        clean(); break;
         case ActionToggleBreak:  toggleBreak(); break;
         case ActionDebug:        debug(false); break;
         case ActionDebugProject: debug(true); break;
