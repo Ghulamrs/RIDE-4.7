@@ -903,6 +903,8 @@ private:
         stopItem_->Enabled = false;
         build->DropDownItems->Add(stopItem_);
         live_->Add(stopItem_);
+        // What a build made, removed, and the panes emptied - said in so many words.
+        build->DropDownItems->Add("Clean", nullptr, gcnew EventHandler(this, &MainForm::OnClean));
         bar->Items->Add(build);
 
         ToolStripMenuItem^ debug = gcnew ToolStripMenuItem("&Debug");
@@ -4664,6 +4666,24 @@ private:
         errorColumn_ = column;
         errorMessage_ = message;
         errorFile_ = file;
+    }
+
+    void OnClean(Object^, EventArgs^) {
+        if (busy_) { what_->Text = StillWorking(); return; }
+        String^ removed = FromUtf8(ride_project_clean(project_));
+        array<String^>^ files = removed->Split(gcnew array<wchar_t>{'\n'}, StringSplitOptions::RemoveEmptyEntries);
+        console_->Clear();
+        debug_->Clear();
+        assembly_->Clear();
+        ForgetError();
+        String^ name = ride_project_loaded(project_) != 0 ? FromUtf8(ride_project_name(project_)) : "no project";
+        String^ head = "Clean succeeded: " + name + " - " +
+                       (files->Length == 0 ? "nothing was left to remove"
+                                           : files->Length + (files->Length == 1 ? " removed" : " removed"));
+        Say("========== " + head + " ==========\n");
+        for each (String^ f in files) Say(f + "\n");
+        panel_->SelectedIndex = 0;
+        what_->Text = head;
     }
 
     void ForgetError() {

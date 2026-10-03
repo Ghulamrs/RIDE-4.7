@@ -5872,6 +5872,56 @@ void ccsWorkspacesOneProjectAtATime() {
     file::remove_all(dir);
 }
 
+// **Build > Clean** removes what a build made and nothing it did not: the program and what sits
+// beside it, the emulated target's .vm, RIDE's own folder for a CCS project, this process's scratch -
+// and never a source, the .pro, a folder of the project's that shares the program's name, or another
+// process's scratch.
+void cleaning() {
+    std::printf("Build > Clean\n");
+    file::path dir = file::temp_directory_path() / "ride-clean-test";
+    file::remove_all(dir);
+    file::create_directories(dir / "demo.vm");
+    file::create_directories(dir / "demo.dSYM");
+    file::create_directories(dir / "src");
+    const char* made[] = { "demo", "demo.pdb", "demo.ilk", "demo.map", "demo.out" };
+    for (size_t i = 0; i < sizeof made / sizeof *made; ++i) std::ofstream((dir / made[i]).string().c_str()) << "built\n";
+    std::ofstream((dir / "demo.vm" / "main.s").string().c_str()) << "; assembly\n";
+    std::ofstream((dir / "main.c").string().c_str()) << "int main(void) { return 0; }\n";
+    std::ofstream((dir / "demo.pro").string().c_str()) << "{}\n";
+    std::ofstream((dir / "src" / "a.c").string().c_str()) << "int a;\n";
+
+    std::vector<std::string> removed = editor::cleanBuilt((dir / "demo").string(), false);
+    for (size_t i = 0; i < sizeof made / sizeof *made; ++i)
+        check(!file::exists(dir / made[i]), std::string("the build's ") + made[i] + " is removed");
+    check(!file::exists(dir / "demo.vm") && !file::exists(dir / "demo.dSYM"), "and the .vm and .dSYM folders");
+    check(file::exists(dir / "main.c") && file::exists(dir / "demo.pro") && file::exists(dir / "src" / "a.c"),
+          "the sources and the .pro stay");
+    check(removed.size() >= 7, "and each removed is named: " + std::to_string(removed.size()));
+
+    // A project named as one of its own folders: the folder is not the program.
+    std::vector<std::string> again = editor::cleanBuilt((dir / "src").string(), false);
+    check(file::exists(dir / "src" / "a.c"), "a folder that shares the program's name is never removed");
+    (void)again;
+
+    // RIDE's folder for a CCS project goes with itsFolder; any other folder does not.
+    file::path ccs = file::temp_directory_path() / (std::string(editor::product::kLower) + "-ccs-CleanTest");
+    file::create_directories(ccs);
+    std::ofstream((ccs / "CleanTest").string().c_str()) << "built\n";
+    editor::cleanBuilt((ccs / "CleanTest").string(), true);
+    check(!file::exists(ccs), "a CCS project's own build folder is removed whole");
+    std::ofstream((dir / "other").string().c_str()) << "built\n";
+    editor::cleanBuilt((dir / "other").string(), true);
+    check(file::exists(dir) && file::exists(dir / "main.c"), "and a folder that is not one never is");
+
+    // Another process's scratch stays; this one's goes.
+    file::path theirs = file::temp_directory_path() / (std::string(editor::product::kLower) + "-run-1.s");
+    std::ofstream(theirs.string().c_str()) << "theirs\n";
+    editor::cleanBuilt(std::string(), false);
+    check(file::exists(theirs), "another RIDE's scratch is left alone");
+    editor::path::remove(theirs.string());
+    file::remove_all(dir);
+}
+
 int main(int argc, char** argv) {
     // The flags the suite expects are the defaults, not what this machine's settings.json has chosen
     // in Compiler Options: an empty store stands in for the installation's for the whole run.
@@ -5898,6 +5948,7 @@ int main(int argc, char** argv) {
     whereAFileBelongs();
     jsonIsALanguage();
     compilerOptions();
+    cleaning();
     talkingToAChild();
     aProgramThatReads();
     theSeamsSmallPromises();

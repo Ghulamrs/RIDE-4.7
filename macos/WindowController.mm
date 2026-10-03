@@ -2448,6 +2448,25 @@ static NSColor* ColourOf(unsigned char kind) {
 
 - (void)showPanelTab:(NSMenuItem*)sender { [self showPanel:sender.tag - kTagPanelBase]; }
 
+- (void)cleanBuild:(id)sender {
+    (void)sender;
+    if (busy_) { [self say:@"a build or a program is running - stop it (Command-.) before cleaning"]; return; }
+    NSArray<NSString*>* files = [Str(ride_project_clean(project_)) componentsSeparatedByString:@"\n"];
+    files = [files filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"length > 0"]];
+    output_.string = @"";
+    progressLog_.string = @"";
+    [self clearIssues];
+    NSString* name = ride_project_loaded(project_) ? Str(ride_project_name(project_)) : @"no project";
+    NSString* head = [NSString stringWithFormat:@"Clean succeeded: %@ - %@", name,
+                         files.count == 0 ? @"nothing was left to remove"
+                                          : [NSString stringWithFormat:@"%lu removed", (unsigned long)files.count]];
+    NSMutableString* said = [NSMutableString stringWithFormat:@"========== %@ ==========\n", head];
+    for (NSString* f in files) [said appendFormat:@"%@\n", f];
+    [self append:said to:output_];
+    [self showPanel:kPanelOutput];
+    [self say:head];
+}
+
 - (void)clearIssues {
     [issues_ removeAllObjects];
     [issueTable_ reloadData];
@@ -3666,6 +3685,7 @@ static const NSUInteger kOutputMost = 2000000;
 - (BOOL)validateMenuItem:(NSMenuItem*)item {
     SEL action = item.action;
     if (action == @selector(openHeaderItem:)) return item.representedObject != nil;
+    if (action == @selector(cleanBuild:)) return !busy_;
     BOOL project = ride_project_loaded(project_) != 0;
     BOOL file = current_ != nil;
     // A build reads the project and settings.json on its own thread; a program running after it does not.
@@ -3951,6 +3971,8 @@ static NSString* Key(unichar c) { return [NSString stringWithCharacters:&c lengt
     [self add:@"Build Project" to:build action:@selector(buildProjectAction:) key:@"b" mods:cmd | shift];
     [self add:@"Run Project" to:build action:@selector(runProjectAction:) key:@"r" mods:cmd | shift];
     [self add:@"Stop" to:build action:@selector(stopWork:) key:@"."];
+    // What a build made, removed, and the panes emptied - said in so many words.
+    [self add:@"Clean" to:build action:@selector(cleanBuild:) key:@""];
     [build addItem:[NSMenuItem separatorItem]];
     [self add:@"Debug Configuration" to:build action:@selector(chooseConfig:) key:@""].tag =
         kTagConfigBase + RIDE_CONFIG_DEBUG;

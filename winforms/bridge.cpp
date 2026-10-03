@@ -799,6 +799,20 @@ const char* ride_project_includes(RIDEProject* project) {
     return scratch().c_str();
 }
 
+const char* ride_project_clean(RIDEProject* project) {
+    std::string program;
+    bool ccs = false;
+    if (project && project->project.loaded()) {
+        program = project->project.targetProgram();
+        ccs = project->project.isCcs();
+    }
+    std::vector<std::string> removed = editor::cleanBuilt(program, ccs);
+    std::string said;
+    for (size_t i = 0; i < removed.size(); ++i) said += removed[i] + "\n";
+    scratch() = said;
+    return scratch().c_str();
+}
+
 const char* ride_header_named(const char* text) {
     std::string s = text ? text : "";
     size_t a = s.find_first_not_of(" \t\r\n");

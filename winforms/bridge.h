@@ -126,6 +126,9 @@ const char* ride_version(void);
 // A project's header directories and libraries, as one ';'-separated line
 // each, relative to the root as the file has them; setting one saves.
 const char* ride_project_includes(RIDEProject* project);
+/* Build > Clean: what the open project's build made, and this process's scratch, removed - one full
+   path a line, "" when there was nothing to remove. Sources, the .pro and CCS's files stay. */
+const char* ride_project_clean(RIDEProject* project);
 /* The header a line or a selection names - "Quat.h" from #include "Quat.h", "cstdio" from
    #include <cstdio>, or a selection that is itself a file name - or "" when it names none. */
 const char* ride_header_named(const char* text);

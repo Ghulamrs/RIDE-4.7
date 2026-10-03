@@ -990,6 +990,55 @@ Ran runProgram(const Toolchain& tool, ToolchainKind kind, const std::string& sou
 }
 
 
+std::vector<std::string> cleanBuilt(const std::string& program, bool itsFolder) {
+    std::vector<std::string> removed;
+    // A file only - a project named as one of its own folders must not lose the folder - and a
+    // directory only where it is a build's own: a .dSYM, a .vm, RIDE's folder for a CCS project.
+    auto gone = [&removed](const std::string& p, bool directory) {
+        if (p.empty() || !path::exists(p) || path::isDirectory(p) != directory) return;
+        if (directory) path::removeTree(p);
+        else std::remove(p.c_str());
+        if (!path::exists(p)) removed.push_back(p);
+    };
+    if (!program.empty()) {
+        std::string stem = program;
+        if (stem.size() > 4 && stem.compare(stem.size() - 4, 4, ".exe") == 0) stem.resize(stem.size() - 4);
+        gone(program, false);
+        gone(program + ".dSYM", true);
+        gone(stem + ".pdb", false);
+        gone(stem + ".ilk", false);
+        gone(stem + ".map", false);
+        gone(stem + ".out", false);
+        gone(emulatedProgram(program), true);
+        // RIDE's own folder for a CCS project, and only when it is: named <product>-ccs-<project>.
+        const std::string folder = path::parent(program);
+        if (itsFolder && path::filename(folder).compare(0, std::string(product::kLower).size() + 5,
+                                                        std::string(product::kLower) + "-ccs-") == 0)
+            gone(folder, true);
+    }
+    // This process's own scratch: <product>-run-<id>, <product>-build-<id> and what hangs off them -
+    // never another RIDE's, which may be building as this one cleans.
+    char id[32];
+#ifdef _WIN32
+    std::snprintf(id, sizeof id, "-%lu", static_cast<unsigned long>(GetCurrentProcessId()));
+#else
+    std::snprintf(id, sizeof id, "-%ld", static_cast<long>(getpid()));
+#endif
+    const std::string ours = std::string(product::kLower) + "-";
+    const std::string tag(id);
+    std::vector<path::Entry> scratch = path::entries(path::tempDir());
+    for (size_t i = 0; i < scratch.size(); ++i) {
+        const std::string& name = scratch[i].name;
+        if (name.compare(0, ours.size(), ours) != 0) continue;
+        size_t at = name.find(tag);
+        if (at == std::string::npos) continue;
+        size_t after = at + tag.size();
+        if (after < name.size() && name[after] != '.') continue;   // -123 is not -1234
+        gone(path::join(path::tempDir(), name), scratch[i].directory);
+    }
+    return removed;
+}
+
 bool startProgram(Process& process, const std::string& program, bool shalimar,
                   const std::vector<std::string>& args) {
     if (program.empty()) return false;

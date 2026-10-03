@@ -122,6 +122,12 @@ Ran runProgram(const Toolchain& tool, ToolchainKind kind, const std::string& sou
 // A built program run with a real input (README.md, "Input"): started on a Process another thread
 // may send to, close or kill, and read here until its output closes; then Process::finish.
 typedef void (*ChunkSink)(void* context, const char* bytes, size_t size, bool isStderr);
+// **Build > Clean.** What a build of `program` made and left - the program, its .pdb, .ilk, .map, .out
+// and .dSYM, the <program>.vm of the emulated target, and with `itsFolder` the folder it was built in
+// (a CCS project's, which is RIDE's own) - and this process's scratch in the temporary directory.
+// Each path removed, by its full name; a source, a .pro or CCS's own files are never among them.
+std::vector<std::string> cleanBuilt(const std::string& program, bool itsFolder);
+
 bool startProgram(Process& process, const std::string& program, bool shalimar = false,
                   const std::vector<std::string>& args = std::vector<std::string>());
 void pumpProgram(Process& process, ChunkSink sink, void* context);
