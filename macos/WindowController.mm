@@ -3874,12 +3874,10 @@ static NSString* Key(unichar c) { return [NSString stringWithCharacters:&c lengt
     [self add:@"Save As..." to:proj action:@selector(saveProjectAs:) key:@""];
     [self add:@"Close" to:proj action:@selector(closeProject:) key:@""];
     [proj addItem:[NSMenuItem separatorItem]];
-    [self add:@"New File..." to:proj action:@selector(newProjectFile:) key:@""];
+    [self add:@"New File" to:proj action:@selector(newProjectFile:) key:@""];
     [self add:@"Add File" to:proj action:@selector(addCurrentFile:) key:@""];
-    [self add:@"Add..." to:proj action:@selector(addFiles:) key:@"a" mods:cmd | opt];
-    [self add:@"Remove" to:proj action:@selector(removeFromProject:) key:@""];
+    [self add:@"Remove..." to:proj action:@selector(removeFromProject:) key:@""];
     [self add:@"Rename..." to:proj action:@selector(renameFile:) key:@""];
-    [self add:@"Move to Group..." to:proj action:@selector(moveToGroup:) key:@""];
     [self add:@"Delete..." to:proj action:@selector(deleteFile:) key:@""];
     [proj addItem:[NSMenuItem separatorItem]];
     [self add:@"Include Paths..." to:proj action:@selector(projectIncludes:) key:@""];

@@ -1,7 +1,7 @@
 ©2026 G. R. Akhtar - RIDE 4.7, the editor
 Release seal, version 4.7, sealed 03-10-2026
 Written by tools/seal; check it with `tools/seal check`.
-CRC32  size  file - 97 files, seal 479AFE33
+CRC32  size  file - 97 files, seal 3D3F211E
 ------------------------------------------------------------------
 B17B07E3     18985  Makefile
 73F6C5C6      3134  RIDE.pro
@@ -14,12 +14,12 @@ EF08ADFB     15897  build.bat
 8528B8CC       612  macos/LineNumbers.h
 A7F98CCC      5957  macos/LineNumbers.mm
 C19D715B      5827  macos/Makefile
-5D309C96      8749  macos/README.md
+9EBD6C1C      8753  macos/README.md
 A2B21358    971341  macos/RIDE.icns
 7E2C43FD      2767  macos/Text.h
 E818B9F2     22370  macos/Window.xcodeproj/project.pbxproj
 AEF649AE      1693  macos/WindowController.h
-AE776297    181370  macos/WindowController.mm
+87BE2137    181201  macos/WindowController.mm
 18F9EFDC      4599  macos/main.mm
 07969C88      3339  macos/make-icon.swift
 5ED755F0     12349  macos/make-xcodeproj.py
