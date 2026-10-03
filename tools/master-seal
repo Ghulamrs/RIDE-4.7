@@ -27,7 +27,7 @@ PROJECTS = [
     ("shalimar", "../VM6747/Compiler-Si", "shalimar-1.2.dat"),
     ("c2s", "../Converter-C2S", "c2s-1.2.dat"),
     ("vm6747", "../VM6747/Emulator", "vm6747-1.0.dat"),
-    ("asm6x", "../ASM6x", "asm6x-0.2.dat"),
+    ("asm6x", "../ASM6x", "asm6x-1.0.dat"),
     ("masm", "../MASM", "masm-1.0.dat"),
     ("link", "../LINK", "link-1.0.dat"),
     ("lnk6x", "../LNK6x", "lnk6x-1.0.dat"),

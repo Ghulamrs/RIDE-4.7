@@ -1,7 +1,7 @@
 ©2026 G. R. Akhtar - RIDE 4.7 and the programs it drives
 Master seal: each project's seal, listed and combined into one
 Written by tools/master-seal; check it with `tools/master-seal check`.
-10 projects, 486 files, master seal 23DBB648
+10 projects, 486 files, master seal 2B76588C
 ------------------------------------------------------------------------
 program   seal     file CRC  files  seal file
 RIDE      5B9A8757 4720B8A0     97  ride-4.7.dat
@@ -10,10 +10,10 @@ cpp11     0BAB3892 19782FE5    154  ../VM6747/Compiler-Cppi/cxx1-1.4.dat
 shalimar  C5A9C456 FC896D19     64  ../VM6747/Compiler-Si/shalimar-1.2.dat
 c2s       7419F4D7 D1D448C0     48  ../Converter-C2S/c2s-1.2.dat
 vm6747    AB17FA8A D7C853E7     13  ../VM6747/Emulator/vm6747-1.0.dat
-asm6x     2407E9D4 C7DE3FB9     13  ../ASM6x/asm6x-0.2.dat
+asm6x     C16A0740 2A1B2C56     13  ../ASM6x/asm6x-1.0.dat
 masm      306906C4 C8570D80     14  ../MASM/masm-1.0.dat
 link      588C5F1F 21F8CD18      9  ../LINK/link-1.0.dat
 lnk6x     4D3385E3 FF9346B3     11  ../LNK6x/lnk6x-1.0.dat
 ------------------------------------------------------------------------
-Master seal 23DBB648
+Master seal 2B76588C
 Sealed on 03-10-2026
