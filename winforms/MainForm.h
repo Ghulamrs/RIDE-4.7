@@ -487,6 +487,7 @@ protected:
         if (path_ != nullptr && path_->Length > 0)
             title += " - " + System::IO::Path::GetFileName(path_);
         Text = title;
+        RefreshProjectMenu();
     }
 
     ~MainForm() {
@@ -807,33 +808,11 @@ private:
 
         project->DropDownItems->Add("New...", nullptr,
                                     gcnew EventHandler(this, &MainForm::OnNewProject));
+        // Open takes a RIDE .pro, a CCS project's .project, or a file in a CCS workspace.
         project->DropDownItems->Add("Open...", nullptr,
                                     gcnew EventHandler(this, &MainForm::OnOpenProjectFile));
-        project->DropDownItems->Add("Open CCS workspace...", nullptr,
-                                    gcnew EventHandler(this, &MainForm::OnOpenCcsWorkspace));
-        project->DropDownItems->Add("Save as...", nullptr,
-                                    gcnew EventHandler(this, &MainForm::OnSaveProjectAs));
-        project->DropDownItems->Add("Close", nullptr,
-                                    gcnew EventHandler(this, &MainForm::OnCloseProject));
-
-        project->DropDownItems->Add(gcnew ToolStripSeparator());
-        project->DropDownItems->Add(
-            Item("New File", Keys::Control | Keys::N,
-                 gcnew EventHandler(this, &MainForm::OnNewFile)));
-        project->DropDownItems->Add("Add File", nullptr,
-                                    gcnew EventHandler(this, &MainForm::OnAddThisFile));
-        project->DropDownItems->Add("Remove File", nullptr,
-                                    gcnew EventHandler(this, &MainForm::OnRemoveFromProject));
-        // Rename, Delete and Move to group: the handlers were here from the
-        // start and nothing reached them until the audit of 2026-09-19.
-        project->DropDownItems->Add(Item("Rename File...", Keys::F2,
-                                         gcnew EventHandler(this, &MainForm::OnRenameFile)));
-        project->DropDownItems->Add("Delete File...", nullptr,
-                                    gcnew EventHandler(this, &MainForm::OnDeleteFile));
-        project->DropDownItems->Add("Move to Group...", nullptr,
-                                    gcnew EventHandler(this, &MainForm::OnMoveToGroup));
         // The last three projects, most recent first, to recall one by name.
-        project->DropDownItems->Add(gcnew ToolStripSeparator());
+        recentMenu_ = gcnew ToolStripMenuItem("Recent");
         recentItems_ = gcnew System::Collections::Generic::List<ToolStripMenuItem^>();
         for (int i = 0; i < 3; ++i) {
             ToolStripMenuItem^ one = gcnew ToolStripMenuItem(
@@ -841,8 +820,40 @@ private:
             one->Tag = i;
             one->Visible = false;
             recentItems_->Add(one);
-            project->DropDownItems->Add(one);
+            recentMenu_->DropDownItems->Add(one);
         }
+        project->DropDownItems->Add(recentMenu_);
+        projSaveAs_ = gcnew ToolStripMenuItem("Save As...", nullptr,
+                                              gcnew EventHandler(this, &MainForm::OnSaveProjectAs));
+        project->DropDownItems->Add(projSaveAs_);
+        projClose_ = gcnew ToolStripMenuItem("Close", nullptr,
+                                             gcnew EventHandler(this, &MainForm::OnCloseProject));
+        project->DropDownItems->Add(projClose_);
+
+        // The open project's files: only the first two say so, the rest are understood.
+        project->DropDownItems->Add(gcnew ToolStripSeparator());
+        projNewFile_ = Item("New File", Keys::Control | Keys::N, gcnew EventHandler(this, &MainForm::OnNewFile));
+        project->DropDownItems->Add(projNewFile_);
+        projAddFile_ = gcnew ToolStripMenuItem("Add File", nullptr,
+                                               gcnew EventHandler(this, &MainForm::OnAddThisFile));
+        project->DropDownItems->Add(projAddFile_);
+        projRemove_ = gcnew ToolStripMenuItem("Remove", nullptr,
+                                              gcnew EventHandler(this, &MainForm::OnRemoveFromProject));
+        project->DropDownItems->Add(projRemove_);
+        projRename_ = Item("Rename...", Keys::F2, gcnew EventHandler(this, &MainForm::OnRenameFile));
+        project->DropDownItems->Add(projRename_);
+        projDelete_ = gcnew ToolStripMenuItem("Delete...", nullptr,
+                                              gcnew EventHandler(this, &MainForm::OnDeleteFile));
+        project->DropDownItems->Add(projDelete_);
+
+        project->DropDownItems->Add(gcnew ToolStripSeparator());
+        projIncludes_ = gcnew ToolStripMenuItem("Include Paths...", nullptr,
+                                                gcnew EventHandler(this, &MainForm::OnProjectIncludes));
+        project->DropDownItems->Add(projIncludes_);
+        projLibraries_ = gcnew ToolStripMenuItem("Libraries...", nullptr,
+                                                 gcnew EventHandler(this, &MainForm::OnProjectLibraries));
+        project->DropDownItems->Add(projLibraries_);
+        project->DropDownOpening += gcnew EventHandler(this, &MainForm::OnProjectMenuOpening);
         bar->Items->Add(project);
 
         ToolStripMenuItem^ build = gcnew ToolStripMenuItem("&Build");
@@ -1018,10 +1029,6 @@ private:
                                   gcnew EventHandler(this, &MainForm::OnSharedIncludes));
         tools->DropDownItems->Add("Shared libraries...", nullptr,
                                   gcnew EventHandler(this, &MainForm::OnSharedLibraries));
-        tools->DropDownItems->Add("Project include paths...", nullptr,
-                                  gcnew EventHandler(this, &MainForm::OnProjectIncludes));
-        tools->DropDownItems->Add("Project libraries...", nullptr,
-                                  gcnew EventHandler(this, &MainForm::OnProjectLibraries));
         tools->DropDownItems->Add("Locate vcvars64.bat...", nullptr,
                                   gcnew EventHandler(this, &MainForm::OnLocateVcvars));
         tools->DropDownItems->Add("Assembler for x86_64-windows...", nullptr,
@@ -1512,22 +1519,6 @@ private:
             return nullptr;
         }
         return FromUtf8(reinterpret_cast<const char*>(filePin));
-    }
-
-    void OnOpenCcsWorkspace(Object^, EventArgs^) {
-        msclr::auto_handle<FolderBrowserDialog> pick(gcnew FolderBrowserDialog());
-        pick->Description = "A CCS workspace: the folder holding .metadata";
-        pick->ShowNewFolderButton = false;
-        if (pick->ShowDialog(this) != System::Windows::Forms::DialogResult::OK) {
-            what_->Text = "no project opened";
-            return;
-        }
-        Utf8 dir(pick->SelectedPath);
-        if (ride_ccs_is_workspace(dir.c()) == 0) {
-            what_->Text = pick->SelectedPath + " is not a CCS workspace (no .metadata) - Project > Open... takes a .pro";
-            return;
-        }
-        LoadProject(pick->SelectedPath);
     }
 
     // ---- one line at a time ------------------------------------------------------
@@ -3195,6 +3186,52 @@ private:
 
     // The last three projects remembered, named at the end of the Project menu; one whose project is gone is not shown.
     System::Collections::Generic::List<ToolStripMenuItem^>^ recentItems_;
+    ToolStripMenuItem^ recentMenu_;
+    // The Project menu's items that want a project open, or one of its files, to mean anything.
+    ToolStripMenuItem^ projSaveAs_;
+    ToolStripMenuItem^ projClose_;
+    ToolStripMenuItem^ projNewFile_;
+    ToolStripMenuItem^ projAddFile_;
+    ToolStripMenuItem^ projRemove_;
+    ToolStripMenuItem^ projRename_;
+    ToolStripMenuItem^ projDelete_;
+    ToolStripMenuItem^ projIncludes_;
+    ToolStripMenuItem^ projLibraries_;
+
+    void OnProjectMenuOpening(Object^, EventArgs^) { RefreshProjectMenu(); }
+
+    // As the macOS window decides it: a file item needs a project, the last three a file of it; a CCS
+    // project's own files are CCS's, so what would change them is offered disabled; nothing while a build runs.
+    void RefreshProjectMenu() {
+        if (projNewFile_ == nullptr || tree_ == nullptr || project_ == nullptr) return;
+        bool project = ride_project_loaded(project_) != 0;
+        bool ccs = project && ride_project_is_ccs(project_) != 0;
+        bool idle = !busy_;
+        String^ target = TargetFile();
+        bool held = false;
+        if (project && target != nullptr && target->Length > 0) {
+            Utf8 t(target);
+            held = ride_project_holds(project_, t.c()) != 0;
+        }
+        bool fresh = false;
+        if (project && path_ != nullptr && path_->Length > 0) {
+            Utf8 here(path_);
+            fresh = ride_project_holds(project_, here.c()) == 0;
+        }
+        projSaveAs_->Enabled = project && !ccs && idle;
+        projClose_->Enabled = project && idle;
+        projNewFile_->Enabled = project && !ccs && idle;
+        projAddFile_->Enabled = project && !ccs && idle && fresh;
+        projRemove_->Enabled = held && !ccs && idle;
+        projRename_->Enabled = held && idle;
+        projDelete_->Enabled = held && idle;
+        projIncludes_->Enabled = project && !ccs && idle;
+        projLibraries_->Enabled = project && !ccs && idle;
+        bool any = false;
+        // Available, not Visible: an item of a submenu never shown reads not visible whatever it was set to.
+        for each (ToolStripMenuItem^ one in recentItems_) any = any || one->Available;
+        recentMenu_->Enabled = any && idle;
+    }
 
     void RefreshRecent() {
         if (recentItems_ == nullptr) return;
@@ -3280,16 +3317,31 @@ private:
         String^ suffix = FromUtf8(ride_project_suffix());
 
         msclr::auto_handle<OpenFileDialog> pick(gcnew OpenFileDialog());
-        pick->Title = "Open project file";
-        pick->Filter = ProductName() + " projects (*" + suffix + ")|*" + suffix +
+        pick->Title = "Open project";
+        pick->Filter = "Projects (*" + suffix + ", CCS .project)|*" + suffix + ";.project"
                        "|All files (*.*)|*.*";
         pick->InitialDirectory = ProjectsDir();
         if (pick->ShowDialog() != System::Windows::Forms::DialogResult::OK) {
             what_->Text = "no project opened";
             return;
         }
-
-        LoadProject(pick->FileName);
+        String^ chosen = pick->FileName;
+        String^ leaf = System::IO::Path::GetFileName(chosen);
+        String^ folder = System::IO::Path::GetDirectoryName(chosen);
+        // A CCS project's three files stand for its folder; any other file of a CCS workspace for the
+        // workspace, which asks which of its projects. A .pro is always itself.
+        if (leaf == ".project" || leaf == ".cproject" || leaf == ".ccsproject") {
+            LoadProject(folder);
+            return;
+        }
+        if (!chosen->EndsWith(suffix, StringComparison::OrdinalIgnoreCase)) {
+            Utf8 dir(folder);
+            if (ride_ccs_is_workspace(dir.c()) != 0) {
+                LoadProject(folder);
+                return;
+            }
+        }
+        LoadProject(chosen);
     }
 
     void OnSaveProjectAs(Object^, EventArgs^) {
@@ -4137,6 +4189,7 @@ private:
         busy_ = on;
         for each (ToolStripMenuItem^ item in gated_) item->Enabled = !on;
         stopItem_->Enabled = on;
+        RefreshProjectMenu();
         if (!on && treeStale_) FillTree();
     }
 

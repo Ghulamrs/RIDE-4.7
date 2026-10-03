@@ -35,17 +35,18 @@ tab. Menus are reached with `Alt`+the underlined letter. In the console a
 letter typed while the menu is open goes to the next column whose title starts
 with it - `T` is Tools, `T` again Target - and F10 opens on File every time.
 
-**The menus:** File, Edit, Project (New / Open / Save as / Close, then New File /
-Add File / Remove File / Rename File / Delete File / Move to Group - the last
-three act on the file in front, or on the one picked in the project pane, and
-the project follows the file; there is no Save, since every change is written
-as it is made), Build (Compile / Run / Build project / Run project / Debug /
+**The menus:** File (New / Open / Save / Save as / Close, the recent files, Exit),
+Edit, Project (New / Open / Recent / Save As / Close, then New File / Add File /
+Remove / Rename / Delete - the last three act on the file in front, or on the one
+picked in the project pane, and the project follows the file - then Include Paths /
+Libraries, the project's own in its `.pro`; each is offered only while a project
+is open, and Open takes a CCS project's `.project` or a file of a CCS workspace
+as well as a `.pro`; there is no Save, since every change is written as it is made), Build (Compile / Run / Build project / Run project / Debug /
 Release), Debug, View (Project pane / Bottom panel / Console / Debug / Assembly
 / Line numbers / Plain frame), Language (By extension / C / C++ / Shalimar /
 JSON / Plain text / Convert), Tools (By language / c90 / cpp11 / shalimar / MSVC (cl)
 / C++ (host), then Header directories, the *shared* include paths and libraries
-of the installation, the *project's* include paths and libraries in its `.pro`,
-and where vcvars64, the assembler and TI's compiler are), Target (the
+of the installation, and where vcvars64, the assembler and TI's compiler are), Target (the
 architectures), Help. The last three — Language, Tools, Target — are one chain: what the file
 **is**, which **compiler** reads it, which **machine** it runs on.
 

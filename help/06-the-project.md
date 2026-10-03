@@ -69,7 +69,8 @@ into `settings.json` under the project's path, never into the project.
 CCS keeps its `.metadata` in, `workspace_v7` say - is a folder of projects,
 not a project, and RIDE opens one of its projects at a time. Open the
 workspace folder: `Project ▸ Open...` on the console lists one `.pro` per
-project, and the window's `Project ▸ Open CCS workspace...` lists the projects.
+project, and in either window `Project ▸ Open...` on the workspace - its folder
+on macOS, any file in it on Windows - lists the projects.
 Picking one writes `<workspace>/<project>.pro`, which holds only
 
 ```json
