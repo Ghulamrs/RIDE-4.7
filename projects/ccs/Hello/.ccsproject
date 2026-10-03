@@ -8,8 +8,8 @@
 	<codegenToolVersion value="8.2.2"/>
 	<isElfFormat value="true"/>
 	<linkerCommandFile value="C6747.cmd"/>
-	<rts value="rts6740_elf_eh.lib"/>
+	<rts value="libc.a"/>
 	<createSlaveProjects value=""/>
-	<templateProperties value="id=com.ti.common.project.core.emptyProjectTemplate,"/>
-	<filesToOpen value=""/>
+	<templateProperties value="id=com.ti.ccstudio.project.templates.helloWorld,"/>
+	<filesToOpen value="hello.c,"/>
 </projectOptions>

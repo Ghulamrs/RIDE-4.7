@@ -63,7 +63,7 @@ say() { printf '%s\n' "$*"; }
 # ---- the editor -----------------------------------------------------------
 # help/ goes for tests/test.cpp's Help > Contents check, and tools/ for `make check`'s --check of the
 # projects. shc's runtime goes as 'shmrt-*' and not 'lib', which matched every lib/ at any depth and
-# dropped projects/ccs/P7misc/lib/util.c and its docs/ccs-reference twin.
+# dropped docs/ccs-reference/ccs74/P7misc/lib/util.c.
 tar --no-mac-metadata \
     --exclude 'obj' --exclude '*.o' --exclude '*.d' --exclude '*.exe' \
     --exclude 'tests/test' --exclude 'tests/session' --exclude '* 2.*' \

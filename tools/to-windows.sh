@@ -61,7 +61,7 @@ say() { printf '%s\n' "$*"; }
 # ---- the editor -----------------------------------------------------------
 # Built things go by name and suffix: a Mach-O RIDE.exe or tests/test sent over is "newer" than its
 # source there. help/ goes for tests/test.cpp's Help > Contents check. shc's runtime goes as 'shmrt-*'
-# and not 'lib', which matched every lib/ and dropped projects/ccs/P7misc/lib/util.c and its docs twin.
+# and not 'lib', which matched every lib/ and dropped docs/ccs-reference/ccs74/P7misc/lib/util.c.
 tar --no-mac-metadata \
     --exclude 'obj' --exclude '*.o' --exclude '*.d' --exclude '*.exe' \
     --exclude 'tests/test' --exclude 'tests/session' --exclude '* 2.*' \

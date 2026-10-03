@@ -55,7 +55,7 @@ one on its own does not; on the console, `--ccs` turns it on for one run, and
 `--ccs-root dir` names the install.
 
 **2. Open it.** `Project ▸ Open...` starts in `Documents/RIDE/projects`, where
-the five samples are, in `ccs`. On macOS choose the project's folder or one of
+the three samples are, in `ccs`. On macOS choose the project's folder or one of
 its three files; on Windows choose its `.project` - the dialog lists RIDE's
 `.pro` files and CCS's `.project` files together. A CCS workspace opens the
 same way: choose the workspace folder (macOS) or any file in it (Windows), and
@@ -135,8 +135,8 @@ device named. The sources are every file in the folder by extension, the linked
 files from `.project`, minus what `.cproject` excludes. The **Compiler Options**
 dialog shows what was read and changes nothing - edit the project in CCS.
 
-**The five samples** in `projects/ccs` - a C one, three C++ ones, one with a
-subfolder and an excluded file - are copied into `Documents/RIDE/projects/ccs`
+**The three samples** in `projects/ccs` - CCS 7.4's own Hello World in C and
+two C++ ones, Sample and SampleExt - are copied into `Documents/RIDE/projects/ccs`
 the first time the editor opens, and any of them missing there is copied again
 later. They say in their `README.md` what each
 prints in Debug and in Release. `Sample` prints through `std::cout`: built by

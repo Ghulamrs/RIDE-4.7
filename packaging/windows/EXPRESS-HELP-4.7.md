@@ -34,7 +34,7 @@ name twice: `cpp11-4.7` always, and `cpp11` pointing at 4.7 as the newest
 installed. RIDE 4.7.app on macOS carries its own copy of every one inside the
 app. 4.7 installs beside 4.5 and 4.51 and leaves them where they were.
 
-The sample CCS 7.4 projects - K6747c, K6747cpp, P7misc, Sample and SampleExt - are in
+The sample CCS 7.4 projects - Hello, Sample and SampleExt - are in
 `projects/ccs`, beside the other sample projects in `Documents/RIDE/projects`; its README says how RIDE opens one and what each prints.
 
 --------------------------------------------------------------------------
