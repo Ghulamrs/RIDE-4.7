@@ -26,6 +26,7 @@
 #endif
 
 #include "about.h"
+#include <sstream>
 #include "compile.h"
 #include "convert.h"
 #include "debugger.h"
@@ -439,6 +440,33 @@ char* ride_indent_for(const char* text, int row, int width, int tabs, int caseIn
 void ride_free(char* what) { std::free(what); }
 
 char* ride_about(void) { return give(join(editor::about::lines())); }
+
+char* ride_find_in_files(const char* text, const char* folder, const char* patterns,
+                         int matchCase, int wholeWord, int subfolders, int namesOnly) {
+    editor::FindInFiles q;
+    q.text = text ? text : "";
+    q.folder = folder ? folder : "";
+    q.patterns = patterns ? patterns : "";
+    q.matchCase = matchCase != 0;
+    q.wholeWord = wholeWord != 0;
+    q.subfolders = subfolders != 0;
+    q.namesOnly = namesOnly != 0;
+    size_t files = 0;
+    bool cut = false;
+    std::vector<editor::FileHit> hits = editor::findInFiles(q, 2000, files, cut);
+    std::ostringstream out;
+    out << (q.namesOnly ? "Find files: '" : "Find in files: '") << q.text << "' in " << q.folder
+        << (q.patterns.empty() ? std::string() : " (" + q.patterns + ")") << " - " << hits.size()
+        << (q.namesOnly ? (hits.size() == 1 ? " file" : " files") : (hits.size() == 1 ? " match" : " matches"));
+    if (!q.namesOnly) out << " in " << files << (files == 1 ? " file searched" : " files searched");
+    if (cut) out << ", the first " << hits.size() << " shown";
+    out << "\n";
+    for (size_t i = 0; i < hits.size(); ++i) {
+        if (q.namesOnly) out << hits[i].file << "\n";
+        else out << hits[i].file << ":" << hits[i].line << ":" << hits[i].col << ": " << hits[i].text << "\n";
+    }
+    return give(out.str());
+}
 
 char* ride_about_credits(void) {
     std::vector<std::string> all = editor::about::lines();

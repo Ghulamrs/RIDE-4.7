@@ -78,6 +78,7 @@
 @property(nonatomic) NSInteger column;
 @property(nonatomic, copy) NSString* message;
 @property(nonatomic) BOOL warning;
+@property(nonatomic) BOOL found;  // a hit of Edit > Find in Files rather than a diagnostic
 @end
 
 @implementation Issue
@@ -2536,7 +2537,12 @@ static NSColor* ColourOf(unsigned char kind) {
 }
 
 - (void)labelErrorsTab {
-    NSUInteger errors = 0, warnings = 0;
+    NSUInteger errors = 0, warnings = 0, found = 0;
+    for (Issue* issue in issues_) if (issue.found) ++found;
+    if (found > 0) {
+        [panel_ tabViewItemAtIndex:kPanelErrors].label = [NSString stringWithFormat:@"Found (%lu)", (unsigned long)found];
+        return;
+    }
     for (Issue* issue in issues_) {
         if (issue.warning) ++warnings;
         else ++errors;
@@ -2654,6 +2660,7 @@ static NSColor* ColourOf(unsigned char kind) {
         [self say:issue.message ?: @""];
         return;
     }
+    if (issue.found && issue.line == 0) { [self.window makeFirstResponder:code_]; [self say:issue.file]; return; }
     [code_ goToLine:issue.line column:issue.column];
     [self.window makeFirstResponder:code_];
     [self say:[NSString stringWithFormat:@"%@:%ld:%ld: %@: %@",
@@ -2705,9 +2712,11 @@ static NSColor* ColourOf(unsigned char kind) {
         }
     }
     if ([which isEqualToString:@"kind"]) {
-        NSString* symbol = issue.warning ? @"exclamationmark.triangle.fill" : @"xmark.octagon.fill";
+        NSString* symbol = issue.found ? @"magnifyingglass"
+                         : issue.warning ? @"exclamationmark.triangle.fill" : @"xmark.octagon.fill";
         cell.imageView.image = [NSImage imageWithSystemSymbolName:symbol accessibilityDescription:nil];
-        cell.imageView.contentTintColor = issue.warning ? [NSColor systemOrangeColor] : [NSColor systemRedColor];
+        cell.imageView.contentTintColor = issue.found ? [NSColor secondaryLabelColor]
+                                        : issue.warning ? [NSColor systemOrangeColor] : [NSColor systemRedColor];
     } else if ([which isEqualToString:@"message"]) {
         cell.textField.stringValue = issue.message ?: @"";
     } else if ([which isEqualToString:@"file"]) {
@@ -3274,6 +3283,93 @@ static const NSUInteger kOutputMost = 2000000;
     [self startRun:ride_run_made_start_line(Utf8(made), outcome.madeShalimar ? 1 : 0, argsLine.c_str(), argsBase.c_str(),
                                             RunOutput, (__bridge void*)self)
             source:nil compiler:compilers program:made];
+}
+
+// ---- Edit > Find in Files --------------------------------------------------------------
+
+- (void)findInFiles:(id)sender {
+    (void)sender;
+    static NSString* types = @"*.c;*.cpp;*.h;*.hpp;*.shl;*.s";
+    static BOOL matchCase = NO, wholeWord = NO, subfolders = YES;
+    NSString* lookFor = @"";
+    if (current_ != nil && code_.selectedRange.length > 0) {
+        NSString* picked = [code_.string substringWithRange:code_.selectedRange];
+        if ([picked rangeOfString:@"\n"].location == NSNotFound) lookFor = picked;
+    }
+    NSString* where = ride_project_loaded(project_) != 0 && projectDirectory_.length > 0 ? projectDirectory_
+                      : current_.path.length > 0 ? current_.path.stringByDeletingLastPathComponent
+                      : NSHomeDirectory();
+
+    NSView* form = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 440, 150)];
+    NSTextField* (^field)(NSString*, CGFloat, NSString*) = ^NSTextField*(NSString* label, CGFloat y, NSString* value) {
+        NSTextField* l = [NSTextField labelWithString:label];
+        l.frame = NSMakeRect(0, y + 3, 80, 17);
+        [form addSubview:l];
+        NSTextField* box = [[NSTextField alloc] initWithFrame:NSMakeRect(84, y, 356, 22)];
+        box.stringValue = value ?: @"";
+        [form addSubview:box];
+        return box;
+    };
+    NSButton* (^check)(NSString*, CGFloat, CGFloat, BOOL) = ^NSButton*(NSString* label, CGFloat x, CGFloat y, BOOL on) {
+        NSButton* b = [NSButton checkboxWithTitle:label target:nil action:nil];
+        b.frame = NSMakeRect(x, y, 200, 18);
+        b.state = on ? NSControlStateValueOn : NSControlStateValueOff;
+        [form addSubview:b];
+        return b;
+    };
+    NSTextField* text = field(@"Find what:", 126, lookFor);
+    NSTextField* folder = field(@"Look in:", 98, where);
+    NSTextField* kinds = field(@"File types:", 70, types);
+    NSButton* caseBox = check(@"Match case", 84, 44, matchCase);
+    NSButton* wordBox = check(@"Whole word", 200, 44, wholeWord);
+    NSButton* subBox = check(@"Include subfolders", 316, 44, subfolders);
+    NSButton* namesBox = check(@"Find files by name - not what is in them", 84, 18, NO);
+    namesBox.frame = NSMakeRect(84, 18, 340, 18);
+
+    NSAlert* alert = [[NSAlert alloc] init];
+    alert.messageText = @"Find in Files";
+    alert.informativeText = @"A text in every file under a folder, or the files whose names hold it.";
+    [alert addButtonWithTitle:@"Find"];
+    [alert addButtonWithTitle:@"Cancel"];
+    alert.accessoryView = form;
+    alert.window.initialFirstResponder = text;
+    if ([alert runModal] != NSAlertFirstButtonReturn) { [self say:@"nothing searched"]; return; }
+    types = kinds.stringValue;
+    matchCase = caseBox.state == NSControlStateValueOn;
+    wholeWord = wordBox.state == NSControlStateValueOn;
+    subfolders = subBox.state == NSControlStateValueOn;
+    const BOOL names = namesBox.state == NSControlStateValueOn;
+    if (text.stringValue.length == 0 && !names) { [self say:@"nothing to find"]; return; }
+
+    NSString* found = Take(ride_find_in_files(Utf8(text.stringValue), Utf8(folder.stringValue), Utf8(types),
+                                              matchCase, wholeWord, subfolders, names));
+    NSArray<NSString*>* lines = [found componentsSeparatedByString:@"\n"];
+    [issues_ removeAllObjects];
+    NSRegularExpression* hit = [NSRegularExpression regularExpressionWithPattern:@"^(.*):(\\d+):(\\d+): (.*)$"
+                                                                         options:0 error:nil];
+    for (NSUInteger i = 1; i < lines.count; ++i) {
+        NSString* line = lines[i];
+        if (line.length == 0) continue;
+        Issue* issue = [[Issue alloc] init];
+        issue.found = YES;
+        NSTextCheckingResult* m = names ? nil : [hit firstMatchInString:line options:0 range:NSMakeRange(0, line.length)];
+        if (m != nil) {
+            issue.file = [line substringWithRange:[m rangeAtIndex:1]];
+            issue.line = [[line substringWithRange:[m rangeAtIndex:2]] integerValue];
+            issue.column = [[line substringWithRange:[m rangeAtIndex:3]] integerValue];
+            issue.message = [[line substringWithRange:[m rangeAtIndex:4]]
+                stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet];
+        } else {
+            issue.file = line;
+            issue.message = line.lastPathComponent;
+        }
+        [issues_ addObject:issue];
+    }
+    [issueTable_ reloadData];
+    [self labelErrorsTab];
+    [self append:[found stringByAppendingString:@"\n"] to:output_];
+    [self showPanel:kPanelErrors];
+    [self say:[lines.firstObject stringByAppendingString:@" - click a row to go to it"]];
 }
 
 // ---- Build > Command-line arguments ------------------------------------------------
@@ -4024,6 +4120,8 @@ static NSString* Key(unichar c) { return [NSString stringWithCharacters:&c lengt
         NSTextFinderActionPreviousMatch;
     [self add:@"Use Selection for Find" to:find action:@selector(performTextFinderAction:) key:@"e"].tag =
         NSTextFinderActionSetSearchString;
+    // After Find: every file under a folder, or the files by name - the hits listed in the panel, a click opening one.
+    [self add:@"Find in Files..." to:edit action:@selector(findInFiles:) key:@"f" mods:cmd | shift];
     [self add:@"Go to Line..." to:edit action:@selector(goToLine:) key:@"l"];
     [edit addItem:[NSMenuItem separatorItem]];
     [self add:@"Re-indent" to:edit action:@selector(reindent:) key:@"i" mods:ctrl];

@@ -1,4 +1,10 @@
 #include "find.h"
+#include "path.h"
+
+#include <algorithm>
+#include <cctype>
+#include <fstream>
+#include <sstream>
 
 namespace editor {
 
@@ -75,6 +81,130 @@ size_t replaceAll(std::vector<std::string>& lines, const std::string& needle,
         }
     }
     return count;
+}
+
+}
+
+namespace editor {
+
+namespace {
+
+std::string lowered(const std::string& text) {
+    std::string out = text;
+    for (size_t i = 0; i < out.size(); ++i) out[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(out[i])));
+    return out;
+}
+
+// '*' any run, '?' any one character, letters compared without case: what a file dialog's filter means.
+bool wildMatch(const std::string& pattern, const std::string& name) {
+    size_t p = 0, n = 0, star = std::string::npos, back = 0;
+    while (n < name.size()) {
+        if (p < pattern.size() && (pattern[p] == '?' ||
+                                   std::tolower(static_cast<unsigned char>(pattern[p])) ==
+                                       std::tolower(static_cast<unsigned char>(name[n])))) { ++p; ++n; }
+        else if (p < pattern.size() && pattern[p] == '*') { star = p++; back = n; }
+        else if (star != std::string::npos) { p = star + 1; n = ++back; }
+        else return false;
+    }
+    while (p < pattern.size() && pattern[p] == '*') ++p;
+    return p == pattern.size();
+}
+
+bool fits(const std::vector<std::string>& patterns, const std::string& name) {
+    if (patterns.empty()) return true;
+    for (size_t i = 0; i < patterns.size(); ++i)
+        if (wildMatch(patterns[i], name)) return true;
+    return false;
+}
+
+// What a build or a tool leaves, which no one searching their sources means to search.
+bool passedOver(const std::string& folder) {
+    static const char* const skip[] = {".git", ".svn", "obj", "x64", "Debug", "Release", "build", ".vs", "node_modules"};
+    for (size_t i = 0; i < sizeof skip / sizeof skip[0]; ++i)
+        if (folder == skip[i]) return true;
+    return folder.size() > 5 && folder.compare(folder.size() - 5, 5, ".dSYM") == 0;
+}
+
+bool wordChar(char c) { return std::isalnum(static_cast<unsigned char>(c)) || c == '_'; }
+
+void walk(const FindInFiles& q, const std::string& dir, const std::vector<std::string>& patterns,
+          const std::string& needle, size_t limit, std::vector<FileHit>& out, size_t& files, bool& cut) {
+    bool ok = false;
+    std::vector<path::Entry> all = path::entries(dir, &ok);
+    if (!ok) return;
+    for (size_t i = 0; i < all.size() && !cut; ++i) {
+        const std::string full = path::join(dir, all[i].name);
+        if (all[i].directory) {
+            if (q.subfolders && !passedOver(all[i].name)) walk(q, full, patterns, needle, limit, out, files, cut);
+            continue;
+        }
+        if (!fits(patterns, all[i].name)) continue;
+        ++files;
+        if (q.namesOnly) {
+            const std::string name = q.matchCase ? all[i].name : lowered(all[i].name);
+            if (needle.empty() || name.find(needle) != std::string::npos) {
+                FileHit hit;
+                hit.file = full;
+                hit.text = all[i].name;
+                out.push_back(hit);
+                if (out.size() >= limit) cut = true;
+            }
+            continue;
+        }
+        std::ifstream in(full.c_str(), std::ios::binary);
+        if (!in) continue;
+        std::stringstream all_; all_ << in.rdbuf();
+        const std::string body = all_.str();
+        if (body.size() > 8 * 1024 * 1024 || body.find('\0') != std::string::npos) continue;  // too big, or not text
+        size_t lineNo = 0, start = 0;
+        while (start <= body.size() && !cut) {
+            size_t end = body.find('\n', start);
+            if (end == std::string::npos) end = body.size();
+            std::string line = body.substr(start, end - start);
+            if (!line.empty() && line[line.size() - 1] == '\r') line.erase(line.size() - 1);
+            ++lineNo;
+            const std::string hay = q.matchCase ? line : lowered(line);
+            for (size_t at = hay.find(needle); at != std::string::npos; at = hay.find(needle, at + 1)) {
+                if (q.wholeWord && ((at > 0 && wordChar(hay[at - 1])) ||
+                                    (at + needle.size() < hay.size() && wordChar(hay[at + needle.size()]))))
+                    continue;
+                FileHit hit;
+                hit.file = full;
+                hit.line = lineNo;
+                hit.col = at + 1;
+                hit.text = line;
+                out.push_back(hit);
+                if (out.size() >= limit) cut = true;
+                break;  // one hit a line: the line is what is shown
+            }
+            if (end == body.size()) break;
+            start = end + 1;
+        }
+    }
+}
+
+}
+
+std::vector<FileHit> findInFiles(const FindInFiles& query, size_t limit, size_t& files, bool& cut) {
+    std::vector<FileHit> out;
+    files = 0;
+    cut = false;
+    if (query.folder.empty() || !path::isDirectory(query.folder)) return out;
+    if (query.text.empty() && !query.namesOnly) return out;
+    std::vector<std::string> patterns;
+    std::string one;
+    for (size_t i = 0; i <= query.patterns.size(); ++i) {
+        const char c = i < query.patterns.size() ? query.patterns[i] : ';';
+        if (c == ';' || c == ',' || c == ' ') {
+            if (!one.empty()) patterns.push_back(one);
+            one.clear();
+        } else {
+            one += c;
+        }
+    }
+    const std::string needle = query.matchCase ? query.text : lowered(query.text);
+    walk(query, path::absolute(query.folder), patterns, needle, limit == 0 ? 1 : limit, out, files, cut);
+    return out;
 }
 
 }

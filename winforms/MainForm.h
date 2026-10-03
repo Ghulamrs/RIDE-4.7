@@ -143,6 +143,99 @@ void OutputToWindow(void* user, const char* bytes, int size, int stream);
 // ---- Compiler Options: a tabbed dialog drawn from the bridge's table (src/options.h) ------------
 // One tab per compiler and one row per option; what each does, or why it is greyed for this target,
 // is its tooltip. It edits the bridge's draft: OK pulls the controls into it, Commit writes it.
+// Edit > Find in Files: what to look for, where, in which files - or file names alone, Find files.
+public ref class FindFilesDialog : public Form {
+public:
+    TextBox^ text;
+    TextBox^ folder;
+    TextBox^ types;
+    CheckBox^ matchCase;
+    CheckBox^ wholeWord;
+    CheckBox^ subfolders;
+    CheckBox^ namesOnly;
+
+    FindFilesDialog(String^ lookFor, String^ where) {
+        Text = "Find in Files";
+        FormBorderStyle = System::Windows::Forms::FormBorderStyle::FixedDialog;
+        MaximizeBox = false;
+        MinimizeBox = false;
+        ShowInTaskbar = false;
+        StartPosition = FormStartPosition::CenterParent;
+        ClientSize = System::Drawing::Size(520, 230);
+        Font = gcnew System::Drawing::Font("Segoe UI", 9.0f);
+
+        text = Field("Find what:", 16, lookFor);
+        folder = Field("Look in:", 50, where);
+        folder->Width = 300;
+        Button^ browse = gcnew Button();
+        browse->Text = "Browse...";
+        browse->SetBounds(418, 48, 86, 25);
+        browse->Click += gcnew EventHandler(this, &FindFilesDialog::OnBrowse);
+        Controls->Add(browse);
+        types = Field("File types:", 84, last_ != nullptr ? last_ : "*.c;*.cpp;*.h;*.hpp;*.shl;*.s");
+
+        matchCase = Box("Match case", 20, 122, lastCase_);
+        wholeWord = Box("Whole word", 140, 122, lastWord_);
+        subfolders = Box("Include subfolders", 260, 122, lastSub_);
+        namesOnly = Box("Find files by name - not what is in them", 20, 152, false);
+
+        Button^ ok = gcnew Button();
+        ok->Text = "Find";
+        ok->DialogResult = System::Windows::Forms::DialogResult::OK;
+        ok->SetBounds(332, 190, 84, 28);
+        Controls->Add(ok);
+        Button^ cancel = gcnew Button();
+        cancel->Text = "Cancel";
+        cancel->DialogResult = System::Windows::Forms::DialogResult::Cancel;
+        cancel->SetBounds(420, 190, 84, 28);
+        Controls->Add(cancel);
+        AcceptButton = ok;
+        CancelButton = cancel;
+    }
+
+    // What was asked last time is asked again, the text excepted, which comes from the selection.
+    void Remember() {
+        last_ = types->Text;
+        lastCase_ = matchCase->Checked;
+        lastWord_ = wholeWord->Checked;
+        lastSub_ = subfolders->Checked;
+    }
+
+private:
+    static String^ last_ = nullptr;
+    static bool lastCase_ = false;
+    static bool lastWord_ = false;
+    static bool lastSub_ = true;
+
+    TextBox^ Field(String^ label, int y, String^ value) {
+        Label^ l = gcnew Label();
+        l->Text = label;
+        l->SetBounds(16, y + 3, 80, 20);
+        Controls->Add(l);
+        TextBox^ box = gcnew TextBox();
+        box->SetBounds(104, y, 400, 23);
+        box->Text = value != nullptr ? value : "";
+        Controls->Add(box);
+        return box;
+    }
+
+    CheckBox^ Box(String^ label, int x, int y, bool on) {
+        CheckBox^ box = gcnew CheckBox();
+        box->Text = label;
+        box->AutoSize = true;
+        box->Location = System::Drawing::Point(x, y);
+        box->Checked = on;
+        Controls->Add(box);
+        return box;
+    }
+
+    void OnBrowse(Object^, EventArgs^) {
+        FolderBrowserDialog^ pick = gcnew FolderBrowserDialog();
+        pick->SelectedPath = folder->Text;
+        if (pick->ShowDialog(this) == System::Windows::Forms::DialogResult::OK) folder->Text = pick->SelectedPath;
+    }
+};
+
 public ref class OptionsDialog : public Form {
 public:
     OptionsDialog(RIDEProject* project, int config, String^ arch, int tab)
@@ -823,6 +916,9 @@ private:
             Item("Find previous", Keys::Shift | Keys::F3, gcnew EventHandler(this, &MainForm::OnFindPrevious)));
         edit->DropDownItems->Add(
             Item("Replace...", Keys::Control | Keys::H, gcnew EventHandler(this, &MainForm::OnReplace)));
+        // The last of the Find group: every file under a folder, or the files by name, the hits in the Console.
+        edit->DropDownItems->Add(Item("Find in Files...", Keys::Control | Keys::Shift | Keys::F,
+                                      gcnew EventHandler(this, &MainForm::OnFindInFiles)));
         edit->DropDownItems->Add(gcnew ToolStripSeparator());
         edit->DropDownItems->Add(
             Item("Re-indent", Keys::Control | Keys::L, gcnew EventHandler(this, &MainForm::OnLayOut)));
@@ -4006,6 +4102,30 @@ private:
         }
     }
 
+    // ---- Edit > Find in Files --------------------------------------------------------
+    void OnFindInFiles(Object^, EventArgs^) {
+        String^ lookFor = text_ != nullptr && text_->SelectionLength > 0 && text_->SelectedText->IndexOf('\n') < 0
+                              ? text_->SelectedText : "";
+        String^ where = ride_project_loaded(project_) != 0 && projectDirectory_ != nullptr ? projectDirectory_
+                        : path_ != nullptr ? System::IO::Path::GetDirectoryName(path_)
+                        : System::Environment::GetFolderPath(System::Environment::SpecialFolder::MyDocuments);
+        msclr::auto_handle<FindFilesDialog> ask(gcnew FindFilesDialog(lookFor, where));
+        if (ask->ShowDialog(this) != System::Windows::Forms::DialogResult::OK) { what_->Text = "nothing searched"; return; }
+        ask->Remember();
+        if (ask->text->Text->Length == 0 && !ask->namesOnly->Checked) { what_->Text = "nothing to find"; return; }
+        if (!System::IO::Directory::Exists(ask->folder->Text)) { what_->Text = "no folder " + ask->folder->Text; return; }
+        Utf8 t(ask->text->Text), f(ask->folder->Text), p(ask->types->Text);
+        System::Windows::Forms::Cursor::Current = Cursors::WaitCursor;
+        String^ found = TakeUtf8(ride_find_in_files(t.c(), f.c(), p.c(), ask->matchCase->Checked ? 1 : 0,
+                                                    ask->wholeWord->Checked ? 1 : 0, ask->subfolders->Checked ? 1 : 0,
+                                                    ask->namesOnly->Checked ? 1 : 0));
+        System::Windows::Forms::Cursor::Current = Cursors::Default;
+        console_->Text = found->Replace("\n", "\r\n");
+        ShowPanel(0);
+        int end = found->IndexOf('\n');
+        what_->Text = (end > 0 ? found->Substring(0, end) : found) + " - double-click a line to go to it";
+    }
+
     void OnBuildMenuOpening(Object^, EventArgs^) { argsBox_->Text = CurrentArgs(); }
     void OnBuildMenuClosed(Object^, EventArgs^) { CommitArgs(); }
 
@@ -4822,6 +4942,13 @@ private:
     void GoToConsoleLine() {
         int row = console_->GetLineFromCharIndex(console_->SelectionStart);
         String^ line = row >= 0 && row < console_->Lines->Length ? console_->Lines[row] : "";
+        // A line that is a file's full name alone - Find in Files by name - opens that file.
+        String^ whole = line->Trim();
+        if (whole->Length > 3 && System::IO::Path::IsPathRooted(whole) && System::IO::File::Exists(whole)) {
+            OpenPath(whole);
+            what_->Text = whole;
+            return;
+        }
         System::Text::RegularExpressions::Match^ found = whereIs_->Match(line);
         if (!found->Success) { GoToError(); return; }
 

@@ -5889,6 +5889,43 @@ void ccsWorkspacesOneProjectAtATime() {
 // process's scratch.
 // About ends with this program's own file: its name, the PKT time it was last written, and its CRC-32.
 // Build > Command-line arguments: one line split as a shell would, at spaces outside quotes.
+// Edit > Find in Files: the text in each file whose name fits, and the files whose names hold it.
+void findingInFiles() {
+    namespace pth = editor::path;
+    const std::string home = pth::join(pth::absolute("."), "find-in-files-test");
+    pth::removeTree(home);
+    pth::makeDirectories(pth::join(home, "sub"));
+    pth::makeDirectories(pth::join(home, "obj"));
+    { std::ofstream a(pth::join(home, "one.cpp").c_str()); a << "int Total = 1;\nint total2;\n// total\n"; }
+    { std::ofstream b(pth::join(home, "sub/two.h").c_str()); b << "extern int Total;\n"; }
+    { std::ofstream c(pth::join(home, "notes.txt").c_str()); c << "Total in notes\n"; }
+    { std::ofstream d(pth::join(home, "obj/skip.cpp").c_str()); d << "Total in a build folder\n"; }
+    editor::FindInFiles q;
+    q.text = "total";
+    q.folder = home;
+    q.patterns = "*.cpp;*.h";
+    size_t files = 0; bool cut = false;
+    std::vector<editor::FileHit> hits = editor::findInFiles(q, 100, files, cut);
+    check(hits.size() == 4 && files == 2, "find in files: every line in *.cpp and *.h, a build folder passed over");
+    check(!hits.empty() && hits[0].line == 1 && hits[0].col == 5, "each hit with its line and column");
+    q.matchCase = true;
+    hits = editor::findInFiles(q, 100, files, cut);
+    check(hits.size() == 2, "matching case finds 'total' twice and not 'Total'");
+    q.matchCase = false; q.wholeWord = true;
+    hits = editor::findInFiles(q, 100, files, cut);
+    check(hits.size() == 3, "a whole word does not find 'total2'");
+    q.wholeWord = false; q.subfolders = false;
+    hits = editor::findInFiles(q, 100, files, cut);
+    check(hits.size() == 3 && files == 1, "without subfolders only the folder itself is searched");
+    q.subfolders = true; q.namesOnly = true; q.text = "two"; q.patterns = "";
+    hits = editor::findInFiles(q, 100, files, cut);
+    check(hits.size() == 1 && hits[0].text == "two.h", "find files: the files whose names hold the text");
+    q.namesOnly = false; q.text = "total"; q.patterns = "";
+    hits = editor::findInFiles(q, 2, files, cut);
+    check(hits.size() == 2 && cut, "and no more than asked for, saying it stopped there");
+    pth::removeTree(home);
+}
+
 void commandLineArguments() {
     std::vector<std::string> got = editor::Project::splitArguments("-run sample.cpp  \"my file.cpp\" \"\" x");
     check(got.size() == 5 && got[0] == "-run" && got[1] == "sample.cpp" && got[2] == "my file.cpp" &&
@@ -6017,6 +6054,7 @@ int main(int argc, char** argv) {
     cleaning();
     aboutSelf();
     commandLineArguments();
+    findingInFiles();
     talkingToAChild();
     aProgramThatReads();
     theSeamsSmallPromises();
