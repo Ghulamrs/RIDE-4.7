@@ -573,9 +573,49 @@ bool rememberCcsProjectState(const std::string& dir, const Json& state) {
     return writeInstall(root);
 }
 
+#ifdef _WIN32
+namespace {
+// The newest earlier release's settings.json in the home directory - C:\Users\<you>\RIDE 4.51 before
+// RIDE 4.7, say - so that a new release starts from what the user had chosen. Versions read as
+// decimals, which is how this product's ran: 4.5, 4.51, 4.7. Empty when there is none.
+std::string earlierReleaseFile() {
+    std::string home = path::homeDir();
+    if (home.empty()) return std::string();
+    const double now = std::strtod(about::version(), 0);
+    std::string best;
+    double bestVersion = 0;
+    // This major and the five before it; under each, "4.0" to "4.9" and "4.00" to "4.99".
+    for (int major = static_cast<int>(now); major >= 1 && major >= static_cast<int>(now) - 5; --major)
+        for (int minor = 0; minor < 110; ++minor) {
+            char name[16];
+            if (minor < 10) std::snprintf(name, sizeof name, "%d.%d", major, minor);
+            else std::snprintf(name, sizeof name, "%d.%02d", major, minor - 10);
+            const double v = std::strtod(name, 0);
+            if (v >= now || v <= bestVersion) continue;
+            std::string candidate =
+                path::join(path::join(home, std::string(product::kName) + " " + name), "settings.json");
+            if (path::exists(candidate)) { best = candidate; bestVersion = v; }
+        }
+    return best;
+}
+}
+#endif
+
 bool writeInstallFileIfAbsent() {
     std::string file = installFile();
     if (file.empty() || path::exists(file)) return true;
+#ifdef _WIN32
+    // A new release's file begins as the last release's choices over this installation's defaults.
+    if (perUserInstallFile()) {
+        std::string earlier = earlierReleaseFile();
+        if (!earlier.empty()) {
+            Json root = readJsonFile(defaultsFile());
+            Json had = readJsonFile(earlier);
+            for (size_t i = 0; i < had.size(); ++i) root.set(had.keyAt(i), had.valueAt(i));
+            if (root.size() > 0) { writeInstall(root); return true; }
+        }
+    }
+#endif
     // The installation's own, where there is one - its assembler and linkers are named there.
     if (perUserInstallFile() && path::exists(defaultsFile())) {
         Json given = readJsonFile(defaultsFile());
