@@ -890,7 +890,6 @@ private:
         ToolStripMenuItem^ exit = Item("Exit", Keys::Control | Keys::Q, gcnew EventHandler(this, &MainForm::OnExit));
         file->DropDownItems->Add(exit);
         live_->Add(exit);
-        bar->Items->Add(file);
 
         ToolStripMenuItem^ edit = gcnew ToolStripMenuItem("&Edit");
         edit->DropDownItems->Add(Item("Undo", Keys::Control | Keys::Z, gcnew EventHandler(this, &MainForm::OnUndo)));
@@ -914,7 +913,6 @@ private:
         edit->DropDownItems->Add(gcnew ToolStripSeparator());
         edit->DropDownItems->Add(
             Item("Re-indent", Keys::Control | Keys::L, gcnew EventHandler(this, &MainForm::OnLayOut)));
-        bar->Items->Add(edit);
 
         ToolStripMenuItem^ project = gcnew ToolStripMenuItem("&Project");
 
@@ -966,7 +964,6 @@ private:
                                                  gcnew EventHandler(this, &MainForm::OnProjectLibraries));
         project->DropDownItems->Add(projLibraries_);
         project->DropDownOpening += gcnew EventHandler(this, &MainForm::OnProjectMenuOpening);
-        bar->Items->Add(project);
 
         ToolStripMenuItem^ build = gcnew ToolStripMenuItem("&Build");
         ToolStripMenuItem^ compile = gcnew ToolStripMenuItem(
@@ -1022,7 +1019,6 @@ private:
         live_->Add(stopItem_);
         // What a build made, removed, and the panes emptied - said in so many words.
         build->DropDownItems->Add("Clean", nullptr, gcnew EventHandler(this, &MainForm::OnClean));
-        bar->Items->Add(build);
 
         ToolStripMenuItem^ debug = gcnew ToolStripMenuItem("&Debug");
         debug->DropDownItems->Add(Item("Start / continue", Keys::F8,
@@ -1060,7 +1056,6 @@ private:
         debug->DropDownItems->Add(gcnew ToolStripSeparator());
         live_->Add(debug->DropDownItems->Add("Stop debugging", nullptr,
                                              gcnew EventHandler(this, &MainForm::OnDebugStop)));
-        bar->Items->Add(debug);
 
         ToolStripMenuItem^ view = gcnew ToolStripMenuItem("&View");
 
@@ -1092,7 +1087,6 @@ private:
         panelItem_->Checked = true;
         view->DropDownItems->Add(panelItem_);
 
-        bar->Items->Add(view);
 
         ToolStripMenuItem^ target = gcnew ToolStripMenuItem("&Target");
         targetItems_ = gcnew System::Collections::Generic::List<ToolStripMenuItem^>();
@@ -1127,7 +1121,6 @@ private:
         convertItem_ = gcnew ToolStripMenuItem(
             "Convert (c2s / s2c)", nullptr, gcnew EventHandler(this, &MainForm::OnConvert));
         language->DropDownItems->Add(convertItem_);
-        bar->Items->Add(language);
 
         ToolStripMenuItem^ tools = gcnew ToolStripMenuItem("Too&ls");
         toolAutoItem_ = gcnew ToolStripMenuItem(
@@ -1178,8 +1171,6 @@ private:
         tools->DropDownItems->Add(gcnew ToolStripSeparator());
         tools->DropDownItems->Add("Compiler options...", nullptr,
                                   gcnew EventHandler(this, &MainForm::OnCompilerOptions));
-        bar->Items->Add(tools);
-        bar->Items->Add(target);
 
         ToolStripMenuItem^ help = gcnew ToolStripMenuItem("&Help");
         help->DropDownItems->Add("Contents", nullptr,
@@ -1195,6 +1186,17 @@ private:
                                  gcnew EventHandler(this, &MainForm::OnEnvironment));
         help->DropDownItems->Add("About", nullptr,
                                  gcnew EventHandler(this, &MainForm::OnAbout));
+        // One order in both windows: File, Edit, View, then the work - Project, Build, Debug, Target - then the
+        // settings, then Help; macOS has the same with its Option for Language and Tools, and its Window menu.
+        bar->Items->Add(file);
+        bar->Items->Add(edit);
+        bar->Items->Add(view);
+        bar->Items->Add(project);
+        bar->Items->Add(build);
+        bar->Items->Add(debug);
+        bar->Items->Add(target);
+        bar->Items->Add(language);
+        bar->Items->Add(tools);
         bar->Items->Add(help);
 
         // The compiler in use, at the right end of the menu bar: plain text,
