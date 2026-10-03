@@ -110,7 +110,7 @@ samples** when they are new or empty - nothing already there is ever replaced:
 ## 5. Making and building a project
 
 **Project** menu: New…, Open…, Recent, Save As…, Close; New File, Add
-File (the one in front), Remove…, Rename…, Delete…; Include Paths…,
+File (the one in front), Remove, Rename…, Delete…; Include Paths…,
 Libraries…. The file items act on the open
 project's files and are offered only while a project is open.
 

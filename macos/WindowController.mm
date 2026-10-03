@@ -3876,7 +3876,7 @@ static NSString* Key(unichar c) { return [NSString stringWithCharacters:&c lengt
     [proj addItem:[NSMenuItem separatorItem]];
     [self add:@"New File" to:proj action:@selector(newProjectFile:) key:@""];
     [self add:@"Add File" to:proj action:@selector(addCurrentFile:) key:@""];
-    [self add:@"Remove..." to:proj action:@selector(removeFromProject:) key:@""];
+    [self add:@"Remove" to:proj action:@selector(removeFromProject:) key:@""];
     [self add:@"Rename..." to:proj action:@selector(renameFile:) key:@""];
     [self add:@"Delete..." to:proj action:@selector(deleteFile:) key:@""];
     [proj addItem:[NSMenuItem separatorItem]];
