@@ -3796,7 +3796,6 @@ static NSString* Key(unichar c) { return [NSString stringWithCharacters:&c lengt
     // File
     NSMenu* file = [self submenu:@"File" of:bar];
     [self add:@"New" to:file action:@selector(newBuffer:) key:@"n"];
-    [self add:@"New File in Project..." to:file action:@selector(newProjectFile:) key:@"n" mods:cmd | opt];
     [self add:@"Open..." to:file action:@selector(openDocument:) key:@"o"];
     recentFilesMenu_ = [self submenu:@"Open Recent" of:file];
     recentFilesMenu_.delegate = self;
@@ -3872,7 +3871,7 @@ static NSString* Key(unichar c) { return [NSString stringWithCharacters:&c lengt
     [self add:@"Save Project As..." to:proj action:@selector(saveProjectAs:) key:@""];
     [self add:@"Close Project" to:proj action:@selector(closeProject:) key:@""];
     [proj addItem:[NSMenuItem separatorItem]];
-    [self add:@"New File..." to:proj action:@selector(newProjectFile:) key:@""];
+    [self add:@"New File..." to:proj action:@selector(newProjectFile:) key:@"n" mods:cmd | opt];
     [self add:@"Add Current File" to:proj action:@selector(addCurrentFile:) key:@""];
     [self add:@"Add Files..." to:proj action:@selector(addFiles:) key:@"a" mods:cmd | opt];
     [self add:@"Remove File from Project" to:proj action:@selector(removeFromProject:) key:@""];

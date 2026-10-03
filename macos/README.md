@@ -119,7 +119,7 @@ the caret and not the whole file, since those are all the layout reads.
 
 | menu | holds |
 | --- | --- |
-| File | New, New File in Project, Open, Open Recent, Close, Save, Save As, Save All, Revert, Show in Finder |
+| File | New, Open, Open Recent, Close, Save, Save As, Save All, Revert, Show in Finder |
 | Edit | Undo/Redo, Cut/Copy/Paste, Find (the find bar), Go to Line, Re-indent, Shift Left/Right, Comment |
 | View | Navigator, Bottom Panel, Errors/Progress/Output, Line Numbers, font size, next/previous file, Full Screen |
 | Project | New/Open/Recent/Save As/Close project, New/Add/Remove/Rename/Move/Delete file, project include paths and libraries |
