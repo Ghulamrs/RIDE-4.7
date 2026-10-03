@@ -109,10 +109,10 @@ samples** when they are new or empty - nothing already there is ever replaced:
 --------------------------------------------------------------------------
 ## 5. Making and building a project
 
-**Project** menu: New Project…, Open Project…, Recent Projects, Save Project
-As…, Close Project, New File…, Add Current File, Add Files…, Remove File from
-Project, Rename File…, Move File to Group…, Delete File…, Project Include
-Paths…, Project Libraries….
+**Project** menu: New…, Open…, Recent, Save As…, Close, New File…, Add
+Current File, Add Files…, Remove File, Rename File…, Move File to Group…,
+Delete File…, Include Paths…, Libraries…. The file items act on the open
+project's files and are offered only while a project is open.
 
 **Build** menu: Compile File (Ctrl-B), Run File (F5), Build Project (F4), Run
 Project, Debug / Release Configuration, Convert C ⇄ Shalimar, Jump to Next
@@ -162,8 +162,8 @@ project file carries the whole provision:
 - `"libraries"` - its binary files (`.a` / `.o` on macOS and Linux, `.lib` /
   `.obj` on Windows); each is handed to the link. Name each file.
 
-Both lists are relative to the project, and **Project ▸ Project Include
-Paths… / Project Libraries…** edit them. **Option ▸ Shared Include Paths… /
+Both lists are relative to the project, and **Project ▸ Include Paths… /
+Libraries…** edit them. **Option ▸ Shared Include Paths… /
 Shared Libraries…** hold the same two lists for every project, in
 `settings.json`.
 

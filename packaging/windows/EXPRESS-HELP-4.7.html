@@ -83,7 +83,7 @@ a{color:inherit;text-decoration:none}}
 </ul>
 <hr>
 <h2 id="5-making-and-building-a-project">5. Making and building a project</h2>
-<p><strong>Project</strong> menu: New Project…, Open Project…, Recent Projects, Save Project As…, Close Project, New File…, Add Current File, Add Files…, Remove File from Project, Rename File…, Move File to Group…, Delete File…, Project Include Paths…, Project Libraries….</p>
+<p><strong>Project</strong> menu: New…, Open…, Recent, Save As…, Close, New File…, Add Current File, Add Files…, Remove File, Rename File…, Move File to Group…, Delete File…, Include Paths…, Libraries…. The file items act on the open project's files and are offered only while a project is open.</p>
 <p><strong>Build</strong> menu: Compile File (Ctrl-B), Run File (F5), Build Project (F4), Run Project, Debug / Release Configuration, Convert C ⇄ Shalimar, Jump to Next Issue, Clear Issues.</p>
 <p>The bottom panel shows <strong>Errors</strong>, <strong>Progress</strong> and <strong>Output</strong>. The title bar shows <code>RIDE 4.7 - &lt;project&gt; - &lt;file&gt;</code>, the status bar the language, the configuration, the compiler (<code>*</code> when the file chose it) and the target.</p>
 <p>On macOS the menus are in the menu bar at the top of the screen <strong>and</strong> in a row inside the window; About RIDE is in the RIDE menu, as on every Mac app.</p>
@@ -115,7 +115,7 @@ a{color:inherit;text-decoration:none}}
 <li><code>&quot;include&quot;</code> - its header directories; every compile gets each as <code>-I</code>.</li>
 <li><code>&quot;libraries&quot;</code> - its binary files (<code>.a</code> / <code>.o</code> on macOS and Linux, <code>.lib</code> / <code>.obj</code> on Windows); each is handed to the link. Name each file.</li>
 </ul>
-<p>Both lists are relative to the project, and <strong>Project ▸ Project Include Paths… / Project Libraries…</strong> edit them. <strong>Option ▸ Shared Include Paths… / Shared Libraries…</strong> hold the same two lists for every project, in <code>settings.json</code>.</p>
+<p>Both lists are relative to the project, and <strong>Project ▸ Include Paths… / Libraries…</strong> edit them. <strong>Option ▸ Shared Include Paths… / Shared Libraries…</strong> hold the same two lists for every project, in <code>settings.json</code>.</p>
 <p><strong><code>thirdparty-mathx</code></strong> is the worked template: <code>third_party/mathx/include</code>, a <code>libmathx.a</code> built by clang for macOS and a <code>mathx.lib</code> built by Visual Studio for Windows. Open <code>mathx-macos.pro</code> on a Mac and <code>mathx-windows.pro</code> on Windows - they differ only in <code>&quot;arch&quot;</code> and the one library. A library made by another compiler links when its interface is C (<code>extern &quot;C&quot;</code>); one that passes <code>std::string</code> or <code>std::vector</code> across its interface does not, since RIDE's C++ library is its own.</p>
 <hr>
 <h2 id="8-windows-the-assembler-and-clang">8. Windows: the assembler and clang</h2>

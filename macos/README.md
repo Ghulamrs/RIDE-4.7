@@ -122,7 +122,7 @@ the caret and not the whole file, since those are all the layout reads.
 | File | New, Open, Open Recent, Close, Save, Save As, Save All, Revert, Show in Finder |
 | Edit | Undo/Redo, Cut/Copy/Paste, Find (the find bar), Go to Line, Re-indent, Shift Left/Right, Comment |
 | View | Navigator, Bottom Panel, Errors/Progress/Output, Line Numbers, font size, next/previous file, Full Screen |
-| Project | New/Open/Recent/Save As/Close project, New/Add/Remove/Rename/Move/Delete file, project include paths and libraries |
+| Project | New, Open, Recent, Save As, Close; New/Add/Remove/Rename/Move/Delete file and the include paths and libraries, offered only while a project is open |
 | Build | Compile File (Cmd-B), Run File (Cmd-R), Build Project (Shift-Cmd-B), Run Project (Shift-Cmd-R), Stop (Cmd-.), Debug/Release, Convert C to/from Shalimar, next issue |
 | Target | the four targets, Compiler (by language, c90, cpp11, shalimar, host c++), Language |
 | Option | Font, header directories, shared include paths and libraries, the assembler, linkers and TI compiler, the tools in use |

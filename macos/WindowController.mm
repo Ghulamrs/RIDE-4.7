@@ -3701,11 +3701,14 @@ static const NSUInteger kOutputMost = 2000000;
     if (action == @selector(openDocument:) || action == @selector(openRecentFile:)) return !building;
     if (action == @selector(openRecentProject:)) return !busy_;
     if (action == @selector(stopWork:)) return busy_ || running_ != NULL;
-    if (action == @selector(renameFile:) || action == @selector(deleteFile:))
-        return [self targetFile] != nil && !busy_;
+    // The Project menu's file items act on the open project's files, so each wants a project.
+    if (action == @selector(renameFile:) || action == @selector(deleteFile:)) {
+        NSString* target = [self targetFile];
+        return project && target != nil && !busy_ && ride_project_holds(project_, Utf8(target));
+    }
     if (action == @selector(nextIssue:) || action == @selector(clearIssuesAction:)) return issues_.count > 0;
-    if (action == @selector(newProject:) || action == @selector(openProject:) ||
-        action == @selector(newProjectFile:))
+    if (action == @selector(newProjectFile:)) return project && !busy_;
+    if (action == @selector(newProject:) || action == @selector(openProject:))
         return !busy_;
     return YES;
 }
@@ -3864,23 +3867,23 @@ static NSString* Key(unichar c) { return [NSString stringWithCharacters:&c lengt
 
     // Project
     NSMenu* proj = [self submenu:@"Project" of:bar];
-    [self add:@"New Project..." to:proj action:@selector(newProject:) key:@"n" mods:cmd | shift];
-    [self add:@"Open Project..." to:proj action:@selector(openProject:) key:@"o" mods:cmd | shift];
-    recentProjectsMenu_ = [self submenu:@"Recent Projects" of:proj];
+    [self add:@"New..." to:proj action:@selector(newProject:) key:@"n" mods:cmd | shift];
+    [self add:@"Open..." to:proj action:@selector(openProject:) key:@"o" mods:cmd | shift];
+    recentProjectsMenu_ = [self submenu:@"Recent" of:proj];
     recentProjectsMenu_.delegate = self;
-    [self add:@"Save Project As..." to:proj action:@selector(saveProjectAs:) key:@""];
-    [self add:@"Close Project" to:proj action:@selector(closeProject:) key:@""];
+    [self add:@"Save As..." to:proj action:@selector(saveProjectAs:) key:@""];
+    [self add:@"Close" to:proj action:@selector(closeProject:) key:@""];
     [proj addItem:[NSMenuItem separatorItem]];
     [self add:@"New File..." to:proj action:@selector(newProjectFile:) key:@""];
     [self add:@"Add Current File" to:proj action:@selector(addCurrentFile:) key:@""];
     [self add:@"Add Files..." to:proj action:@selector(addFiles:) key:@"a" mods:cmd | opt];
-    [self add:@"Remove File from Project" to:proj action:@selector(removeFromProject:) key:@""];
+    [self add:@"Remove File" to:proj action:@selector(removeFromProject:) key:@""];
     [self add:@"Rename File..." to:proj action:@selector(renameFile:) key:@""];
     [self add:@"Move File to Group..." to:proj action:@selector(moveToGroup:) key:@""];
     [self add:@"Delete File..." to:proj action:@selector(deleteFile:) key:@""];
     [proj addItem:[NSMenuItem separatorItem]];
-    [self add:@"Project Include Paths..." to:proj action:@selector(projectIncludes:) key:@""];
-    [self add:@"Project Libraries..." to:proj action:@selector(projectLibraries:) key:@""];
+    [self add:@"Include Paths..." to:proj action:@selector(projectIncludes:) key:@""];
+    [self add:@"Libraries..." to:proj action:@selector(projectLibraries:) key:@""];
 
     // Build
     NSMenu* build = [self submenu:@"Build" of:bar];
