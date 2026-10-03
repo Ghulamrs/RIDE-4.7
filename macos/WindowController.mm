@@ -4009,9 +4009,11 @@ static NSString* Key(unichar c) { return [NSString stringWithCharacters:&c lengt
     // What a build made, removed, and the panes emptied - said in so many words.
     [self add:@"Clean" to:build action:@selector(cleanBuild:) key:@""];
     [build addItem:[NSMenuItem separatorItem]];
-    [self add:@"Debug Configuration" to:build action:@selector(chooseConfig:) key:@""].tag =
+    // Debug or Release, one of the two, in a submenu as Recent is; the check says which is in force.
+    NSMenu* configuration = [self submenu:@"Configuration" of:build];
+    [self add:@"Debug" to:configuration action:@selector(chooseConfig:) key:@""].tag =
         kTagConfigBase + RIDE_CONFIG_DEBUG;
-    [self add:@"Release Configuration" to:build action:@selector(chooseConfig:) key:@""].tag =
+    [self add:@"Release" to:configuration action:@selector(chooseConfig:) key:@""].tag =
         kTagConfigBase + RIDE_CONFIG_RELEASE;
     [build addItem:[NSMenuItem separatorItem]];
     [self add:@"Convert C ⇄ Shalimar" to:build action:@selector(convertFile:) key:@""];

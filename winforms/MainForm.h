@@ -893,15 +893,18 @@ private:
                  gcnew EventHandler(this, &MainForm::OnBuildProject)));
         build->DropDownItems->Add("Run project", nullptr,
                                   gcnew EventHandler(this, &MainForm::OnRunProject));
+        // Debug or Release, one of the two, in a submenu as Recent is; the check says which is in force.
+        ToolStripMenuItem^ configuration = gcnew ToolStripMenuItem("Configuration");
         debugConfigItem_ = gcnew ToolStripMenuItem(
-            "Debug build", nullptr, gcnew EventHandler(this, &MainForm::OnDebugConfig));
+            "Debug", nullptr, gcnew EventHandler(this, &MainForm::OnDebugConfig));
 
         debugConfigItem_->ShortcutKeyDisplayString = "Ctrl+D";
-        build->DropDownItems->Add(debugConfigItem_);
+        configuration->DropDownItems->Add(debugConfigItem_);
         releaseConfigItem_ = gcnew ToolStripMenuItem(
-            "Release build", nullptr, gcnew EventHandler(this, &MainForm::OnReleaseConfig));
+            "Release", nullptr, gcnew EventHandler(this, &MainForm::OnReleaseConfig));
         releaseConfigItem_->ShortcutKeyDisplayString = "Ctrl+D";
-        build->DropDownItems->Add(releaseConfigItem_);
+        configuration->DropDownItems->Add(releaseConfigItem_);
+        build->DropDownItems->Add(configuration);
         build->DropDownItems->Add(gcnew ToolStripSeparator());
         // Ctrl+Break, Visual Studio's key for it: ends the build, the run or the debugged program.
         stopItem_ = Item("Stop", Keys::Control | Keys::Cancel, gcnew EventHandler(this, &MainForm::OnStop));
@@ -4460,7 +4463,7 @@ private:
         if (config_ != RIDE_CONFIG_DEBUG) {
 
             what_->Text =
-                FromUtf8(ride_release_cannot_stop(kind)) + " - choose Debug build, then F8";
+                FromUtf8(ride_release_cannot_stop(kind)) + " - choose Build > Configuration > Debug, then F8";
             delete tools;
             return;
         }
