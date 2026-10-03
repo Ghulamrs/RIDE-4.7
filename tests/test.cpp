@@ -5888,6 +5888,15 @@ void ccsWorkspacesOneProjectAtATime() {
 // and never a source, the .pro, a folder of the project's that shares the program's name, or another
 // process's scratch.
 // About ends with this program's own file: its name, the PKT time it was last written, and its CRC-32.
+// Build > Command-line arguments: one line split as a shell would, at spaces outside quotes.
+void commandLineArguments() {
+    std::vector<std::string> got = editor::Project::splitArguments("-run sample.cpp  \"my file.cpp\" \"\" x");
+    check(got.size() == 5 && got[0] == "-run" && got[1] == "sample.cpp" && got[2] == "my file.cpp" &&
+              got[3].empty() && got[4] == "x",
+          "command-line arguments split at spaces outside quotes, an empty pair of quotes kept");
+    check(editor::Project::splitArguments("   ").empty(), "and a blank line is no arguments at all");
+}
+
 void aboutSelf() {
     const std::vector<std::string> said = editor::about::lines();
     // The last two lines: the release and the time, then the CRC and what the record says.
@@ -6007,6 +6016,7 @@ int main(int argc, char** argv) {
     compilerOptions();
     cleaning();
     aboutSelf();
+    commandLineArguments();
     talkingToAChild();
     aProgramThatReads();
     theSeamsSmallPromises();

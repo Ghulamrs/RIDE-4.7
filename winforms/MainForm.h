@@ -597,6 +597,10 @@ private:
     Timer^ settle_;
 
     SplitContainer^ outer_;
+    // Build > Command-line arguments: the line Run and Run project hand the program - the project's own,
+    // kept in its .pro, or for a file run on its own, this session's.
+    ToolStripTextBox^ argsBox_;
+    String^ fileArgs_;
     // The bottom panel's minimise button: checked, the panel is only its tab strip and the editor takes the rest.
     CheckBox^ fold_;
     bool folded_;
@@ -893,6 +897,21 @@ private:
                  gcnew EventHandler(this, &MainForm::OnBuildProject)));
         build->DropDownItems->Add("Run project", nullptr,
                                   gcnew EventHandler(this, &MainForm::OnRunProject));
+        // The command line Run and Run project hand the program, typed straight into the menu.
+        ToolStripMenuItem^ argsLabel = gcnew ToolStripMenuItem("Command-line arguments:");
+        argsLabel->Enabled = false;
+        build->DropDownItems->Add(argsLabel);
+        argsBox_ = gcnew ToolStripTextBox();
+        argsBox_->AutoSize = false;
+        argsBox_->Width = 320;
+        argsBox_->Font = gcnew System::Drawing::Font("Consolas", 10.0f);
+        argsBox_->ToolTipText = "Handed to the program by Run and Run project - e.g. -run sample.cpp; "
+                                "a word in quotes may hold spaces. Enter keeps it.";
+        argsBox_->KeyDown += gcnew KeyEventHandler(this, &MainForm::OnArgsKey);
+        build->DropDownItems->Add(argsBox_);
+        build->DropDownOpening += gcnew EventHandler(this, &MainForm::OnBuildMenuOpening);
+        build->DropDownClosed += gcnew EventHandler(this, &MainForm::OnBuildMenuClosed);
+        fileArgs_ = "";
         // Debug or Release, one of the two, in a submenu as Recent is; the check says which is in force.
         ToolStripMenuItem^ configuration = gcnew ToolStripMenuItem("Configuration");
         debugConfigItem_ = gcnew ToolStripMenuItem(
@@ -3963,6 +3982,41 @@ private:
         what_->Text = "Compilation succeeded: " + name + " - 0 errors, " + lines + " lines of assembly";
     }
 
+    // ---- Build > Command-line arguments --------------------------------------------
+    String^ CurrentArgs() {
+        if (ride_project_loaded(project_) != 0) return TakeUtf8(ride_project_arguments(project_));
+        return fileArgs_ == nullptr ? "" : fileArgs_;
+    }
+
+    String^ ArgsBase() {
+        if (ride_project_loaded(project_) != 0 && projectDirectory_ != nullptr) return projectDirectory_;
+        return path_ == nullptr ? "" : System::IO::Path::GetDirectoryName(path_);
+    }
+
+    void CommitArgs() {
+        String^ typed = argsBox_->Text->Trim();
+        if (typed == CurrentArgs()) return;
+        if (ride_project_loaded(project_) != 0) {
+            Utf8 line(typed);
+            what_->Text = ride_project_set_arguments(project_, line.c()) != 0
+                              ? "command-line arguments: " + (typed->Length > 0 ? typed : "none")
+                              : "the command-line arguments could not be kept with the project";
+        } else {
+            fileArgs_ = typed;
+            what_->Text = "command-line arguments: " + (typed->Length > 0 ? typed : "none");
+        }
+    }
+
+    void OnBuildMenuOpening(Object^, EventArgs^) { argsBox_->Text = CurrentArgs(); }
+    void OnBuildMenuClosed(Object^, EventArgs^) { CommitArgs(); }
+
+    void OnArgsKey(Object^, KeyEventArgs^ e) {
+        if (e->KeyCode != Keys::Enter) return;
+        e->SuppressKeyPress = true;
+        CommitArgs();
+        argsBox_->Owner->Hide();
+    }
+
     void OnRun(Object^, EventArgs^) {
         int kind = 0, language = 0;
         if (!SingleFileReady(kind, language)) return;
@@ -3982,10 +4036,14 @@ private:
         panel_->SelectedIndex = 0;
         what_->Text = "building and running " + System::IO::Path::GetFileName(path_) + " ...";
 
-        RIDERunning* running = ride_run_start(project_, tools->cc1(), tools->cl(), tools->shc(),
-                                              tools->cxx1(), kind, source.c(), language,
-                                              tools->arch(), config_, &OutputToWindow,
-                                              Runtime::InteropServices::GCHandle::ToIntPtr(self_).ToPointer());
+        String^ args = CurrentArgs();
+        if (args->Length > 0) console_->AppendText("$ " + System::IO::Path::GetFileNameWithoutExtension(path_) + " " + args + "\r\n");
+        Utf8 argsLine(args);
+        Utf8 argsBase(ArgsBase());
+        RIDERunning* running = ride_run_start_line(project_, tools->cc1(), tools->cl(), tools->shc(),
+                                                   tools->cxx1(), kind, source.c(), language,
+                                                   tools->arch(), config_, argsLine.c(), argsBase.c(), &OutputToWindow,
+                                                   Runtime::InteropServices::GCHandle::ToIntPtr(self_).ToPointer());
         StartedRunning(running, tools, path_, nullptr);
     }
 
@@ -4187,11 +4245,16 @@ private:
             return;
         }
 
-        Say("\n$ " + madeProgram + "\n");
-        what_->Text = "running " + System::IO::Path::GetFileName(madeProgram) + " ...";
         Utf8 built(madeProgram);
-        RIDERunning* running = ride_run_made_start(built.c(), madeShalimar ? 1 : 0, &OutputToWindow,
-                                                   Runtime::InteropServices::GCHandle::ToIntPtr(self_).ToPointer());
+        String^ args = CurrentArgs();
+        Utf8 argsLine(args);
+        Utf8 argsBase(ArgsBase());
+        // The command run, arguments and all: a tool handed none prints its usage, and that should not read as a fault.
+        Say("\n" + TakeUtf8(ride_run_line(project_, built.c(), argsLine.c())) + "\n");
+        what_->Text = "running " + System::IO::Path::GetFileName(madeProgram) + " ...";
+        RIDERunning* running = ride_run_made_start_line(built.c(), madeShalimar ? 1 : 0, argsLine.c(), argsBase.c(),
+                                                        &OutputToWindow,
+                                                        Runtime::InteropServices::GCHandle::ToIntPtr(self_).ToPointer());
         StartedRunning(running, nullptr, nullptr, madeProgram);
     }
 

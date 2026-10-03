@@ -467,6 +467,9 @@ static const CGFloat kJumpBarHeight = 26;
     NSTextField* statusWhere_;
     NSProgressIndicator* statusSpinner_;
     CGFloat panelHeight_;      // remembered while the panel is hidden
+    NSTextField* argsField_;  // Build > Command-line arguments: what Run and Run Project hand the program
+    NSMenu* buildMenu_;
+    NSString* fileArgs_;      // a file run on its own: this session's line; a project keeps its own
     NSButton* fold_;          // the panel's minimise button: on, the panel is only its tab strip
     BOOL folded_;
 
@@ -2870,9 +2873,14 @@ static NSColor* ColourOf(unsigned char kind) {
         // Built and run on the core's worker, the program's output here as it comes and the input
         // line open to it; the project is read now, on this thread, and not again.
         [self showPanel:kPanelOutput];
-        [self startRun:ride_run_start(project, cc1.c_str(), cl.c_str(), shc.c_str(), cxx1.c_str(), kind,
-                                      source.c_str(), language, arch.c_str(), config,
-                                      RunOutput, (__bridge void*)self)
+        NSString* args = [self currentArgs];
+        std::string argsLine = StdString(args), argsBase = StdString([self argsBase]);
+        if (args.length > 0)
+            [self append:[NSString stringWithFormat:@"$ %@ %@\n", path.lastPathComponent.stringByDeletingPathExtension, args]
+                      to:output_];
+        [self startRun:ride_run_start_line(project, cc1.c_str(), cl.c_str(), shc.c_str(), cxx1.c_str(), kind,
+                                           source.c_str(), language, arch.c_str(), config,
+                                           argsLine.c_str(), argsBase.c_str(), RunOutput, (__bridge void*)self)
                 source:path compiler:compiler program:nil];
         return;
     }
@@ -3239,9 +3247,52 @@ static const NSUInteger kOutputMost = 2000000;
     [self showPanel:kPanelOutput];
     // What the build made is what runs - <program>.vm for a C6747 project - and never the target's name.
     NSString* made = outcome.made.empty() ? program : Str(outcome.made.c_str());
-    [self append:[NSString stringWithFormat:@"\n$ %@\n", made] to:output_];
-    [self startRun:ride_run_made_start(Utf8(made), outcome.madeShalimar ? 1 : 0, RunOutput, (__bridge void*)self)
+    // The command run, arguments and all: a tool handed none prints its usage, and that should not read as a fault.
+    NSString* args = [self currentArgs];
+    std::string argsLine = StdString(args), argsBase = StdString([self argsBase]);
+    [self append:[NSString stringWithFormat:@"\n%@\n", Take(ride_run_line(project_, Utf8(made), argsLine.c_str()))]
+              to:output_];
+    [self startRun:ride_run_made_start_line(Utf8(made), outcome.madeShalimar ? 1 : 0, argsLine.c_str(), argsBase.c_str(),
+                                            RunOutput, (__bridge void*)self)
             source:nil compiler:compilers program:made];
+}
+
+// ---- Build > Command-line arguments ------------------------------------------------
+
+- (NSString*)currentArgs {
+    if (ride_project_loaded(project_) != 0) return Take(ride_project_arguments(project_));
+    return fileArgs_ ?: @"";
+}
+
+- (NSString*)argsBase {
+    if (ride_project_loaded(project_) != 0 && projectDirectory_.length > 0) return projectDirectory_;
+    return current_.path.stringByDeletingLastPathComponent ?: @"";
+}
+
+- (void)commitArgs {
+    NSString* typed = [argsField_.stringValue stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet];
+    if ([typed isEqualToString:[self currentArgs]]) return;
+    NSString* said = [@"command-line arguments: " stringByAppendingString:typed.length > 0 ? typed : @"none"];
+    if (ride_project_loaded(project_) != 0) {
+        if (ride_project_set_arguments(project_, Utf8(typed)) == 0) said = @"the command-line arguments could not be kept with the project";
+    } else {
+        fileArgs_ = typed;
+    }
+    [self say:said];
+}
+
+- (void)argsEntered:(id)sender {
+    (void)sender;
+    [self commitArgs];
+    [buildMenu_ cancelTracking];
+}
+
+- (void)menuWillOpen:(NSMenu*)menu {
+    if (menu == buildMenu_) argsField_.stringValue = [self currentArgs];
+}
+
+- (void)menuDidClose:(NSMenu*)menu {
+    if (menu == buildMenu_) [self commitArgs];
 }
 
 - (void)convertFile:(id)sender {
@@ -3834,6 +3885,7 @@ static const NSUInteger kOutputMost = 2000000;
 
 // The two recent lists are filled as their menus open.
 - (void)menuNeedsUpdate:(NSMenu*)menu {
+    if (menu != recentProjectsMenu_ && menu != recentFilesMenu_) return;  // the recent lists only
     BOOL projects = menu == recentProjectsMenu_;
     [menu removeAllItems];
     for (int i = 0; i < 8; ++i) {
@@ -4009,6 +4061,28 @@ static NSString* Key(unichar c) { return [NSString stringWithCharacters:&c lengt
     [build addItem:[NSMenuItem separatorItem]];
     [self add:@"Build Project" to:build action:@selector(buildProjectAction:) key:@"b" mods:cmd | shift];
     [self add:@"Run Project" to:build action:@selector(runProjectAction:) key:@"r" mods:cmd | shift];
+    // The command line Run and Run Project hand the program, typed straight into the menu.
+    {
+        NSView* holder = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 340, 46)];
+        NSTextField* label = [NSTextField labelWithString:@"Command-line arguments:"];
+        label.font = [NSFont menuFontOfSize:0];
+        label.textColor = [NSColor secondaryLabelColor];
+        label.frame = NSMakeRect(20, 26, 300, 17);
+        [holder addSubview:label];
+        argsField_ = [[NSTextField alloc] initWithFrame:NSMakeRect(20, 2, 304, 22)];
+        argsField_.font = [NSFont monospacedSystemFontOfSize:12 weight:NSFontWeightRegular];
+        argsField_.placeholderString = @"e.g. -run sample.cpp";
+        argsField_.toolTip = @"Handed to the program by Run and Run Project; a word in quotes may hold spaces. Return keeps it.";
+        argsField_.target = self;
+        argsField_.action = @selector(argsEntered:);
+        [holder addSubview:argsField_];
+        NSMenuItem* argsItem = [[NSMenuItem alloc] initWithTitle:@"Command-line arguments" action:nil keyEquivalent:@""];
+        argsItem.view = holder;
+        [build addItem:argsItem];
+        buildMenu_ = build;
+        build.delegate = self;
+        fileArgs_ = @"";
+    }
     [self add:@"Stop" to:build action:@selector(stopWork:) key:@"."];
     // What a build made, removed, and the panes emptied - said in so many words.
     [self add:@"Clean" to:build action:@selector(cleanBuild:) key:@""];

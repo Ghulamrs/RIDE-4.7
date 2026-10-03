@@ -1838,6 +1838,7 @@ struct RIDERunning {
     editor::Configuration config;
     std::string program;
     bool shalimar = false;      // a built Shalimar program, which the emulator runs beside its runtime
+    std::vector<std::string> args;  // its command line, Build > Command-line arguments
 
     editor::Process process;
     std::thread worker;
@@ -1900,7 +1901,7 @@ void runTheProgram(RIDERunning* running) {
         std::lock_guard<std::mutex> in(running->input);
         running->built = !program.empty() && !stopFirst;
         if (running->built && !running->stopWanted && !editor::buildCancelled()) {
-            running->ran = editor::startProgram(running->process, program, shalimar);
+            running->ran = editor::startProgram(running->process, program, shalimar, running->args);
             if (running->ran) {
                 if (!running->waiting.empty())
                     running->process.send(running->waiting.data(), running->waiting.size());
@@ -1974,6 +1975,84 @@ RIDERunning* ride_run_made_start(const char* program, int shalimar, RIDEOutput o
     running->config = editor::ConfigDebug;
     running->program = program ? program : "";
     return startRunning(running);
+}
+
+namespace {
+
+void argumentsFrom(const char* line, const char* base, std::vector<std::string>& out) {
+    out = editor::Project::splitArguments(line ? line : "");
+    const std::string root = base ? base : "";
+    for (size_t i = 0; i < out.size() && !root.empty(); ++i) {
+        const std::string full = editor::path::absolute(editor::path::join(root, out[i]));
+        if (!out[i].empty() && out[i][0] != '-' && editor::path::exists(full)) out[i] = full;
+    }
+}
+
+}
+
+RIDERunning* ride_run_made_start_line(const char* program, int shalimar, const char* line, const char* base,
+                                      RIDEOutput onOutput, void* user) {
+    RIDERunning* running = new RIDERunning();
+    running->shalimar = shalimar != 0;
+    running->onOutput = onOutput;
+    running->user = user;
+    running->fromSource = false;
+    running->kind = editor::ToolAuto;
+    running->language = editor::LangPlain;
+    running->config = editor::ConfigDebug;
+    running->program = program ? program : "";
+    argumentsFrom(line, base, running->args);
+    return startRunning(running);
+}
+
+RIDERunning* ride_run_start_line(RIDEProject* project, const char* cc1, const char* cl, const char* shc,
+                                 const char* cxx1, int kind, const char* source, int language,
+                                 const char* arch, int config, const char* line, const char* base,
+                                 RIDEOutput onOutput, void* user) {
+    RIDERunning* running = new RIDERunning();
+    running->onOutput = onOutput;
+    running->user = user;
+    running->fromSource = true;
+    running->tool = toolFrom(project, cc1, cl, shc, cxx1, config);
+    running->kind = static_cast<editor::ToolchainKind>(kind);
+    running->source = source ? source : "";
+    running->language = static_cast<editor::Language>(language);
+    running->arch = arch ? arch : "";
+    running->config = static_cast<editor::Configuration>(config);
+    argumentsFrom(line, base, running->args);
+    return startRunning(running);
+}
+
+char* ride_project_arguments(RIDEProject* project) {
+    return give(project && project->project.loaded() ? project->project.argumentsText() : std::string());
+}
+
+int ride_project_set_arguments(RIDEProject* project, const char* line) {
+    if (!project || !project->project.loaded()) return 0;
+    std::string error;
+    return project->project.rememberArguments(line ? line : "", error) ? 1 : 0;
+}
+
+char* ride_run_line(RIDEProject* project, const char* program, const char* line) {
+    std::string shown = program ? program : "";
+    if (project && project->project.loaded()) {
+        // Under the project's folder, by its name there; elsewhere - the emulator's temporary build - in full.
+        const std::string rel = project->project.relative(shown);
+        if (!rel.empty() && rel.compare(0, 2, "..") != 0 && rel.find(':') == std::string::npos && rel[0] != '/') shown = rel;
+    }
+    const std::string args = line ? line : "";
+    if (!args.empty()) shown += " " + args;
+    return give("$ " + shown);
+}
+
+char* ride_project_run_line(RIDEProject* project, const char* program) {
+    std::string shown = program ? program : "";
+    if (project && project->project.loaded()) {
+        shown = project->project.relative(shown);
+        const std::string args = project->project.argumentsText();
+        if (!args.empty()) shown += " " + args;
+    }
+    return give("$ " + shown);
 }
 
 int ride_running_send(RIDERunning* running, const char* bytes, int size) {

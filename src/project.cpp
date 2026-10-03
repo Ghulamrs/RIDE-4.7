@@ -1008,6 +1008,8 @@ bool Project::loadCcs(const std::string& folder, std::string& error, const std::
 
     Json state = settings::ccsProjectState(root_);
     open_ = withSlashes(state.get("open").text(std::string()));
+    const Json& args = state.get("args");
+    for (size_t i = 0; i < args.size(); ++i) target_.args.push_back(args.at(i).text(std::string()));
     loaded_ = true;
     return true;
 }
@@ -1034,6 +1036,52 @@ int Project::ccsConfiguration() const {
     if (!ccs_) return -1;
     std::string said = settings::ccsProjectState(root_).get("config").text(std::string());
     return said == "release" ? ConfigRelease : said == "debug" ? ConfigDebug : -1;
+}
+
+std::vector<std::string> Project::splitArguments(const std::string& line) {
+    std::vector<std::string> out;
+    std::string one;
+    bool inQuote = false, any = false;
+    for (size_t i = 0; i < line.size(); ++i) {
+        const char c = line[i];
+        if (c == '"') { inQuote = !inQuote; any = true; continue; }
+        if (!inQuote && (c == ' ' || c == '\t')) {
+            if (any) out.push_back(one);
+            one.clear();
+            any = false;
+            continue;
+        }
+        one += c;
+        any = true;
+    }
+    if (any) out.push_back(one);
+    return out;
+}
+
+std::string Project::argumentsText() const {
+    std::string line;
+    for (size_t i = 0; i < target_.args.size(); ++i) {
+        const std::string& one = target_.args[i];
+        if (i) line += " ";
+        if (one.empty() || one.find_first_of(" \t") != std::string::npos) line += "\"" + one + "\"";
+        else line += one;
+    }
+    return line;
+}
+
+bool Project::rememberArguments(const std::string& line, std::string& error) {
+    error.clear();
+    if (!loaded_) { error = "there is no project to keep arguments for"; return false; }
+    target_.args = splitArguments(line);
+    if (!ccs_) return save(error);
+    Json state = settings::ccsProjectState(root_);
+    if (!state.is(Json::Object)) state = Json::object();
+    Json list = Json::array();
+    for (size_t i = 0; i < target_.args.size(); ++i) list.push(Json::fromText(target_.args[i]));
+    state.set("args", list);
+    if (settings::rememberCcsProjectState(root_, state)) return true;
+    error = "cannot write settings.json, where a CCS project's state is kept";
+    return false;
 }
 
 bool Project::rememberConfiguration(Configuration config) {

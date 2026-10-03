@@ -376,6 +376,22 @@ RIDERunning* ride_run_start(RIDEProject* project, const char* cc1, const char* c
 RIDERunning* ride_run_built_start(const char* program, RIDEOutput onOutput, void* user);
 /* The same for what ride_build_made named, Shalimar or not. */
 RIDERunning* ride_run_made_start(const char* program, int shalimar, RIDEOutput onOutput, void* user);
+/* The same two, handing the program a command line - Build > Command-line arguments - split as a shell
+   would at spaces outside quotes; a word naming a file under `base` (the project, or the file's folder)
+   goes by its full name. */
+RIDERunning* ride_run_made_start_line(const char* program, int shalimar, const char* line, const char* base,
+                                      RIDEOutput onOutput, void* user);
+RIDERunning* ride_run_start_line(RIDEProject* project, const char* cc1, const char* cl, const char* shc,
+                                 const char* cxx1, int kind, const char* source, int language,
+                                 const char* arch, int config, const char* line, const char* base,
+                                 RIDEOutput onOutput, void* user);
+/* The project's command-line arguments as one line, and setting them from one: kept in its .pro, or for a
+   CCS project in RIDE's own state. The line said before a run: "$ program arguments". */
+char* ride_project_arguments(RIDEProject* project);
+int ride_project_set_arguments(RIDEProject* project, const char* line);
+char* ride_project_run_line(RIDEProject* project, const char* program);
+/* "$ program line", the program by its name in the project where it is in one. */
+char* ride_run_line(RIDEProject* project, const char* program, const char* line);
 
 /* Bytes to its input as they are - a line wants its "\n"; held until it starts. 0 once it has
    ended or its input was closed. Any thread, as are the next three. */

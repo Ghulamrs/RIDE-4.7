@@ -1,7 +1,7 @@
 ©2026 G. R. Akhtar - RIDE 4.7, the editor
 Release seal, version 4.7, sealed 03-10-2026
 Written by tools/seal; check it with `tools/seal check`.
-CRC32  size  file - 97 files, seal 77BE73D0
+CRC32  size  file - 97 files, seal 6D1FBF0E
 ------------------------------------------------------------------
 06F11F39     18706  Makefile
 3A1FF49C      3207  RIDE.pro
@@ -19,7 +19,7 @@ A2B21358    971341  macos/RIDE.icns
 7E2C43FD      2767  macos/Text.h
 E818B9F2     22370  macos/Window.xcodeproj/project.pbxproj
 AEF649AE      1693  macos/WindowController.h
-A42F9181    188912  macos/WindowController.mm
+1E3D29EF    192557  macos/WindowController.mm
 18F9EFDC      4599  macos/main.mm
 07969C88      3339  macos/make-icon.swift
 5ED755F0     12349  macos/make-xcodeproj.py
@@ -63,8 +63,8 @@ DD59BAFA      8601  src/options.cpp
 AA505B11     36918  src/process.cpp
 AAB34DCA      1876  src/process.h
 155E9F80      1344  src/product.h
-8A6EB8D4     41156  src/project.cpp
-B734AED9      7989  src/project.h
+9ABC65A3     42937  src/project.cpp
+854C2958      8376  src/project.h
 D3726986     27448  src/settings.cpp
 3E0AC86E      6626  src/settings.h
 E46E1607      4314  src/shalimar/README.md
@@ -88,14 +88,14 @@ CC9C965F      7196  src/toolchain.h
 D93038C5       572  src/utf8.h
 1DD9DC1C     12808  src/workspace.cpp
 F35C52A2      2086  src/workspace.h
-82E056A3    236792  winforms/MainForm.h
+AB9FA7F0    240110  winforms/MainForm.h
 6BA8DA64      2289  winforms/Marshal.h
 3D89F3C4      6415  winforms/Program.cpp
 1F889F5F       157  winforms/RIDEGui.rc
 1BAC8258      9623  winforms/RIDEGui.vcxproj
 B2EA0EE1      4860  winforms/TextFile.h
-8C878080     81370  winforms/bridge.cpp
-D66C2EEA     26654  winforms/bridge.h
+972EF27C     84873  winforms/bridge.cpp
+BA0B4DC1     27997  winforms/bridge.h
 BBD2FAFE      2198  winforms/children.h
 BE6A6F09     72502  winforms/ride.ico
 BF74EBDD     11065  winforms/show.ps1

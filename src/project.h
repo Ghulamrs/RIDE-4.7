@@ -93,6 +93,11 @@ public:
     const std::vector<std::string>& targetArgs() const { return target_.args; }
     std::vector<std::string> absoluteTargetArgs() const;
     void setTargetArgs(const std::vector<std::string>& args) { target_.args = args; }
+    // The program's command line as one line of text - an argument with a space in it in quotes - and back:
+    // kept in the .pro, or for a CCS project in RIDE's own state, never in CCS's files.
+    std::string argumentsText() const;
+    bool rememberArguments(const std::string& line, std::string& error);
+    static std::vector<std::string> splitArguments(const std::string& line);
     const IndentStyle& indent() const { return indent_; }
     ToolchainKind toolchain() const { return toolchain_; }
     const std::string& arch() const { return arch_; }
