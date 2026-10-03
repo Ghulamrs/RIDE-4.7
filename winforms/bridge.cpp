@@ -26,7 +26,6 @@
 #endif
 
 #include "about.h"
-#include <sstream>
 #include "compile.h"
 #include "convert.h"
 #include "debugger.h"
@@ -454,18 +453,20 @@ char* ride_find_in_files(const char* text, const char* folder, const char* patte
     size_t files = 0;
     bool cut = false;
     std::vector<editor::FileHit> hits = editor::findInFiles(q, 2000, files, cut);
-    std::ostringstream out;
-    out << (q.namesOnly ? "Find files: '" : "Find in files: '") << q.text << "' in " << q.folder
-        << (q.patterns.empty() ? std::string() : " (" + q.patterns + ")") << " - " << hits.size()
-        << (q.namesOnly ? (hits.size() == 1 ? " file" : " files") : (hits.size() == 1 ? " match" : " matches"));
-    if (!q.namesOnly) out << " in " << files << (files == 1 ? " file searched" : " files searched");
-    if (cut) out << ", the first " << hits.size() << " shown";
-    out << "\n";
-    for (size_t i = 0; i < hits.size(); ++i) {
-        if (q.namesOnly) out << hits[i].file << "\n";
-        else out << hits[i].file << ":" << hits[i].line << ":" << hits[i].col << ": " << hits[i].text << "\n";
+    // Plain strings and not <sstream>: the iostream library's globals corrupt this window's heap before main.
+    const size_t n = hits.size();
+    std::string out = std::string(q.namesOnly ? "Find files: '" : "Find in files: '") + q.text + "' in " + q.folder +
+                      (q.patterns.empty() ? std::string() : " (" + q.patterns + ")") + " - " + std::to_string(n) +
+                      (q.namesOnly ? (n == 1 ? " file" : " files") : (n == 1 ? " match" : " matches"));
+    if (!q.namesOnly) out += " in " + std::to_string(files) + (files == 1 ? " file searched" : " files searched");
+    if (cut) out += ", the first " + std::to_string(n) + " shown";
+    out += "\n";
+    for (size_t i = 0; i < n; ++i) {
+        if (q.namesOnly) out += hits[i].file + "\n";
+        else out += hits[i].file + ":" + std::to_string(hits[i].line) + ":" + std::to_string(hits[i].col) + ": " +
+                    hits[i].text + "\n";
     }
-    return give(out.str());
+    return give(out);
 }
 
 char* ride_about_credits(void) {

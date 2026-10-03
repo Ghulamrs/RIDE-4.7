@@ -266,10 +266,12 @@ rem The window has to reach main. Its start-up is mixed-mode, and a native
 rem global with a destructor anywhere in what it links kills it before main
 rem with STATUS_HEAP_CORRUPTION - which no suite saw from 2026-09-18 to the
 rem 19th, because none of them ran the window. --version exits before a form.
-if exist %BINDIR%\%PRODUCT%.exe (
-  %BINDIR%\%PRODUCT%.exe --version
-  if errorlevel 1 goto :fail
-)
+rem start /wait, because cmd does not wait for a windowed program and its errorlevel stays 0 whatever
+rem happens; and a test for not 0, because the heap-corruption exit is negative and `errorlevel 1` misses it.
+if not exist %BINDIR%\%PRODUCT%.exe goto :done
+start "" /wait %BINDIR%\%PRODUCT%.exe --version
+set START_RC=%errorlevel%
+if not "%START_RC%"=="0" (echo   %PRODUCT%.exe DOES NOT START - exit %START_RC% & goto :fail)
 
 :done
 echo built %BINDIR%\%PRODUCT%Console.exe

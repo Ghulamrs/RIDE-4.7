@@ -154,7 +154,8 @@ public:
     CheckBox^ subfolders;
     CheckBox^ namesOnly;
 
-    FindFilesDialog(String^ lookFor, String^ where) {
+    // What was asked last time comes in from the window, which keeps it: no static state in this class.
+    FindFilesDialog(String^ lookFor, String^ where, String^ lastTypes, bool lastCase, bool lastWord, bool lastSub) {
         Text = "Find in Files";
         FormBorderStyle = System::Windows::Forms::FormBorderStyle::FixedDialog;
         MaximizeBox = false;
@@ -172,11 +173,11 @@ public:
         browse->SetBounds(418, 48, 86, 25);
         browse->Click += gcnew EventHandler(this, &FindFilesDialog::OnBrowse);
         Controls->Add(browse);
-        types = Field("File types:", 84, last_ != nullptr ? last_ : "*.c;*.cpp;*.h;*.hpp;*.shl;*.s");
+        types = Field("File types:", 84, lastTypes);
 
-        matchCase = Box("Match case", 20, 122, lastCase_);
-        wholeWord = Box("Whole word", 140, 122, lastWord_);
-        subfolders = Box("Include subfolders", 260, 122, lastSub_);
+        matchCase = Box("Match case", 20, 122, lastCase);
+        wholeWord = Box("Whole word", 140, 122, lastWord);
+        subfolders = Box("Include subfolders", 260, 122, lastSub);
         namesOnly = Box("Find files by name - not what is in them", 20, 152, false);
 
         Button^ ok = gcnew Button();
@@ -193,19 +194,7 @@ public:
         CancelButton = cancel;
     }
 
-    // What was asked last time is asked again, the text excepted, which comes from the selection.
-    void Remember() {
-        last_ = types->Text;
-        lastCase_ = matchCase->Checked;
-        lastWord_ = wholeWord->Checked;
-        lastSub_ = subfolders->Checked;
-    }
-
 private:
-    static String^ last_ = nullptr;
-    static bool lastCase_ = false;
-    static bool lastWord_ = false;
-    static bool lastSub_ = true;
 
     TextBox^ Field(String^ label, int y, String^ value) {
         Label^ l = gcnew Label();
@@ -694,6 +683,9 @@ private:
     // kept in its .pro, or for a file run on its own, this session's.
     ToolStripTextBox^ argsBox_;
     String^ fileArgs_;
+    // Edit > Find in Files: what was asked last time, asked again - the text excepted, which comes from the selection.
+    String^ findTypes_;
+    bool findCase_, findWord_, findSub_;
     // The bottom panel's minimise button: checked, the panel is only its tab strip and the editor takes the rest.
     CheckBox^ fold_;
     bool folded_;
@@ -1007,6 +999,8 @@ private:
         argsMenu->DropDownClosed += gcnew EventHandler(this, &MainForm::OnBuildMenuClosed);
         build->DropDownItems->Add(argsMenu);
         fileArgs_ = "";
+        findTypes_ = "*.c;*.cpp;*.h;*.hpp;*.shl;*.s";
+        findCase_ = false; findWord_ = false; findSub_ = true;
         // Debug or Release, one of the two, in a submenu as Recent is; the check says which is in force.
         ToolStripMenuItem^ configuration = gcnew ToolStripMenuItem("Configuration");
         debugConfigItem_ = gcnew ToolStripMenuItem(
@@ -4109,9 +4103,13 @@ private:
         String^ where = ride_project_loaded(project_) != 0 && projectDirectory_ != nullptr ? projectDirectory_
                         : path_ != nullptr ? System::IO::Path::GetDirectoryName(path_)
                         : System::Environment::GetFolderPath(System::Environment::SpecialFolder::MyDocuments);
-        msclr::auto_handle<FindFilesDialog> ask(gcnew FindFilesDialog(lookFor, where));
+        msclr::auto_handle<FindFilesDialog> ask(
+            gcnew FindFilesDialog(lookFor, where, findTypes_, findCase_, findWord_, findSub_));
         if (ask->ShowDialog(this) != System::Windows::Forms::DialogResult::OK) { what_->Text = "nothing searched"; return; }
-        ask->Remember();
+        findTypes_ = ask->types->Text;
+        findCase_ = ask->matchCase->Checked;
+        findWord_ = ask->wholeWord->Checked;
+        findSub_ = ask->subfolders->Checked;
         if (ask->text->Text->Length == 0 && !ask->namesOnly->Checked) { what_->Text = "nothing to find"; return; }
         if (!System::IO::Directory::Exists(ask->folder->Text)) { what_->Text = "no folder " + ask->folder->Text; return; }
         Utf8 t(ask->text->Text), f(ask->folder->Text), p(ask->types->Text);

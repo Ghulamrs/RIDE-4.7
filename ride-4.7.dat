@@ -1,13 +1,13 @@
 ©2026 G. R. Akhtar - RIDE 4.7, the editor
 Release seal, version 4.7, sealed 03-10-2026
 Written by tools/seal; check it with `tools/seal check`.
-CRC32  size  file - 97 files, seal 205EEBF4
+CRC32  size  file - 97 files, seal CFCF6348
 ------------------------------------------------------------------
 06F11F39     18706  Makefile
 3A1FF49C      3207  RIDE.pro
 494C87DE      7105  RIDE.sln
 E30F8F6C      3997  RIDEConsole.vcxproj
-094E017D     15168  build.bat
+E8CB27AD     15792  build.bat
 1DBB2FBC      2412  macos/CodeView.h
 02B3F91E     14632  macos/CodeView.mm
 2FED410A      3110  macos/Info.plist
@@ -45,7 +45,7 @@ EDA5FB1A      4293  src/debugger.h
 DA6DC095       811  src/demangle_win.cpp
 54362A6B    151096  src/editor.cpp
 4CB2D902     11302  src/editor.h
-D0AE116C      7681  src/find.cpp
+C93A58DA      8040  src/find.cpp
 BB4788F4      1436  src/find.h
 FEE59884      2728  src/help.cpp
 909782C5       314  src/help.h
@@ -88,13 +88,13 @@ CC9C965F      7196  src/toolchain.h
 D93038C5       572  src/utf8.h
 1DD9DC1C     12808  src/workspace.cpp
 F35C52A2      2086  src/workspace.h
-D21D7AAA    246286  winforms/MainForm.h
+CB2110D8    246494  winforms/MainForm.h
 6BA8DA64      2289  winforms/Marshal.h
 3D89F3C4      6415  winforms/Program.cpp
 1F889F5F       157  winforms/RIDEGui.rc
 1BAC8258      9623  winforms/RIDEGui.vcxproj
 B2EA0EE1      4860  winforms/TextFile.h
-45DD3F0F     86233  winforms/bridge.cpp
+CB748B10     86406  winforms/bridge.cpp
 AC9D9867     28352  winforms/bridge.h
 BBD2FAFE      2198  winforms/children.h
 BE6A6F09     72502  winforms/ride.ico

@@ -1,10 +1,8 @@
 #include "find.h"
 #include "path.h"
 
-#include <algorithm>
 #include <cctype>
-#include <fstream>
-#include <sstream>
+#include <cstdio>
 
 namespace editor {
 
@@ -151,10 +149,18 @@ void walk(const FindInFiles& q, const std::string& dir, const std::vector<std::s
             }
             continue;
         }
-        std::ifstream in(full.c_str(), std::ios::binary);
+        // FILE* and not <fstream>: linked into the C++/CLI window, the iostream library's globals corrupt the heap
+        // before main - the trap settings.cpp names, and every other source here reads files this way for it.
+        std::FILE* in = std::fopen(full.c_str(), "rb");
         if (!in) continue;
-        std::stringstream all_; all_ << in.rdbuf();
-        const std::string body = all_.str();
+        std::string body;
+        char chunk[65536];
+        size_t got = 0;
+        while ((got = std::fread(chunk, 1, sizeof chunk, in)) > 0) {
+            body.append(chunk, got);
+            if (body.size() > 8 * 1024 * 1024) break;
+        }
+        std::fclose(in);
         if (body.size() > 8 * 1024 * 1024 || body.find('\0') != std::string::npos) continue;  // too big, or not text
         size_t lineNo = 0, start = 0;
         while (start <= body.size() && !cut) {
