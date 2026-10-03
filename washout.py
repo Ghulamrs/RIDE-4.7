@@ -32,7 +32,7 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 # (project, whole directories, source directories, named files): what compiling needs.
 # help/, projects/ and programs/ because the macOS window's project copies them into
 # RIDE.app as it builds, and fails without them; the Windows projects do not use them.
-RIDE_PLAN = ("RIDE-4.5", ["Editor.xcodeproj", "RIDE.xcworkspace", "help", "projects", "programs"],
+RIDE_PLAN = (os.path.basename(ROOT), ["Editor.xcodeproj", "RIDE.xcworkspace", "help", "projects", "programs"],
              ["src", "macos", "winforms"],
              ["RIDE.sln", "RIDEConsole.vcxproj", "product.props",
               "packaging/windows/settings.json", "packaging/linux/settings.json"])
@@ -143,7 +143,8 @@ def main(argv):
     if os.path.abspath(dest).startswith(ROOT + os.sep) or dest == ROOT:
         print("washout: the copy cannot go inside the tree it washes"); return 2
     workspace = "--workspace" in argv
-    ride_dest = os.path.join(dest, "RIDE-4.5") if workspace else dest
+    ride_name = RIDE_PLAN[0]                     # this tree's own folder name, RIDE-4.7 - never a version written here
+    ride_dest = os.path.join(dest, ride_name) if workspace else dest
     if os.path.exists(dest) and os.listdir(dest):
         if "--force" not in argv:
             print("washout: %s is not empty - give --force to replace it" % dest); return 2
@@ -152,8 +153,8 @@ def main(argv):
     total_kept, total_dropped = 0, []
     _, whole, sources, files = RIDE_PLAN
     kept, dropped = wash(ROOT, ride_dest, whole, files, sources)
-    print("  %-26s %4d files kept, %d binaries dropped" % ("RIDE-4.5", kept, len(dropped)))
-    total_kept += kept; total_dropped += ["RIDE-4.5/" + d for d in dropped]
+    print("  %-26s %4d files kept, %d binaries dropped" % (ride_name, kept, len(dropped)))
+    total_kept += kept; total_dropped += [ride_name + "/" + d for d in dropped]
     if workspace:
         for rel, whole, sources, files in WORKSPACE:
             project = os.path.normpath(os.path.join(ROOT, rel))

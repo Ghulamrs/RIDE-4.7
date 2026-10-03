@@ -34,7 +34,7 @@ kept=0
 tracked() {
     repo=$1 path=$2
     rel=${path#"$repo"/}
-    if [ -d "$repo/.git" ]; then
+    if [ -e "$repo/.git" ]; then
         git -C "$repo" ls-files --error-unmatch "$rel" >/dev/null 2>&1 && return 0
         # A directory holding tracked files counts as tracked too.
         [ -n "$(git -C "$repo" ls-files -- "$rel" 2>/dev/null)" ] && return 0
@@ -79,23 +79,23 @@ if [ -e "$root/build" ]; then
     echo
 fi
 
-# The four, named the way workspace.mk names them and overridable the same
-# way. They are not called this everywhere: on the Linux box the trees are
-# ~/ansicc, ~/shalimar, ~/converter and ~/RIDE, so
-#
-#   CC1_DIR=$HOME/ansicc SHC_DIR=$HOME/shalimar C2S_DIR=$HOME/converter \
-#       ~/RIDE/clean.sh
-#
-# reaches the right ones. A cleaner that silently cleaned nothing because it
-# looked for a name that machine does not use would be worse than no cleaner.
-CC1_DIR=${CC1_DIR:-$root/Compiler-C}
-SHC_DIR=${SHC_DIR:-$root/Compiler-S}
+# The projects RIDE 4.7 builds, named the way workspace.mk names them and overridable the same way, so a
+# machine that keeps them elsewhere is reached by naming them: a cleaner that silently cleaned nothing because
+# it looked for a name that machine does not use would be worse than no cleaner.
+CC1_DIR=${CC1_DIR:-$root/VM6747/Compiler-Ci}
+CXX1_DIR=${CXX1_DIR:-$root/VM6747/Compiler-Cppi}
+SHC_DIR=${SHC_DIR:-$root/VM6747/Compiler-Si}
+VM_DIR=${VM_DIR:-$root/VM6747/Emulator}
 C2S_DIR=${C2S_DIR:-$root/Converter-C2S}
+ASM_DIR=${ASM_DIR:-$root/ASM6x}
+MASM_DIR=${MASM_DIR:-$root/MASM}
+LINK_DIR=${LINK_DIR:-$root/LINK}
+LNK6X_DIR=${LNK6X_DIR:-$root/LNK6x}
 ED_DIR=${ED_DIR:-$here}
 
-for repo in "$CC1_DIR" "$SHC_DIR" "$C2S_DIR" "$ED_DIR"; do
+for repo in "$CC1_DIR" "$CXX1_DIR" "$SHC_DIR" "$VM_DIR" "$C2S_DIR" "$ASM_DIR" "$MASM_DIR" "$LINK_DIR" "$LNK6X_DIR" "$ED_DIR"; do
     if [ ! -d "$repo" ]; then
-        echo "  NOT FOUND $repo   (name it with CC1_DIR / SHC_DIR / C2S_DIR)"
+        echo "  NOT FOUND $repo   (name it with CC1_DIR, CXX1_DIR, SHC_DIR, VM_DIR, C2S_DIR, ASM_DIR, MASM_DIR, LINK_DIR or LNK6X_DIR)"
         continue
     fi
     echo "$(basename "$repo"):"
@@ -105,10 +105,12 @@ for repo in "$CC1_DIR" "$SHC_DIR" "$C2S_DIR" "$ED_DIR"; do
 
     # The binaries. Named rather than globbed, because a glob over *.exe in a
     # directory that also holds sources is how a clean script becomes a bug.
-    for exe in cc1.exe shc.exe c2s.exe RIDE.exe RIDEConsole.exe; do
+    for exe in c90.exe cpp11.exe shalimar.exe c2s.exe vm6747.exe asm6x.exe masm.exe link.exe lnk6x.exe \
+               RIDE.exe RIDEConsole.exe cc1.exe cxx1.exe shc.exe; do
         drop "$repo" "$repo/$exe"
     done
     drop "$repo" "$repo/bin"
+    drop "$repo" "$repo/build"     # ASM6x, LNK6x, LINK and MASM build here; a tracked one is kept
 
     # Compiler-S's runtime archives. In Compiler-C this same name is source,
     # which `tracked` is what stops.
@@ -116,6 +118,8 @@ for repo in "$CC1_DIR" "$SHC_DIR" "$C2S_DIR" "$ED_DIR"; do
 
     # What the suites leave. Compiler-C has eight of these.
     for out in "$repo"/tests/out "$repo"/tests/out-*; do
+        # cpp11's emit golden is a recorded before-and-after, kept through a clean on purpose.
+        case "$out" in *out-emit.golden) continue ;; esac
         drop "$repo" "$out"
     done
 
@@ -148,7 +152,7 @@ for repo in "$CC1_DIR" "$SHC_DIR" "$C2S_DIR" "$ED_DIR"; do
     find "$repo" -name '* [0-9].*' -not -path '*/.git/*' 2>/dev/null |
     while IFS= read -r dup; do
         [ -e "$dup" ] || continue
-        if [ -d "$repo/.git" ] &&
+        if [ -e "$repo/.git" ] &&
            git -C "$repo" ls-files --error-unmatch "${dup#"$repo"/}" >/dev/null 2>&1; then
             echo "  KEPT     ${dup#"$root"/}   (the repository holds this)"
             continue
@@ -168,7 +172,7 @@ for repo in "$CC1_DIR" "$SHC_DIR" "$C2S_DIR" "$ED_DIR"; do
     # file, and only if the answer is none does the sweep run. No repository
     # here tracks one, so the sweep can only take build output; if one ever
     # did, this prints and does nothing.
-    if [ -d "$repo/.git" ] && [ -n "$(git -C "$repo" ls-files '*.o' '*.d' '*.obj' 2>/dev/null)" ]; then
+    if [ -e "$repo/.git" ] && [ -n "$(git -C "$repo" ls-files '*.o' '*.d' '*.obj' 2>/dev/null)" ]; then
         echo "  SKIPPED  loose objects in $(basename "$repo")   (it tracks some)"
     else
         n=$(find "$repo" -name '*.o' -o -name '*.d' -o -name '*.obj' 2>/dev/null | wc -l | tr -d ' ')

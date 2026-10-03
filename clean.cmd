@@ -1,14 +1,14 @@
 @echo off
-rem Remove everything the four projects build on Windows, and nothing they are
-rem made of. The Unix half of this is clean.sh; this is not a translation of it
+rem Remove everything RIDE and the nine projects it drives build on Windows, and
+rem nothing they are made of. The Unix half of this is clean.sh; this is not a translation of it
 rem because the two machines do not leave the same things behind.
 rem
 rem   clean.cmd        clean
 rem   clean.cmd -n     say what would go, remove nothing
 rem
-rem Run it from the RIDE directory. The four projects are expected as
-rem siblings - RIDE\, Compiler-C\, Compiler-S\, Converter-C2S\ - which is
-rem what RIDE.sln's ..\ paths require anyway.
+rem Run it from the RIDE directory. The projects are expected beside it -
+rem VM6747\ (Compiler-Ci, Compiler-Cppi, Compiler-Si, Emulator), Converter-C2S\,
+rem ASM6x\, MASM\, LINK\ and LNK6x\ - which is what RIDE.sln's ..\ paths require.
 rem
 rem **Every path here is named, never globbed.** clean.sh can ask git whether a
 rem path is source; there is no git on this machine, so the safety has to come
@@ -38,52 +38,58 @@ rem ---- the shared object root the Makefiles default to -----------------------
 call :dropdir "%ROOT%\build"
 
 rem ---- RIDE ---------------------------------------------------------------
-echo RIDE:
-call :dropdir "%ROOT%\RIDE\x64"
-call :dropdir "%ROOT%\RIDE\obj"
-call :dropdir "%ROOT%\RIDE\RIDEConsole"
-call :dropdir "%ROOT%\RIDE\winforms\x64"
-call :dropdir "%ROOT%\RIDE\winforms\RIDEGui"
-call :dropfile "%ROOT%\RIDE\RIDEConsole.exe"
-call :dropfile "%ROOT%\RIDE\RIDE.exe"
-call :dropfile "%ROOT%\RIDE\test.exe"
-call :dropfile "%ROOT%\RIDE\session.exe"
-call :dropglob "%ROOT%\RIDE" *.obj
-call :dropglob "%ROOT%\RIDE" *.ilk
-call :dropglob "%ROOT%\RIDE" *.pdb
+set HERE=%~dp0
+if "%HERE:~-1%"=="\" set HERE=%HERE:~0,-1%
+for %%I in ("%HERE%") do set RIDENAME=%%~nxI
+echo %RIDENAME%:
+call :dropdir "%HERE%\x64"
+call :dropdir "%HERE%\obj"
+call :dropdir "%HERE%\bin"
+call :dropdir "%HERE%\dist"
+call :dropdir "%HERE%\RIDEConsole"
+call :dropdir "%HERE%\winforms\x64"
+call :dropdir "%HERE%\winforms\RIDEGui"
+call :dropfile "%HERE%\RIDEConsole.exe"
+call :dropfile "%HERE%\RIDE.exe"
+call :dropfile "%HERE%\test.exe"
+call :dropfile "%HERE%\session.exe"
+call :dropglob "%HERE%" *.obj
+call :dropglob "%HERE%" *.ilk
+call :dropglob "%HERE%" *.pdb
 echo.
 
-rem ---- Compiler-C ------------------------------------------------------------
-echo Compiler-C:
-call :dropdir "%ROOT%\Compiler-C\msvc\x64"
-call :dropdir "%ROOT%\Compiler-C\msvc\cc1"
-call :dropdir "%ROOT%\Compiler-C\obj"
-call :dropfile "%ROOT%\Compiler-C\cc1.exe"
-call :dropouts "%ROOT%\Compiler-C"
-echo.
-
-rem ---- Compiler-S ------------------------------------------------------------
-echo Compiler-S:
-call :dropdir "%ROOT%\Compiler-S\x64"
-call :dropdir "%ROOT%\Compiler-S\shc"
-call :dropdir "%ROOT%\Compiler-S\obj"
-call :dropfile "%ROOT%\Compiler-S\shc.exe"
-call :dropouts "%ROOT%\Compiler-S"
-echo.
-
-rem ---- Converter-C2S ---------------------------------------------------------
-echo Converter-C2S:
-call :dropdir "%ROOT%\Converter-C2S\x64"
-call :dropdir "%ROOT%\Converter-C2S\c2s"
-call :dropdir "%ROOT%\Converter-C2S\obj"
-call :dropfile "%ROOT%\Converter-C2S\c2s.exe"
-call :dropouts "%ROOT%\Converter-C2S"
-echo.
+rem ---- the projects RIDE drives, as workspace.mk and RIDE.sln name them -------
+rem Each: the x64\ and obj\ trees MSVC leaves, bin\, its program, and what its suites wrote. build\ only
+rem where the project holds no source of that name - c90's and cpp11's build is a tracked file.
+call :project "VM6747\Compiler-Ci" c90.exe keepbuild
+call :project "VM6747\Compiler-Cppi" cpp11.exe keepbuild
+call :project "VM6747\Compiler-Si" shalimar.exe
+call :project "VM6747\Emulator" vm6747.exe
+call :project "Converter-C2S" c2s.exe
+call :project "ASM6x" asm6x.exe
+call :project "MASM" masm.exe
+call :project "LINK" link.exe
+call :project "LNK6x" lnk6x.exe
 
 if "%DRY%"=="1" (echo %COUNT% would be removed.) else (echo %COUNT% removed.)
 exit /b 0
 
 rem ---------------------------------------------------------------------------
+:project
+set P=%ROOT%\%~1
+if not exist "%P%\" (echo %~1: NOT FOUND - not beside RIDE here & echo. & exit /b 0)
+echo %~1:
+call :dropdir "%P%\x64"
+call :dropdir "%P%\obj"
+call :dropdir "%P%\bin"
+call :dropdir "%P%\msvc\x64"
+call :dropdir "%P%\ide\x64"
+if not "%~3"=="keepbuild" call :dropdir "%P%\build"
+call :dropfile "%P%\%~2"
+call :dropouts "%P%"
+echo.
+exit /b 0
+
 :dropdir
 if not exist %1\ exit /b 0
 set /a COUNT+=1
@@ -109,8 +115,11 @@ exit /b 0
 rem The suites' scratch. tests\out and tests\out-<target>, which the shell
 rem suites make and which arrive here inside a relayed tarball.
 :dropouts
+rem cpp11's emit golden is a recorded before-and-after, kept through a clean on purpose.
 for /d %%D in ("%~1\tests\out" "%~1\tests\out-*") do (
-  set /a COUNT+=1
-  if "%DRY%"=="1" (echo   would go %%~fD) else (rd /s /q "%%~fD" & echo   removed  %%~fD)
+  if /i not "%%~nxD"=="out-emit.golden" (
+    set /a COUNT+=1
+    if "%DRY%"=="1" (echo   would go %%~fD) else (rd /s /q "%%~fD" & echo   removed  %%~fD)
+  )
 )
 exit /b 0
