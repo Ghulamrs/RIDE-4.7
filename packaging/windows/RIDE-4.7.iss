@@ -43,6 +43,14 @@ LicenseFile={#Stage}\README.md
 [Files]
 Source: "{#Stage}\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
 
+[InstallDelete]
+; The samples are the installer's own, so an upgrade replaces them whole: what an earlier
+; install had and this one does not - examples\, the CCS samples that left - goes. The
+; user's copies in Documents\RIDE are not touched.
+Type: filesandordirs; Name: "{app}\examples"
+Type: filesandordirs; Name: "{app}\projects"
+Type: filesandordirs; Name: "{app}\programs"
+
 [Dirs]
 ; Projects and single programs are Documents\RIDE\projects and Documents\RIDE\programs,
 ; filled by the editor from {app}\projects and {app}\programs on first use - the user's own,

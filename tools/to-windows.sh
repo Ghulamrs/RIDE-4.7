@@ -141,6 +141,11 @@ BIN="$DIR\\bin"
     set -- $pair
     printf 'cd /d "%s" || exit /b 2\r\n' "$1"
     printf 'if exist tests rmdir /s /q tests\r\n'
+    # RIDE's samples are the repository's alone, so they go too: laid over, a sample removed
+    # from the tree stayed here and was staged into the installer (K6747c, 03-10-2026).
+    if [ "$2" = ride ]; then
+      for d in projects programs examples; do printf 'if exist %s rmdir /s /q %s\r\n' "$d" "$d"; done
+    fi
     printf 'tar -xzf %s-src.tgz || exit /b 2\r\n' "$2"
     printf 'del /q %s-src.tgz\r\n' "$2"
   done
