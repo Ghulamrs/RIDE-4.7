@@ -440,6 +440,16 @@ void ride_free(char* what) { std::free(what); }
 
 char* ride_about(void) { return give(join(editor::about::lines())); }
 
+char* ride_about_credits(void) {
+    std::vector<std::string> all = editor::about::lines();
+    const size_t stamp = editor::about::stampLines().size();
+    if (stamp > 0 && all.size() > stamp) all.resize(all.size() - stamp);
+    while (!all.empty() && all.back().empty()) all.pop_back();
+    return give(join(all));
+}
+
+char* ride_about_stamp(void) { return give(join(editor::about::stampLines())); }
+
 char* ride_environment(void) { return give(join(editor::about::environment())); }
 
 char* ride_describe_build(const char* assembly) {

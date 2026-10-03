@@ -45,6 +45,16 @@ int main(int argc, char** argv) {
     int caseIndent = -1;
 
     // The installer's last step: the release record of the programs in a directory, for About to compare with.
+    // Any file's CRC-32, as About computes it: the same answer on every system, which has no common command.
+    if (argc >= 3 && std::strcmp(argv[1], "--crc32") == 0) {
+        int status = 0;
+        for (int k = 2; k < argc; ++k) {
+            const std::string crc = editor::about::crc32Text(argv[k]);
+            if (crc.empty()) { std::fprintf(stderr, "%s: cannot read %s\n", me.c_str(), argv[k]); status = 2; continue; }
+            std::printf("%s  %s\n", crc.c_str(), argv[k]);
+        }
+        return status;
+    }
     if (argc >= 3 && std::strcmp(argv[1], "--release-record") == 0) {
         std::vector<std::string> more;
         for (int k = 3; k < argc; ++k) more.push_back(argv[k]);
@@ -112,6 +122,7 @@ int main(int argc, char** argv) {
                 "           [--width n] [--tabs] [--case-indent] [--plain]\n"
                 "       %s <project.pro or dir> [--arch a] [--assembler path] [--linker path]\n"
                 "           [--ti dir [--tilib dir] [--tilinker path]] [--ccs [--ccs-root dir]] --build | --run\n"
+                "       %s --crc32 file...      each file's CRC-32, as About and release.crc compute it\n"
                 "  %s - the console half, which is %s.exe on Linux and\n"
                 "  macOS and %sConsole.exe on Windows. %s.exe on Windows is the\n"
                 "  same editor in a window, over the same core.\n"
@@ -165,7 +176,7 @@ int main(int argc, char** argv) {
                 "  F4 build the project's program   Ctrl-A lay out\n"
                 "  F9 breakpoint   F8 debug   F7/F6 step over/into\n"
                 "  F1 keys    Ctrl-Q quit\n",
-                me.c_str(), me.c_str(), editor::product::kName, editor::product::kName,
+                me.c_str(), me.c_str(), me.c_str(), editor::product::kName, editor::product::kName,
                 editor::product::kName, editor::product::kName);
             return 0;
         } else if (argv[i][0] == '-' && argv[i][1] != '\0') {

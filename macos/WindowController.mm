@@ -3702,15 +3702,21 @@ static const NSUInteger kOutputMost = 2000000;
 
 - (void)showAbout:(id)sender {
     (void)sender;
-    // A box sized to what it says, as the Windows one is: the standard panel's credits are a fixed,
-    // scrolling area, and the last lines - the time and the CRC - fell below it.
-    NSString* about = Take(ride_about());
-    NSAlert* box = [[NSAlert alloc] init];
-    box.messageText = @"About";
-    box.informativeText = about;
-    box.icon = [NSApp applicationIconImage];
-    [box addButtonWithTitle:@"OK"];
-    [box runModal];
+    // The standard panel at its own size: the credits stop before the stamp - the release, the time,
+    // the CRC and what the release record says - which takes the panel's own line under them.
+    NSString* about = Take(ride_about_credits());
+    NSString* stamp = Take(ride_about_stamp());
+    NSDictionary* options = @{
+        NSAboutPanelOptionApplicationName : Str(ride_product_name()),
+        NSAboutPanelOptionApplicationVersion : Str(ride_version()),
+        NSAboutPanelOptionVersion : @"",
+        NSAboutPanelOptionCredits : [[NSAttributedString alloc]
+            initWithString:about
+                attributes:@{NSFontAttributeName : [NSFont systemFontOfSize:[NSFont smallSystemFontSize]],
+                             NSForegroundColorAttributeName : [NSColor labelColor]}],
+        @"Copyright" : stamp.length > 0 ? stamp : @"RIDE 4.7 - G. R. Akhtar",
+    };
+    [NSApp orderFrontStandardAboutPanelWithOptions:options];
 }
 
 // ---- menu state -----------------------------------------------------------------

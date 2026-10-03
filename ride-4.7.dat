@@ -1,7 +1,7 @@
 ©2026 G. R. Akhtar - RIDE 4.7, the editor
 Release seal, version 4.7, sealed 03-10-2026
 Written by tools/seal; check it with `tools/seal check`.
-CRC32  size  file - 97 files, seal BF436E31
+CRC32  size  file - 97 files, seal 77BE73D0
 ------------------------------------------------------------------
 06F11F39     18706  Makefile
 3A1FF49C      3207  RIDE.pro
@@ -19,13 +19,13 @@ A2B21358    971341  macos/RIDE.icns
 7E2C43FD      2767  macos/Text.h
 E818B9F2     22370  macos/Window.xcodeproj/project.pbxproj
 AEF649AE      1693  macos/WindowController.h
-F62B5A5F    188405  macos/WindowController.mm
+A42F9181    188912  macos/WindowController.mm
 18F9EFDC      4599  macos/main.mm
 07969C88      3339  macos/make-icon.swift
 5ED755F0     12349  macos/make-xcodeproj.py
 35A578A1       400  product.props
-6C9B1A07     14631  src/about.cpp
-03395B08       717  src/about.h
+BEA48324     15040  src/about.cpp
+ABC4FB50      1108  src/about.h
 634B7DB9      8502  src/buffer.cpp
 985593C8      2268  src/buffer.h
 4CDAFF38      7717  src/ccs/ccsoptions.cpp
@@ -53,7 +53,7 @@ FEE59884      2728  src/help.cpp
 DC8B18AF      1891  src/indent.h
 C644F94E      9211  src/json.cpp
 D12A8855      1365  src/json.h
-2A783301     14185  src/main.cpp
+74C2A56E     14831  src/main.cpp
 45F21E26     12643  src/menu.cpp
 3E29C965      4108  src/menu.h
 DD59BAFA      8601  src/options.cpp
@@ -94,8 +94,8 @@ F35C52A2      2086  src/workspace.h
 1F889F5F       157  winforms/RIDEGui.rc
 1BAC8258      9623  winforms/RIDEGui.vcxproj
 B2EA0EE1      4860  winforms/TextFile.h
-7FA4AB44     80968  winforms/bridge.cpp
-F9F850D8     26479  winforms/bridge.h
+8C878080     81370  winforms/bridge.cpp
+D66C2EEA     26654  winforms/bridge.h
 BBD2FAFE      2198  winforms/children.h
 BE6A6F09     72502  winforms/ride.ico
 BF74EBDD     11065  winforms/show.ps1

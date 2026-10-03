@@ -5928,7 +5928,7 @@ void aboutSelf() {
         std::ofstream outFile(record.c_str()); outFile << text;
     }
     const std::string changed = editor::about::lines().back();
-    check(changed.find("- CHANGED since the release (it was ") != std::string::npos,
+    check(changed.find("- CHANGED, released ") != std::string::npos,
           "and a record that disagrees says the program has CHANGED, with what it was");
     std::remove(record.c_str());
 }

@@ -416,6 +416,9 @@ const char* ride_shown_run_command(RIDEProject* project, const char* cc1, const 
                                   int config);
 
 char* ride_about(void);
+// About without its last lines, and those lines alone: the macOS panel puts them in its line under the credits.
+char* ride_about_credits(void);
+char* ride_about_stamp(void);
 /* Help > Environment: every tool, header directory and library in force, and where each came from. */
 char* ride_environment(void);
 
