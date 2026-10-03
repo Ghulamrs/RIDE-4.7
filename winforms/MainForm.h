@@ -597,6 +597,10 @@ private:
     Timer^ settle_;
 
     SplitContainer^ outer_;
+    // The bottom panel's minimise button: checked, the panel is only its tab strip and the editor takes the rest.
+    CheckBox^ fold_;
+    bool folded_;
+    int keptPanel_;
     SplitContainer^ upper_;
 
     TreeView^ tree_;
@@ -768,20 +772,9 @@ private:
         // A new file in a project and a new project are the Project menu's, and only there.
         file->DropDownItems->Add("Open...", nullptr,
                                  gcnew EventHandler(this, &MainForm::OnOpenFile));
-        ToolStripMenuItem^ save = gcnew ToolStripMenuItem(
-            "Save", nullptr, gcnew EventHandler(this, &MainForm::OnSave));
-        save->ShortcutKeys = static_cast<Keys>(Keys::Control | Keys::S);
-        file->DropDownItems->Add(save);
-        live_->Add(save);
-        file->DropDownItems->Add("Save as...", nullptr,
-                                 gcnew EventHandler(this, &MainForm::OnSaveAs));
-        ToolStripMenuItem^ close = Item("Close", Keys::Control | Keys::W, gcnew EventHandler(this, &MainForm::OnCloseFile));
-        file->DropDownItems->Add(close);
-        live_->Add(close);
-        file->DropDownItems->Add(gcnew ToolStripSeparator());
-        // The last three files opened on their own, most recent first. Next
-        // and previous file keep their keys, Ctrl+PageDown and Ctrl+PageUp,
-        // off the menu.
+        // The last three files opened on their own, most recent first, in a submenu as macOS has them
+        // and as the Project menu has its projects. Next and previous file keep Ctrl+PageDown and Ctrl+PageUp.
+        recentFilesMenu_ = gcnew ToolStripMenuItem("Recent");
         recentFileItems_ = gcnew System::Collections::Generic::List<ToolStripMenuItem^>();
         for (int i = 0; i < 3; ++i) {
             ToolStripMenuItem^ one = gcnew ToolStripMenuItem(
@@ -789,8 +782,21 @@ private:
             one->Tag = i;
             one->Visible = false;
             recentFileItems_->Add(one);
-            file->DropDownItems->Add(one);
+            recentFilesMenu_->DropDownItems->Add(one);
         }
+        recentFilesMenu_->Enabled = false;
+        file->DropDownItems->Add(recentFilesMenu_);
+        file->DropDownItems->Add(gcnew ToolStripSeparator());
+        ToolStripMenuItem^ close = Item("Close", Keys::Control | Keys::W, gcnew EventHandler(this, &MainForm::OnCloseFile));
+        file->DropDownItems->Add(close);
+        live_->Add(close);
+        ToolStripMenuItem^ save = gcnew ToolStripMenuItem(
+            "Save", nullptr, gcnew EventHandler(this, &MainForm::OnSave));
+        save->ShortcutKeys = static_cast<Keys>(Keys::Control | Keys::S);
+        file->DropDownItems->Add(save);
+        live_->Add(save);
+        file->DropDownItems->Add("Save as...", nullptr,
+                                 gcnew EventHandler(this, &MainForm::OnSaveAs));
         file->DropDownItems->Add(gcnew ToolStripSeparator());
         ToolStripMenuItem^ exit = Item("Exit", Keys::Control | Keys::Q, gcnew EventHandler(this, &MainForm::OnExit));
         file->DropDownItems->Add(exit);
@@ -1206,6 +1212,23 @@ private:
         panel_->TabPages->Add(two);
         panel_->TabPages->Add(three);
         outer->Panel2->Controls->Add(panel_);
+        fold_ = gcnew CheckBox();
+        fold_->Appearance = Appearance::Button;
+        fold_->FlatStyle = FlatStyle::Flat;
+        fold_->FlatAppearance->BorderSize = 1;
+        fold_->Size = System::Drawing::Size(24, 20);
+        fold_->Text = L"\u25BE";
+        fold_->TextAlign = System::Drawing::ContentAlignment::MiddleCenter;
+        fold_->Font = gcnew System::Drawing::Font("Segoe UI", 8.0f);
+        fold_->Anchor = AnchorStyles::Top | AnchorStyles::Right;
+        fold_->TabStop = false;
+        (gcnew ToolTip())->SetToolTip(fold_, "Minimise the panel to give the editor the room; click again to restore it");
+        fold_->CheckedChanged += gcnew EventHandler(this, &MainForm::OnFold);
+        outer->Panel2->Controls->Add(fold_);
+        fold_->BringToFront();
+        folded_ = false;
+        keptPanel_ = 0;
+        outer->Panel2->Resize += gcnew EventHandler(this, &MainForm::PlaceFold);
 
         Controls->Add(outer);
         outer->BringToFront();
@@ -1261,7 +1284,9 @@ private:
                 Math::Max(forTree, Math::Min(240, upper_->Width - forCode));
         }
 
-        if (outer_ != nullptr &&
+        if (outer_ != nullptr && folded_) {
+            outer_->SplitterDistance = Math::Max(forUpper, outer_->Height - FoldedHeight() - outer_->SplitterWidth);
+        } else if (outer_ != nullptr &&
             outer_->Height > forUpper + forPanel + outer_->SplitterWidth) {
             outer_->Panel1MinSize = forUpper;
             outer_->Panel2MinSize = forPanel;
@@ -3312,9 +3337,11 @@ private:
     }
 
     System::Collections::Generic::List<ToolStripMenuItem^>^ recentFileItems_;
+    ToolStripMenuItem^ recentFilesMenu_;
 
     void RefreshRecentFiles() {
         if (recentFileItems_ == nullptr) return;
+        bool any = false;
         for (int i = 0; i < recentFileItems_->Count; ++i) {
             String^ where = FromUtf8(ride_recent_file(i));
             ToolStripMenuItem^ item = recentFileItems_[i];
@@ -3322,7 +3349,9 @@ private:
             item->Text = String::Format("&{0}. {1}", i + 1, System::IO::Path::GetFileName(where));
             item->ToolTipText = where;
             item->Visible = true;
+            any = true;
         }
+        if (recentFilesMenu_ != nullptr) recentFilesMenu_->Enabled = any;
     }
 
     void OnOpenRecentFile(Object^ sender, EventArgs^) {
@@ -4964,7 +4993,37 @@ private:
         text_->Focus();
     }
 
+    // The button sits at the right of the panel's tab strip, where no tab reaches.
+    void PlaceFold(Object^, EventArgs^) {
+        if (fold_ == nullptr) return;
+        fold_->Location = System::Drawing::Point(outer_->Panel2->ClientSize.Width - fold_->Width - 4, 1);
+    }
+
+    int FoldedHeight() { return panel_->ItemSize.Height + 8; }
+
+    void OnFold(Object^, EventArgs^) {
+        if (fold_->Checked == folded_) return;
+        if (fold_->Checked) {
+            keptPanel_ = outer_->Height - outer_->SplitterDistance - outer_->SplitterWidth;
+            folded_ = true;
+            outer_->Panel2MinSize = FoldedHeight();
+            outer_->SplitterDistance = Math::Max(outer_->Panel1MinSize,
+                                                 outer_->Height - FoldedHeight() - outer_->SplitterWidth);
+            fold_->Text = L"\u25B4";
+        } else {
+            folded_ = false;
+            int deep = keptPanel_ > FoldedHeight() + 20 ? keptPanel_ : Math::Max(120, outer_->Height / 4);
+            outer_->SplitterDistance = Math::Max(outer_->Panel1MinSize,
+                                                 Math::Min(outer_->Height - 80 - outer_->SplitterWidth,
+                                                           outer_->Height - deep - outer_->SplitterWidth));
+            outer_->Panel2MinSize = 80;
+            fold_->Text = L"\u25BE";
+        }
+        PlaceFold(nullptr, nullptr);
+    }
+
     void ShowPanel(int which) {
+        if (folded_) fold_->Checked = false;
         panel_->SelectedIndex = which;
         if (which == 0) console_->Focus();
         else if (which == 1) debug_->Focus();

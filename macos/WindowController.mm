@@ -467,6 +467,8 @@ static const CGFloat kJumpBarHeight = 26;
     NSTextField* statusWhere_;
     NSProgressIndicator* statusSpinner_;
     CGFloat panelHeight_;      // remembered while the panel is hidden
+    NSButton* fold_;          // the panel's minimise button: on, the panel is only its tab strip
+    BOOL folded_;
 
     NSTimer* recolourTimer_;
     NSMenu* recentFilesMenu_;
@@ -957,13 +959,43 @@ static NSScrollView* Scroller(NSRect frame) {
     [panel_ addTabViewItem:[self tabNamed:@"Output" holding:outPane]];
 
     [panelPane_ addSubview:panel_];
+
+    // At the right of the tab strip, where no tab reaches: down to minimise, up to restore.
+    fold_ = [NSButton buttonWithTitle:@"\u25BE" target:self action:@selector(foldPanel:)];
+    [fold_ setButtonType:NSButtonTypePushOnPushOff];
+    fold_.bezelStyle = NSBezelStyleRecessed;
+    fold_.controlSize = NSControlSizeSmall;
+    fold_.font = [NSFont systemFontOfSize:[NSFont smallSystemFontSize]];
+    fold_.toolTip = @"Minimise the panel to give the editor the room; click again to restore it";
+    fold_.frame = NSMakeRect(NSWidth(panelPane_.bounds) - 30, NSHeight(panelPane_.bounds) - 22, 26, 18);
+    fold_.autoresizingMask = NSViewMinXMargin | NSViewMinYMargin;
+    [panelPane_ addSubview:fold_];
+}
+
+- (CGFloat)foldedHeight { return 30; }
+
+- (void)foldPanel:(id)sender {
+    (void)sender;
+    const BOOL want = fold_.state == NSControlStateValueOn;
+    if (want == folded_) return;
+    if (want) {
+        panelHeight_ = NSHeight(panelPane_.frame);
+        folded_ = YES;
+        [down_ setPosition:NSHeight(down_.bounds) - [self foldedHeight] ofDividerAtIndex:0];
+        fold_.title = @"\u25B4";
+    } else {
+        folded_ = NO;
+        CGFloat height = panelHeight_ > 60 ? panelHeight_ : floor(NSHeight(down_.bounds) / 4);
+        [down_ setPosition:NSHeight(down_.bounds) - height ofDividerAtIndex:0];
+        fold_.title = @"\u25BE";
+    }
 }
 
 // The navigator keeps its width and the panel its share as the window grows;
 // neither can be dragged to nothing.
 - (BOOL)splitView:(NSSplitView*)split shouldAdjustSizeOfSubview:(NSView*)view {
     if (split == across_) return view != navigatorPane_;
-    return YES;
+    return !(folded_ && view == panelPane_);  // minimised, it keeps its tab strip's height
 }
 
 - (CGFloat)splitView:(NSSplitView*)split constrainMinCoordinate:(CGFloat)proposed
@@ -977,7 +1009,7 @@ static NSScrollView* Scroller(NSRect frame) {
          ofSubviewAt:(NSInteger)index {
     (void)index;
     if (split == across_) return MIN(proposed, NSWidth(split.bounds) - 320);
-    return MIN(proposed, NSHeight(split.bounds) - 70);
+    return MIN(proposed, NSHeight(split.bounds) - (folded_ ? [self foldedHeight] : 70));
 }
 
 - (BOOL)splitView:(NSSplitView*)split canCollapseSubview:(NSView*)view {
@@ -3385,6 +3417,7 @@ static const NSUInteger kOutputMost = 2000000;
 
 - (void)togglePanel:(id)sender {
     (void)sender;
+    if (folded_) { fold_.state = NSControlStateValueOff; [self foldPanel:nil]; }
     if (!panelPane_.hidden) panelHeight_ = NSHeight(panelPane_.frame);
     panelPane_.hidden = !panelPane_.hidden;
     [down_ adjustSubviews];
