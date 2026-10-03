@@ -2,6 +2,7 @@
 #define EDITOR_FIND_H
 
 #include <cstddef>
+#include <atomic>
 #include <string>
 #include <vector>
 
@@ -39,6 +40,7 @@ struct FindInFiles {
     bool wholeWord = false;
     bool subfolders = true;
     bool namesOnly = false;
+    const std::atomic<bool>* stop = nullptr;   // set from another thread, the walk ends at the next file
 };
 
 // The hits, at most `limit` of them; `files` says how many files were searched, `cut` whether the limit was met.

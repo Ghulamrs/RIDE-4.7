@@ -434,6 +434,8 @@ const char* ride_shown_run_command(RIDEProject* project, const char* cc1, const 
 char* ride_about(void);
 /* Edit > Find in Files: a heading line, then a line a hit - "<file>:<line>:<col>: <the line>", or for a
    name search "<file>" alone - at most 2000 of them. Freed by the caller. */
+// Ends a Find in Files running on another thread at its next file; its answer then says "stopped".
+void ride_find_stop(void);
 char* ride_find_in_files(const char* text, const char* folder, const char* patterns,
                          int matchCase, int wholeWord, int subfolders, int namesOnly);
 // About without its last lines, and those lines alone: the macOS panel puts them in its line under the credits.

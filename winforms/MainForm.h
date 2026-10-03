@@ -22,8 +22,10 @@ public:
     TextFile^ file;        // how it was on disk, so that a save writes it the same way
     int language;          // the Language menu's choice for this file, or -1 for its suffix's
     int lines;             // how many lines, kept by OnTextChanged so nobody asks the box for all of them
+    String^ saved;         // the text as it is on disk, so an undo back to it is not a change
+    DateTime stamp;        // the file's write time when it was read or written here
 
-    Sheet() : file(gcnew TextFile()), language(-1), lines(1) {}
+    Sheet() : file(gcnew TextFile()), language(-1), lines(1), stamp(DateTime::MinValue) {}
 };
 
 ref class Gutter : public Panel {
@@ -464,15 +466,34 @@ private:
     void Accepted(Object^, EventArgs^) { if (ccsText_ == nullptr) Pull(); }
 };
 
+// Find in Files on a thread of its own: the walk reads files and nothing of the window or a project,
+// and ride_find_stop ends it early.
+ref class FindJob {
+public:
+    Utf8^ text;
+    Utf8^ folder;
+    Utf8^ types;
+    int matchCase, wholeWord, subfolders, namesOnly;
+    String^ found;
+    void Run() {
+        found = TakeUtf8(ride_find_in_files(text->c(), folder->c(), types->c(), matchCase, wholeWord, subfolders, namesOnly));
+    }
+};
+
 public ref class MainForm : public Form {
 public:
     MainForm() { Start(nullptr, nullptr); }
     MainForm(String^ projectDirectory, array<String^>^ files) {
-        paneMode_ = PaneMode::PaneProject;
         Start(projectDirectory, files);
     }
 
 protected:
+
+    // Back from another program: the file in front is checked against the disk.
+    virtual void OnActivated(EventArgs^ e) override {
+        Form::OnActivated(e);
+        if (started_) ReloadIfChanged(Current());
+    }
 
     virtual void OnResize(EventArgs^ e) override {
         Form::OnResize(e);
@@ -507,10 +528,27 @@ protected:
 public:
     // Called on the run's worker thread: a copy of what it said, or nullptr when it is over, sent
     // to this window's thread. Nothing here waits for the window, and a window gone drops it.
+    // Collected under a lock and drained by one message at a time, so a program printing without
+    // end costs the window one append per drain, not one per chunk; past QueueCap the oldest goes.
     void Post(array<Byte>^ bytes, int stream) {
         try {
             if (IsDisposed || !IsHandleCreated) return;
-            BeginInvoke(gcnew Action<array<Byte>^, int>(this, &MainForm::Heard), bytes, stream);
+            bool post;
+            System::Threading::Monitor::Enter(outLock_);
+            try {
+                outQueue_->Add(gcnew OutChunk(bytes, stream));
+                if (bytes != nullptr) outQueued_ += bytes->Length;
+                while (outQueued_ > QueueCap && outQueue_->Count > 1 && outQueue_[0]->bytes != nullptr) {
+                    outQueued_ -= outQueue_[0]->bytes->Length;
+                    outQueue_->RemoveAt(0);
+                    outDropped_ = true;
+                }
+                post = !outPosted_;
+                outPosted_ = true;
+            } finally {
+                System::Threading::Monitor::Exit(outLock_);
+            }
+            if (post) BeginInvoke(gcnew Action(this, &MainForm::DrainOutput));
         } catch (Exception^) { }
     }
 
@@ -720,6 +758,20 @@ private:
     ToolStripMenuItem^ paneItem_;
     ToolStripMenuItem^ panelItem_;
     TextBox^ console_;
+    ref struct OutChunk {
+        array<Byte>^ bytes;
+        int stream;
+        OutChunk(array<Byte>^ b, int s) : bytes(b), stream(s) { }
+    };
+    literal int QueueCap = 4 * 1024 * 1024;
+    literal int ConsoleCap = 2 * 1024 * 1024;
+    Object^ outLock_;
+    System::Collections::Generic::List<OutChunk^>^ outQueue_;
+    int outQueued_;
+    bool outPosted_;
+    bool outDropped_;
+    bool heardProgram_;
+    bool finding_;
     TextBox^ debug_;
     RichTextBox^ assembly_;
     StatusStrip^ status_;
@@ -756,6 +808,13 @@ private:
     void Start(String^ projectDirectory, array<String^>^ files) {
         // The user's settings.json, made from the installation's the first time - as the console does.
         ride_write_install_file_if_absent();
+        outLock_ = gcnew Object();
+        outQueue_ = gcnew System::Collections::Generic::List<OutChunk^>();
+        outQueued_ = 0;
+        outPosted_ = false;
+        outDropped_ = false;
+        heardProgram_ = false;
+        finding_ = false;
         project_ = ride_project_new();
         arch_ = "x86_64-windows";
         ride_ask_native(AskNativeInWindow);
@@ -823,7 +882,6 @@ private:
             DropSheet(sheets_[0]);
             text_ = nullptr;
             path_ = nullptr;
-            if (ride_project_loaded(project_) == 0) paneMode_ = PaneMode::PaneFiles;
             RefreshTitle();
             FillTree();
             SayBuild();
@@ -859,8 +917,8 @@ private:
         live_->Add(file->DropDownItems->Add("New", nullptr,
                                             gcnew EventHandler(this, &MainForm::OnNewBuffer)));
         // A new file in a project and a new project are the Project menu's, and only there.
-        file->DropDownItems->Add("Open...", nullptr,
-                                 gcnew EventHandler(this, &MainForm::OnOpenFile));
+        openFileItem_ = gcnew ToolStripMenuItem("Open...", nullptr, gcnew EventHandler(this, &MainForm::OnOpenFile));
+        file->DropDownItems->Add(openFileItem_);
         // The last three files opened on their own, most recent first, in a submenu as macOS has them
         // and as the Project menu has its projects. Next and previous file keep Ctrl+PageDown and Ctrl+PageUp.
         recentFilesMenu_ = gcnew ToolStripMenuItem("Recent");
@@ -884,8 +942,8 @@ private:
         save->ShortcutKeys = static_cast<Keys>(Keys::Control | Keys::S);
         file->DropDownItems->Add(save);
         live_->Add(save);
-        file->DropDownItems->Add("Save as...", nullptr,
-                                 gcnew EventHandler(this, &MainForm::OnSaveAs));
+        saveAsItem_ = gcnew ToolStripMenuItem("Save as...", nullptr, gcnew EventHandler(this, &MainForm::OnSaveAs));
+        file->DropDownItems->Add(saveAsItem_);
         file->DropDownItems->Add(gcnew ToolStripSeparator());
         ToolStripMenuItem^ exit = Item("Exit", Keys::Control | Keys::Q, gcnew EventHandler(this, &MainForm::OnExit));
         file->DropDownItems->Add(exit);
@@ -1097,6 +1155,7 @@ private:
             targetItems_->Add(one);
             target->DropDownItems->Add(one);
         }
+        target->DropDownOpening += gcnew EventHandler(this, &MainForm::OnChoicesOpening);
 
         ToolStripMenuItem^ language = gcnew ToolStripMenuItem("Lan&guage");
         langAutoItem_ = gcnew ToolStripMenuItem(
@@ -1123,6 +1182,7 @@ private:
         language->DropDownItems->Add(convertItem_);
 
         ToolStripMenuItem^ tools = gcnew ToolStripMenuItem("Too&ls");
+        tools->DropDownOpening += gcnew EventHandler(this, &MainForm::OnChoicesOpening);
         toolAutoItem_ = gcnew ToolStripMenuItem(
             "By language", nullptr, gcnew EventHandler(this, &MainForm::OnToolAuto));
         toolAutoItem_->ShortcutKeyDisplayString = "Ctrl+K";
@@ -1265,6 +1325,26 @@ private:
         tree_->NodeMouseClick += gcnew TreeNodeMouseClickEventHandler(this, &MainForm::OnTreeClick);
 
         tree_->KeyDown += gcnew KeyEventHandler(this, &MainForm::OnTreeKey);
+        // The navigator's right-click menu on macOS, item for item but Add Files.
+        treeMenu_ = gcnew System::Windows::Forms::ContextMenuStrip();
+        treeOpen_ = gcnew ToolStripMenuItem("Open", nullptr, gcnew EventHandler(this, &MainForm::OnTreeMenuOpen));
+        treeNewFile_ = gcnew ToolStripMenuItem("New File", nullptr, gcnew EventHandler(this, &MainForm::OnNewFile));
+        treeRename_ = gcnew ToolStripMenuItem("Rename...", nullptr, gcnew EventHandler(this, &MainForm::OnRenameFile));
+        treeMove_ = gcnew ToolStripMenuItem("Move to Group...", nullptr, gcnew EventHandler(this, &MainForm::OnMoveToGroup));
+        treeRemove_ = gcnew ToolStripMenuItem("Remove", nullptr, gcnew EventHandler(this, &MainForm::OnRemoveFromProject));
+        treeDelete_ = gcnew ToolStripMenuItem("Delete...", nullptr, gcnew EventHandler(this, &MainForm::OnDeleteFile));
+        treeShow_ = gcnew ToolStripMenuItem("Show in Explorer", nullptr, gcnew EventHandler(this, &MainForm::OnShowInExplorer));
+        treeMenu_->Items->Add(treeOpen_);
+        treeMenu_->Items->Add(gcnew ToolStripSeparator());
+        treeMenu_->Items->Add(treeNewFile_);
+        treeMenu_->Items->Add(treeRename_);
+        treeMenu_->Items->Add(treeMove_);
+        treeMenu_->Items->Add(treeRemove_);
+        treeMenu_->Items->Add(treeDelete_);
+        treeMenu_->Items->Add(gcnew ToolStripSeparator());
+        treeMenu_->Items->Add(treeShow_);
+        treeMenu_->Opening += gcnew System::ComponentModel::CancelEventHandler(this, &MainForm::OnTreeMenuOpening);
+        tree_->ContextMenuStrip = treeMenu_;
         upper->Panel1->Controls->Add(tree_);
 
         sheets_ = gcnew System::Collections::Generic::List<Sheet^>();
@@ -1944,6 +2024,7 @@ private:
         sheet->gutter->Invalidate();
 
         Recolour();
+        ReloadIfChanged(sheet);
     }
 
     literal int kDrawing = 0x000B;
@@ -2778,7 +2859,6 @@ private:
         ride_project_free(project_);
         project_ = trying;
         projectDirectory_ = directory;
-        paneMode_ = PaneMode::PaneProject;
         FillTree();
         TakeProjectSettings();
 
@@ -2838,7 +2918,7 @@ private:
         try {
             tree_->Nodes->Clear();
 
-            if (paneMode_ == PaneMode::PaneFiles || ride_project_loaded(project_) == 0) {
+            if (ride_project_loaded(project_) == 0) {
                 for (int i = 0; i < sheets_->Count; ++i) {
                     TreeNode^ leaf = gcnew TreeNode(TabName(sheets_[i]));
                     leaf->Tag = sheets_[i]->path;
@@ -2858,6 +2938,15 @@ private:
                     }
                     tree_->Nodes->Add(node);
                 }
+                // The project and what is open, both at once, as the macOS navigator shows them.
+                TreeNode^ open = gcnew TreeNode("Open files");
+                open->Name = OpenFilesNode;
+                for (int i = 0; i < sheets_->Count; ++i) {
+                    TreeNode^ leaf = gcnew TreeNode(TabName(sheets_[i]));
+                    leaf->Tag = sheets_[i]->path;
+                    open->Nodes->Add(leaf);
+                }
+                tree_->Nodes->Add(open);
                 tree_->ExpandAll();
             }
             TreeNode^ again = FindNode(tree_->Nodes, chosen);
@@ -2879,6 +2968,8 @@ private:
         return nullptr;
     }
 
+    literal String^ OpenFilesNode = "$open";
+
     String^ TargetFile() {
         if (tree_->SelectedNode != nullptr && tree_->SelectedNode->Tag != nullptr)
             return safe_cast<String^>(tree_->SelectedNode->Tag);
@@ -2888,7 +2979,7 @@ private:
     String^ GroupUnderCursor() {
         TreeNode^ node = tree_->SelectedNode;
         while (node != nullptr && node->Tag != nullptr) node = node->Parent;
-        return node == nullptr ? "Sources" : node->Text;
+        return node == nullptr || node->Name == OpenFilesNode ? "Sources" : node->Text;
     }
 
     bool Did(int outcome) {
@@ -3021,7 +3112,6 @@ private:
 
     void OnNewBuffer(Object^, EventArgs^) {
 
-        paneMode_ = PaneMode::PaneFiles;
         MakeSheet(nullptr, "");
         what_->Text = "new file - Ctrl+S names it";
     }
@@ -3160,18 +3250,19 @@ private:
             FillTree();
     }
 
-    enum class PaneMode { PaneProject, PaneFiles };
-    PaneMode paneMode_;
     // Set once Start() has opened what the command line and the project asked for; LoadProject opens the project's file only after that.
     bool started_ = false;
 
+    // The file the menu was enabled for - the tree's selection, else the one in front - as Rename
+    // and Delete do, and as the macOS window removes.
     void OnRemoveFromProject(Object^, EventArgs^) {
-        if (path_ == nullptr) {
+        String^ target = TargetFile();
+        if (target == nullptr) {
             what_->Text = "this buffer has no name to look for";
             return;
         }
 
-        array<Byte>^ path = Utf8Of(path_);
+        array<Byte>^ path = Utf8Of(target);
         pin_ptr<Byte> pathPin = &path[0];
 
         if (Did(ride_remove_from_project(project_, reinterpret_cast<const char*>(pathPin))))
@@ -3454,6 +3545,30 @@ private:
 
     System::Collections::Generic::List<ToolStripMenuItem^>^ recentFileItems_;
     ToolStripMenuItem^ recentFilesMenu_;
+    ToolStripMenuItem^ openFileItem_;
+    ToolStripMenuItem^ saveAsItem_;
+
+    // A program running, its build over: what it holds is its own process, not the core, so a
+    // file may be opened, picked from Recent or saved under a new name, as on macOS.
+    bool ProgramOnly() { return busy_ && running_ != nullptr && job_ == nullptr && heardProgram_; }
+    void FreeForProgram() {
+        if (!ProgramOnly()) return;
+        if (openFileItem_ != nullptr) openFileItem_->Enabled = true;
+        if (saveAsItem_ != nullptr) saveAsItem_->Enabled = true;
+        for each (ToolStripMenuItem^ one in recentFileItems_) one->Enabled = true;
+    }
+
+    // The name and the two folders above it, so two main.c read apart, as the macOS menu shows them.
+    static String^ RecentLabel(String^ where) {
+        String^ name = System::IO::Path::GetFileName(where);
+        String^ folder = System::IO::Path::GetDirectoryName(where);
+        if (String::IsNullOrEmpty(folder)) return name;
+        String^ last = System::IO::Path::GetFileName(folder);
+        String^ above = System::IO::Path::GetDirectoryName(folder);
+        String^ before = String::IsNullOrEmpty(above) ? nullptr : System::IO::Path::GetFileName(above);
+        String^ shown = String::IsNullOrEmpty(before) ? last : before + "\\" + last;
+        return String::IsNullOrEmpty(shown) ? name : name + "  -  " + shown;
+    }
 
     void RefreshRecentFiles() {
         if (recentFileItems_ == nullptr) return;
@@ -3462,7 +3577,7 @@ private:
             String^ where = FromUtf8(ride_recent_file(i));
             ToolStripMenuItem^ item = recentFileItems_[i];
             if (where->Length == 0) { item->Visible = false; continue; }
-            item->Text = String::Format("&{0}. {1}", i + 1, System::IO::Path::GetFileName(where));
+            item->Text = String::Format("&{0}. {1}", i + 1, RecentLabel(where));
             item->ToolTipText = where;
             item->Visible = true;
             any = true;
@@ -3512,7 +3627,6 @@ private:
                                   reinterpret_cast<const char*>(calledPin),
                                   reinterpret_cast<const char*>(firstPin)))) {
             projectDirectory_ = pick->SelectedPath;
-            paneMode_ = PaneMode::PaneProject;
             FillTree();
             TakeProjectSettings();
             SayWhere();
@@ -3528,7 +3642,7 @@ private:
         pick->Filter = "Projects (*" + suffix + ", CCS .project)|*" + suffix + ";.project;.cproject;.ccsproject"
                        "|All files (*.*)|*.*";
         pick->InitialDirectory = ProjectsDir();
-        if (pick->ShowDialog() != System::Windows::Forms::DialogResult::OK) {
+        if (pick->ShowDialog(this) != System::Windows::Forms::DialogResult::OK) {
             what_->Text = "no project opened";
             return;
         }
@@ -3565,7 +3679,7 @@ private:
         pick->FileName = offered;
         pick->Filter = ProductName() + " projects (*" + suffix + ")|*" + suffix;
         pick->InitialDirectory = ProjectsDir();
-        if (pick->ShowDialog() != System::Windows::Forms::DialogResult::OK) {
+        if (pick->ShowDialog(this) != System::Windows::Forms::DialogResult::OK) {
             what_->Text = "not saved";
             return;
         }
@@ -3620,9 +3734,9 @@ private:
         ForgetError();
 
         ride_project_close(project_);
+        projectDirectory_ = nullptr;
         TakeInstallationSettings();
 
-        paneMode_ = PaneMode::PaneFiles;
         AfterSheetsGone();
         // All three panes were the project's: the Console alone was cleared, and the Debug and
         // Assembly tabs kept the closed project's build. Assembly first - the Debug tab is
@@ -3651,7 +3765,65 @@ private:
     }
 
 
+    System::Windows::Forms::ContextMenuStrip^ treeMenu_;
+    ToolStripMenuItem^ treeOpen_;
+    ToolStripMenuItem^ treeNewFile_;
+    ToolStripMenuItem^ treeRename_;
+    ToolStripMenuItem^ treeMove_;
+    ToolStripMenuItem^ treeRemove_;
+    ToolStripMenuItem^ treeDelete_;
+    ToolStripMenuItem^ treeShow_;
+
+    // As the Project menu decides them, for the row under the right click.
+    void OnTreeMenuOpening(Object^, System::ComponentModel::CancelEventArgs^ e) {
+        bool project = ride_project_loaded(project_) != 0;
+        bool ccs = project && ride_project_is_ccs(project_) != 0;
+        bool idle = !busy_;
+        // The row under the pointer, selected before anything is decided: the menu may open before the click is seen.
+        TreeNode^ under = tree_->GetNodeAt(tree_->PointToClient(Control::MousePosition));
+        if (under != nullptr) tree_->SelectedNode = under;
+        TreeNode^ node = tree_->SelectedNode;
+        String^ file = node != nullptr && node->Tag != nullptr ? safe_cast<String^>(node->Tag) : nullptr;
+        bool held = false;
+        if (project && file != nullptr) {
+            Utf8 f(file);
+            held = ride_project_holds(project_, f.c()) != 0;
+        }
+        if (!project && file == nullptr) { e->Cancel = true; return; }
+        treeOpen_->Enabled = file != nullptr;
+        treeNewFile_->Enabled = project && !ccs && idle;
+        treeRename_->Enabled = held && idle;
+        treeMove_->Enabled = held && !ccs && idle;
+        treeRemove_->Enabled = held && !ccs && idle;
+        treeDelete_->Enabled = held && idle;
+        treeShow_->Enabled = file != nullptr || project;
+    }
+
+    void OnTreeMenuOpen(Object^, EventArgs^) {
+        TreeNode^ node = tree_->SelectedNode;
+        if (node != nullptr && node->Tag != nullptr) OpenPath(safe_cast<String^>(node->Tag));
+    }
+
+    void OnShowInExplorer(Object^, EventArgs^) {
+        TreeNode^ node = tree_->SelectedNode;
+        String^ file = node != nullptr && node->Tag != nullptr ? safe_cast<String^>(node->Tag) : nullptr;
+        try {
+            if (file != nullptr && System::IO::File::Exists(file))
+                System::Diagnostics::Process::Start("explorer.exe", "/select,\"" + file + "\"");
+            else {
+                String^ root = RootNow();
+                if (root != nullptr && System::IO::Directory::Exists(root))
+                    System::Diagnostics::Process::Start("explorer.exe", "\"" + root + "\"");
+                else what_->Text = "nothing on disk to show";
+            }
+        } catch (Exception^ problem) {
+            what_->Text = problem->Message;
+        }
+    }
+
     void OnTreeClick(Object^, TreeNodeMouseClickEventArgs^ e) {
+        // A right click selects its row first, so the menu acts on what was clicked.
+        if (e->Button == System::Windows::Forms::MouseButtons::Right) { tree_->SelectedNode = e->Node; return; }
         if (e->Button != System::Windows::Forms::MouseButtons::Left) return;
         if (e->Node == nullptr || e->Node->Tag == nullptr) return;
         OpenPath(safe_cast<String^>(e->Node->Tag));
@@ -3691,29 +3863,24 @@ private:
 
     void OnOpenFile(Object^, EventArgs^) {
 
-        paneMode_ = PaneMode::PaneFiles;
         msclr::auto_handle<OpenFileDialog> pick(gcnew OpenFileDialog());
         pick->Filter = "Sources|*.c;*.h;*.cpp;*.hpp;*.cc;*.cxx;*.shl;*.s;*.json"
                        "|C and C++|*.c;*.h;*.cpp;*.hpp;*.cc;*.cxx|Shalimar|*.shl|All files|*.*";
         pick->InitialDirectory = ProgramsDir();
-        if (pick->ShowDialog() != System::Windows::Forms::DialogResult::OK) {
+        if (pick->ShowDialog(this) != System::Windows::Forms::DialogResult::OK) {
             what_->Text = "not opened";
             return;
         }
         OpenPath(pick->FileName);
-        {
-            array<Byte>^ bytes = Utf8Of(pick->FileName);
-            pin_ptr<Byte> pinned = &bytes[0];
-            ride_remember_file(reinterpret_cast<const char*>(pinned));
-        }
-        RefreshRecentFiles();
     }
 
     void OpenPath(String^ path) {
 
         Sheet^ already = SheetFor(path);
         if (already != nullptr) {
-            files_->SelectedTab = already->page;
+            if (files_->SelectedTab == already->page) ReloadIfChanged(already);
+            else files_->SelectedTab = already->page;
+            RememberFile(path);
             return;
         }
 
@@ -3752,10 +3919,21 @@ private:
         OnTextChanged(nullptr, nullptr);
 
         sheet->box->Modified = false;
+        Settle(sheet, path);
         MarkTab(sheet);
         text_->Select(0, 0);
         text_->Focus();
         what_->Text = System::IO::Path::GetFileName(path) + "  " + LineCount(text_) + " lines";
+        RememberFile(path);
+    }
+
+    // Every way a file is opened puts it first in File > Recent - the tree, an error line, the
+    // command line and Recent itself, as on macOS - unless the core is the worker's.
+    void RememberFile(String^ path) {
+        if (path == nullptr || (busy_ && !ProgramOnly())) return;
+        Utf8 where(path);
+        ride_remember_file(where.c());
+        RefreshRecentFiles();
     }
 
     void OnCloseFile(Object^, EventArgs^) { CloseSheet(Current()); }
@@ -3794,6 +3972,7 @@ private:
             return false;
         }
         sheet->box->Modified = false;
+        Settle(sheet, where);
         MarkTab(sheet);
         what_->Text = System::IO::Path::GetFileName(where) + " written" + (note == nullptr ? "" : " - " + note);
         return true;
@@ -3818,7 +3997,7 @@ private:
 
     void OnSaveAs(Object^, EventArgs^) {
         if (text_ == nullptr) { what_->Text = "no file is open"; return; }
-        if (busy_) { what_->Text = StillWorking(); return; }
+        if (busy_ && !ProgramOnly()) { what_->Text = StillWorking(); return; }
         Sheet^ sheet = Current();
         if (sheet == nullptr) return;
 
@@ -3858,8 +4037,66 @@ private:
         FillTree();
     }
 
+    static DateTime StampOf(String^ path) {
+        if (path == nullptr) return DateTime::MinValue;
+        try {
+            return System::IO::File::Exists(path) ? System::IO::File::GetLastWriteTimeUtc(path) : DateTime::MinValue;
+        } catch (Exception^) {
+            return DateTime::MinValue;
+        }
+    }
+
+    // What the sheet now holds is what is on disk at where.
+    void Settle(Sheet^ sheet, String^ where) {
+        sheet->saved = sheet->box->Text;
+        sheet->stamp = StampOf(where);
+    }
+
+    // A file changed on disk since it was read or written here is read again when nothing in its
+    // tab is unsaved; with unsaved edits they are kept and the status line says so, once.
+    bool ReloadIfChanged(Sheet^ sheet) {
+        if (sheet == nullptr || sheet->path == nullptr || busy_) return false;
+        DateTime now = StampOf(sheet->path);
+        if (now == DateTime::MinValue || sheet->stamp == DateTime::MinValue || now == sheet->stamp) return false;
+        String^ name = System::IO::Path::GetFileName(sheet->path);
+        if (sheet->box->Modified) {
+            sheet->stamp = now;
+            what_->Text = name + " changed on disk - your unsaved edits are kept, and Save writes over it";
+            return false;
+        }
+        String^ contents;
+        TextFile^ file = nullptr;
+        try {
+            String^ why = nullptr;
+            contents = TextFile::Read(sheet->path, file, why);
+            if (contents == nullptr) { what_->Text = why; return false; }
+        } catch (Exception^ problem) {
+            what_->Text = problem->Message;
+            return false;
+        }
+        int at = sheet->box->SelectionStart;
+        sheet->file = file;
+        sheet->box->Text = contents;
+        sheet->box->Modified = false;
+        Settle(sheet, sheet->path);
+        if (sheet->box == text_) {
+            stateGood_ = false;
+            Recolour();
+            OnTextChanged(nullptr, nullptr);
+            sheet->box->Select(Math::Min(at, sheet->box->TextLength), 0);
+            sheet->box->ScrollToCaret();
+        }
+        MarkTab(sheet);
+        what_->Text = name + " re-read - it changed on disk";
+        return true;
+    }
+
     void MarkTab(Sheet^ sheet) {
         if (sheet == nullptr || sheet->page == nullptr) return;
+        // Undone back to what is on disk is no change (the box's own flag stays set once typed in).
+        if (sheet->box->Modified && sheet->saved != nullptr && sheet->box->TextLength == sheet->saved->Length &&
+            String::Equals(sheet->box->Text, sheet->saved, StringComparison::Ordinal))
+            sheet->box->Modified = false;
         String^ name = TabName(sheet);
         sheet->page->Text = sheet->box->Modified ? name + "*" : name;
         if (files_ != nullptr) files_->Invalidate();
@@ -3868,6 +4105,7 @@ private:
     void OnExit(Object^, EventArgs^) { Close(); }
 
     bool MayDiscard(Sheet^ sheet) {
+        if (sheet != nullptr) MarkTab(sheet);
         if (sheet == nullptr || !sheet->box->Modified) return true;
 
         String^ named = sheet->path == nullptr
@@ -3952,8 +4190,15 @@ private:
     }
 
     // Help > Environment on the Console, in its fixed-width font, so the columns line up.
+    // A report in the Console: in its place while nothing runs, and under a running program's
+    // output rather than over it.
+    void ShowReport(String^ text) {
+        if (running_ != nullptr) SayCapped("\r\n" + text);
+        else console_->Text = text;
+    }
+
     void OnEnvironment(Object^, EventArgs^) {
-        console_->Text = Lines(TakeUtf8(ride_environment()));
+        ShowReport(Lines(TakeUtf8(ride_environment())));
         ShowPanel(0);
     }
 
@@ -4100,6 +4345,7 @@ private:
 
     // ---- Edit > Find in Files --------------------------------------------------------
     void OnFindInFiles(Object^, EventArgs^) {
+        if (finding_) { what_->Text = "a search is running - Build > Stop ends it"; return; }
         String^ lookFor = text_ != nullptr && text_->SelectionLength > 0 && text_->SelectedText->IndexOf('\n') < 0
                               ? text_->SelectedText : "";
         String^ where = ride_project_loaded(project_) != 0 && projectDirectory_ != nullptr ? projectDirectory_
@@ -4114,13 +4360,32 @@ private:
         findSub_ = ask->subfolders->Checked;
         if (ask->text->Text->Length == 0 && !ask->namesOnly->Checked) { what_->Text = "nothing to find"; return; }
         if (!System::IO::Directory::Exists(ask->folder->Text)) { what_->Text = "no folder " + ask->folder->Text; return; }
-        Utf8 t(ask->text->Text), f(ask->folder->Text), p(ask->types->Text);
-        System::Windows::Forms::Cursor::Current = Cursors::WaitCursor;
-        String^ found = TakeUtf8(ride_find_in_files(t.c(), f.c(), p.c(), ask->matchCase->Checked ? 1 : 0,
-                                                    ask->wholeWord->Checked ? 1 : 0, ask->subfolders->Checked ? 1 : 0,
-                                                    ask->namesOnly->Checked ? 1 : 0));
-        System::Windows::Forms::Cursor::Current = Cursors::Default;
-        console_->Text = found->Replace("\n", "\r\n");
+        FindJob^ job = gcnew FindJob();
+        job->text = gcnew Utf8(ask->text->Text);
+        job->folder = gcnew Utf8(ask->folder->Text);
+        job->types = gcnew Utf8(ask->types->Text);
+        job->matchCase = ask->matchCase->Checked ? 1 : 0;
+        job->wholeWord = ask->wholeWord->Checked ? 1 : 0;
+        job->subfolders = ask->subfolders->Checked ? 1 : 0;
+        job->namesOnly = ask->namesOnly->Checked ? 1 : 0;
+        // Off the window's thread, so a search of a large tree leaves the window live and Stop ends it.
+        System::Threading::Thread^ worker =
+            gcnew System::Threading::Thread(gcnew System::Threading::ThreadStart(job, &FindJob::Run));
+        worker->IsBackground = true;
+        bool wasBusy = busy_;
+        if (!wasBusy) SetBusy(true);
+        finding_ = true;
+        what_->Text = "searching ... Build > Stop ends it";
+        worker->Start();
+        while (!worker->Join(40)) Application::DoEvents();
+        finding_ = false;
+        if (!wasBusy) SetBusy(false);
+        delete job->text;
+        delete job->folder;
+        delete job->types;
+        String^ found = job->found == nullptr ? "" : job->found;
+        if (closeWhenIdle_ && !busy_) { CloseNow(); return; }
+        ShowReport(found->Replace("\n", "\r\n"));
         ShowPanel(0);
         int end = found->IndexOf('\n');
         what_->Text = (end > 0 ? found->Substring(0, end) : found) + " - double-click a line to go to it";
@@ -4191,18 +4456,63 @@ private:
         SetBusy(true);
         input_->Enabled = true;
         input_->Clear();
-        input_->Focus();
+        heardProgram_ = false;
     }
 
-    void Heard(array<Byte>^ bytes, int stream) {
-        if (running_ == nullptr) return;
-        if (bytes == nullptr) { EndedRunning(); return; }
-        if (stream < 0 || stream > 2) stream = RIDE_STREAM_OUT;
-        array<wchar_t>^ chars = gcnew array<wchar_t>(decoders_[stream]->GetCharCount(bytes, 0, bytes->Length));
-        decoders_[stream]->GetChars(bytes, 0, bytes->Length, chars, 0);
-        Say(gcnew String(chars));
-        if (stream != RIDE_STREAM_BUILD && what_->Text->StartsWith("building and running"))
-            what_->Text = "running - type under the Console, Enter sends, Ctrl+Z ends the input";
+    // Everything posted since the last drain, appended at once; the end of the run after its output.
+    void DrainOutput() {
+        System::Collections::Generic::List<OutChunk^>^ batch;
+        bool dropped;
+        System::Threading::Monitor::Enter(outLock_);
+        try {
+            batch = outQueue_;
+            outQueue_ = gcnew System::Collections::Generic::List<OutChunk^>();
+            outQueued_ = 0;
+            outPosted_ = false;
+            dropped = outDropped_;
+            outDropped_ = false;
+        } finally {
+            System::Threading::Monitor::Exit(outLock_);
+        }
+        System::Text::StringBuilder^ text = gcnew System::Text::StringBuilder();
+        if (dropped && running_ != nullptr) text->Append("\n[... output dropped - the program printed faster than it could be shown ...]\n");
+        bool program = false;
+        for each (OutChunk^ chunk in batch) {
+            if (running_ == nullptr) break;
+            if (chunk->bytes == nullptr) {
+                SayCapped(text->ToString());
+                text->Clear();
+                EndedRunning();
+                continue;
+            }
+            int stream = chunk->stream < 0 || chunk->stream > 2 ? RIDE_STREAM_OUT : chunk->stream;
+            array<wchar_t>^ chars = gcnew array<wchar_t>(decoders_[stream]->GetCharCount(chunk->bytes, 0, chunk->bytes->Length));
+            decoders_[stream]->GetChars(chunk->bytes, 0, chunk->bytes->Length, chars, 0);
+            text->Append(chars);
+            if (stream != RIDE_STREAM_BUILD) program = true;
+        }
+        SayCapped(text->ToString());
+        if (program && running_ != nullptr) {
+            if (what_->Text->StartsWith("building and running"))
+                what_->Text = "running - type under the Console, Enter sends, Ctrl+Z ends the input";
+            // The keyboard goes to the input line when the program first speaks, not while it compiles.
+            if (!heardProgram_) {
+                heardProgram_ = true;
+                if (input_->Enabled) input_->Focus();
+                FreeForProgram();
+            }
+        }
+    }
+
+    // Say, keeping the Console to its last ConsoleCap characters.
+    void SayCapped(String^ text) {
+        if (String::IsNullOrEmpty(text)) return;
+        Say(text);
+        if (console_->TextLength > ConsoleCap) {
+            console_->Select(0, console_->TextLength - ConsoleCap * 3 / 4);
+            console_->SelectedText = "";
+            ShowConsoleEnd();
+        }
     }
 
     void OnInputKey(Object^, KeyEventArgs^ e) {
@@ -4512,6 +4822,7 @@ private:
     }
 
     void OnStop(Object^, EventArgs^) {
+        if (finding_) { ride_find_stop(); what_->Text = "stopping the search ..."; return; }
         if (running_ == nullptr && (!busy_ || job_ == nullptr)) { what_->Text = "nothing is running"; return; }
         StopWork();
     }
@@ -4520,6 +4831,7 @@ private:
     // through the core's, and the debugger - which has none - by ending the processes the window started.
     void StopWork() {
         what_->Text = "stopping ...";
+        if (finding_) ride_find_stop();
         if (running_ != nullptr) { ride_running_stop(running_); return; }
         if (job_ == nullptr) return;
         job_->stopped = true;
@@ -4898,6 +5210,8 @@ private:
 
     void OnClean(Object^, EventArgs^) {
         if (busy_) { what_->Text = StillWorking(); return; }
+        // The program stopped at a breakpoint is one Clean would remove from under the debugger.
+        if (ride_debugger_running(debugger_) != 0) { what_->Text = "not cleaned - the debugger is running the program; Debug > Stop debugging first"; return; }
         String^ removed = FromUtf8(ride_project_clean(project_));
         array<String^>^ files = removed->Split(gcnew array<wchar_t>{'\n'}, StringSplitOptions::RemoveEmptyEntries);
         console_->Clear();
@@ -5330,7 +5644,26 @@ private:
         if (outcome != 0) return " - written to " + System::IO::Path::GetFileName(OutcomePath());
         return " - but " + FromUtf8(ride_outcome_message(project_));
     }
+    // A CCS project's target and compiler are CCS's: its save keeps neither, and a build reloads
+    // them, so a choice here would be reported written and then lost. Offered disabled, as on macOS.
+    bool CcsOwnsChoices() {
+        return project_ != nullptr && ride_project_loaded(project_) != 0 && ride_project_is_ccs(project_) != 0;
+    }
+    bool RefusedForCcs(String^ what) {
+        if (!CcsOwnsChoices()) return false;
+        what_->Text = "the " + what + " of a CCS project is CCS's - change it in CCS";
+        return true;
+    }
+    void OnChoicesOpening(Object^, EventArgs^) {
+        bool free = !CcsOwnsChoices() && !busy_;
+        if (targetItems_ != nullptr)
+            for each (ToolStripMenuItem^ one in targetItems_) one->Enabled = free;
+        for each (ToolStripMenuItem^ one in gcnew array<ToolStripMenuItem^>{
+                 toolAutoItem_, toolCc1Item_, toolCxx1Item_, toolShcItem_, toolClItem_})
+            if (one != nullptr) one->Enabled = free;
+    }
     void OnTarget(Object^ sender, EventArgs^) {
+        if (RefusedForCcs("target")) return;
         arch_ = safe_cast<ToolStripMenuItem^>(sender)->Text;
         String^ said = "target: " + arch_;
         if (project_ != nullptr && ride_project_loaded(project_) != 0) {
@@ -5343,6 +5676,7 @@ private:
         what_->Text = said;
     }
     void ChooseTool(int kind, String^ said) {
+        if (RefusedForCcs("compiler")) return;
         toolKind_ = kind;
         if (project_ != nullptr && ride_project_loaded(project_) != 0) {
             said += WrittenToProject(ride_project_set_toolchain(project_, kind));

@@ -131,6 +131,7 @@ void walk(const FindInFiles& q, const std::string& dir, const std::vector<std::s
     std::vector<path::Entry> all = path::entries(dir, &ok);
     if (!ok) return;
     for (size_t i = 0; i < all.size() && !cut; ++i) {
+        if (q.stop && q.stop->load()) { cut = true; return; }
         const std::string full = path::join(dir, all[i].name);
         if (all[i].directory) {
             if (q.subfolders && !passedOver(all[i].name)) walk(q, full, patterns, needle, limit, out, files, cut);

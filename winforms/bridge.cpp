@@ -440,9 +440,16 @@ void ride_free(char* what) { std::free(what); }
 
 char* ride_about(void) { return give(join(editor::about::lines())); }
 
+// Find in Files may run on a thread of its own; ride_find_stop ends the walk at its next file.
+static std::atomic<bool> findStop(false);
+
+void ride_find_stop(void) { findStop = true; }
+
 char* ride_find_in_files(const char* text, const char* folder, const char* patterns,
                          int matchCase, int wholeWord, int subfolders, int namesOnly) {
+    findStop = false;
     editor::FindInFiles q;
+    q.stop = &findStop;
     q.text = text ? text : "";
     q.folder = folder ? folder : "";
     q.patterns = patterns ? patterns : "";
@@ -459,7 +466,8 @@ char* ride_find_in_files(const char* text, const char* folder, const char* patte
                       (q.patterns.empty() ? std::string() : " (" + q.patterns + ")") + " - " + std::to_string(n) +
                       (q.namesOnly ? (n == 1 ? " file" : " files") : (n == 1 ? " match" : " matches"));
     if (!q.namesOnly) out += " in " + std::to_string(files) + (files == 1 ? " file searched" : " files searched");
-    if (cut) out += ", the first " + std::to_string(n) + " shown";
+    if (findStop) out += ", stopped";
+    else if (cut) out += ", the first " + std::to_string(n) + " shown";
     out += "\n";
     for (size_t i = 0; i < n; ++i) {
         if (q.namesOnly) out += hits[i].file + "\n";

@@ -449,6 +449,7 @@ static const CGFloat kJumpBarHeight = 26;
     int indentCase_;
     BOOL numbers_;
     BOOL busy_;
+    BOOL finding_;     // a Find in Files is walking on another thread
     BOOL started_;
     BOOL closing_;  // the window is going; nothing more to ask
     NSDate* workStarted_;
@@ -2823,6 +2824,7 @@ static NSColor* ColourOf(unsigned char kind) {
 // then ending as a failure that says it was stopped (H2).
 - (void)stopWork:(id)sender {
     (void)sender;
+    if (finding_) { ride_find_stop(); [self say:@"stopping the search..."]; return; }
     if (running_ != NULL) ride_running_stop(running_);
     else if (busy_) ride_cancel_builds();
     else return;
@@ -2843,6 +2845,7 @@ static NSColor* ColourOf(unsigned char kind) {
 }
 
 - (void)stopEverything {
+    ride_find_stop();
     if (running_ != NULL) {
         ride_running_stop(running_);
         ride_running_wait(running_, 5000);
@@ -3288,6 +3291,7 @@ static const NSUInteger kOutputMost = 2000000;
 // ---- Edit > Find in Files --------------------------------------------------------------
 
 - (void)findInFiles:(id)sender {
+    if (finding_) { [self say:@"a search is running - Command-. ends it"]; return; }
     (void)sender;
     static NSString* types = @"*.c;*.cpp;*.h;*.hpp;*.shl;*.s";
     static BOOL matchCase = NO, wholeWord = NO, subfolders = YES;
@@ -3341,8 +3345,24 @@ static const NSUInteger kOutputMost = 2000000;
     const BOOL names = namesBox.state == NSControlStateValueOn;
     if (text.stringValue.length == 0 && !names) { [self say:@"nothing to find"]; return; }
 
-    NSString* found = Take(ride_find_in_files(Utf8(text.stringValue), Utf8(folder.stringValue), Utf8(types),
-                                              matchCase, wholeWord, subfolders, names));
+    // Off the main thread, so a search of a large tree leaves the window live and Stop ends it.
+    NSString* lookingFor = [text.stringValue copy];
+    NSString* lookIn = [folder.stringValue copy];
+    NSString* kindsNow = [types copy];
+    const BOOL byCase = matchCase, byWord = wholeWord, below = subfolders;
+    finding_ = YES;
+    [self say:@"searching ... Command-. ends it"];
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        NSString* found = Take(ride_find_in_files(Utf8(lookingFor), Utf8(lookIn), Utf8(kindsNow),
+                                                  byCase, byWord, below, names));
+        dispatch_async(dispatch_get_main_queue(), ^{
+            self->finding_ = NO;
+            [self showFound:found byName:names];
+        });
+    });
+}
+
+- (void)showFound:(NSString*)found byName:(BOOL)names {
     NSArray<NSString*>* lines = [found componentsSeparatedByString:@"\n"];
     [issues_ removeAllObjects];
     NSRegularExpression* hit = [NSRegularExpression regularExpressionWithPattern:@"^(.*):(\\d+):(\\d+): (.*)$"
@@ -3986,7 +4006,7 @@ static const NSUInteger kOutputMost = 2000000;
     // A file opens while a program runs - it may be waiting on input for minutes; a project does not.
     if (action == @selector(openDocument:) || action == @selector(openRecentFile:)) return !building;
     if (action == @selector(openRecentProject:)) return !busy_;
-    if (action == @selector(stopWork:)) return busy_ || running_ != NULL;
+    if (action == @selector(stopWork:)) return busy_ || running_ != NULL || finding_;
     // The Project menu's file items act on the open project's files, so each wants a project.
     if (action == @selector(renameFile:) || action == @selector(deleteFile:)) {
         NSString* target = [self targetFile];

@@ -5923,6 +5923,10 @@ void findingInFiles() {
     q.namesOnly = false; q.text = "total"; q.patterns = "";
     hits = editor::findInFiles(q, 2, files, cut);
     check(hits.size() == 2 && cut, "and no more than asked for, saying it stopped there");
+    std::atomic<bool> stop(true);
+    q.stop = &stop;
+    hits = editor::findInFiles(q, 100, files, cut);
+    check(hits.empty() && cut && files == 0, "a search told to stop ends before its first file");
     pth::removeTree(home);
 }
 
