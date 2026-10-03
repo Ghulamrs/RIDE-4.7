@@ -32,7 +32,10 @@ Terminal::~Terminal() {
     if (raw_) tcsetattr(STDIN_FILENO, TCSAFLUSH, &original_);
 }
 
-void Terminal::reclaim() {}
+// A program run in this terminal may have turned the mouse off on its way out; asking again costs nothing.
+void Terminal::reclaim() {
+    if (raw_ && mouseOn_) write("\x1b[?1000h\x1b[?1002h\x1b[?1006h");
+}
 
 void Terminal::size(int& rows, int& cols) const {
     struct winsize ws;

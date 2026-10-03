@@ -133,8 +133,20 @@ for b in bundles: b['BundleIsRelocatable'] = False
 with open(p, 'wb') as f: plistlib.dump(bundles, f)
 print('  %d bundle(s), none relocatable: %s' % (len(bundles), ', '.join(b['RootRelativeBundlePath'] for b in bundles)))
 PY
+# The samples are the package's own, so an upgrade replaces them whole: an installer lays files
+# over an earlier install and never removes, which left 4.7's examples/ behind on 03-10-2026.
+# The user's copies in ~/Documents/RIDE are not touched.
+SCRIPTS=$MAC/scripts; rm -rf "$SCRIPTS"; mkdir -p "$SCRIPTS"
+cat > "$SCRIPTS/preinstall" <<EOS
+#!/bin/sh
+for d in examples projects programs; do
+    rm -rf "/usr/local/$RDIR/\$d" "/Applications/$APPNAME/Contents/Resources/\$d"
+done
+exit 0
+EOS
+chmod 755 "$SCRIPTS/preinstall"
 pkgbuild --root "$STAGE" --component-plist "$COMP" --identifier "$PKGID" \
-    --version "$VER" --install-location / "$MAC/RIDE-component.pkg" >/dev/null
+    --version "$VER" --install-location / --scripts "$SCRIPTS" "$MAC/RIDE-component.pkg" >/dev/null
 productbuild --package "$MAC/RIDE-component.pkg" "$OUT/RIDE-$VER-macos.pkg" >/dev/null
 if lsbom -s "$(pkgutil --bom "$MAC/RIDE-component.pkg" | head -1)" | grep -q '/\._'; then
     say "  note: the payload carries ._ entries - com.apple.provenance, which macOS puts on"

@@ -4010,6 +4010,9 @@ void Editor::run() {
         int key = term_.readKey();
         if (key == KEY_MOUSE) {
             processMouse(term_.mouse());
+            // A click may have run a command that ran a program, as a key may: the console's modes are
+            // taken back the same way, or on Windows the first click that built anything was the last one heard.
+            term_.reclaim();
             needsDraw_ = true;
         } else if (key != KEY_NONE) {
             processKey(key);
