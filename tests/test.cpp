@@ -3606,6 +3606,17 @@ void whatItRemembers() {
     check(recent.size() == 3 && recent[0] == pth::absolute(second) && recent[1] == pth::absolute(fourth),
           "and one opened again comes to the front, once");
 
+    // A CCS project opened by its own .ccsproject is the project in that folder: one entry, not
+    // two, and one with a name - the Windows menu showed it blank, a name that is all extension.
+    std::string ccs = pth::join(home, "SampleExt");
+    pth::makeDirectories(ccs);
+    writeSource(pth::join(ccs, ".ccsproject"), "<?xml version=\"1.0\"?>\n");
+    editor::settings::rememberProject(ccs);
+    editor::settings::rememberProject(pth::join(ccs, ".ccsproject"));
+    recent = editor::settings::recentProjects();
+    check(recent.size() == 3 && recent[0] == pth::absolute(ccs) && recent[1] == pth::absolute(second),
+          "a CCS project opened by its .ccsproject is remembered as its folder, once");
+
     sayWhereHomeIs(realHome);
     pth::removeTree(home);
 }

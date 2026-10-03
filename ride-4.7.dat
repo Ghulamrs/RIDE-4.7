@@ -1,7 +1,7 @@
 ©2026 G. R. Akhtar - RIDE 4.7, the editor
 Release seal, version 4.7, sealed 03-10-2026
 Written by tools/seal; check it with `tools/seal check`.
-CRC32  size  file - 97 files, seal 6AFBC28E
+CRC32  size  file - 97 files, seal BB603216
 ------------------------------------------------------------------
 06F11F39     18706  Makefile
 3A1FF49C      3207  RIDE.pro
@@ -65,7 +65,7 @@ AAB34DCA      1876  src/process.h
 155E9F80      1344  src/product.h
 8A6EB8D4     41156  src/project.cpp
 B734AED9      7989  src/project.h
-5ECF2F76     26675  src/settings.cpp
+D3726986     27448  src/settings.cpp
 3E0AC86E      6626  src/settings.h
 E46E1607      4314  src/shalimar/README.md
 4B7E8748      9069  src/shalimar/channel.cpp
@@ -88,7 +88,7 @@ CC9C965F      7196  src/toolchain.h
 D93038C5       572  src/utf8.h
 1DD9DC1C     12808  src/workspace.cpp
 F35C52A2      2086  src/workspace.h
-C57643DC    236286  winforms/MainForm.h
+3B67F102    236529  winforms/MainForm.h
 6BA8DA64      2289  winforms/Marshal.h
 3D89F3C4      6415  winforms/Program.cpp
 1F889F5F       157  winforms/RIDEGui.rc

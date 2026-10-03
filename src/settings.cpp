@@ -645,13 +645,31 @@ bool writeInstallFileIfAbsent() {
     return true;
 }
 
+namespace {
+
+// A CCS project opened by one of its own files - .project, .cproject, .ccsproject - is the project
+// in that folder: remembered as the folder, so it is one entry and not two, and has a name to show.
+std::string projectEntry(const std::string& where) {
+    std::string leaf = where;
+    const size_t slash = leaf.find_last_of("/\\");
+    if (slash != std::string::npos) leaf.erase(0, slash + 1);
+    if ((leaf == ".project" || leaf == ".cproject" || leaf == ".ccsproject") && slash != std::string::npos)
+        return where.substr(0, slash);
+    return where;
+}
+
+}
+
 std::vector<std::string> recentProjects() {
     std::vector<std::string> out;
     Json root = readAll();
     const Json& recent = root.get("recent");
     for (size_t i = 0; i < recent.size() && out.size() < 3; ++i) {
-        std::string one = recent.at(i).text("");
-        if (!one.empty() && path::exists(one)) out.push_back(one);
+        std::string one = projectEntry(recent.at(i).text(""));
+        if (one.empty() || !path::exists(one)) continue;
+        bool seen = false;
+        for (size_t k = 0; k < out.size(); ++k) seen = seen || path::oneName(out[k]) == path::oneName(one);
+        if (!seen) out.push_back(one);
     }
     // The single "project" of earlier versions, carried in as the first.
     std::string project = root.get("project").text("");
@@ -691,7 +709,7 @@ std::string lastProject() {
 bool rememberProject(const std::string& directory) {
     if (fileName().empty() || directory.empty()) return false;
 
-    std::string now = path::absolute(directory);
+    std::string now = path::absolute(projectEntry(directory));
     std::vector<std::string> recent = recentProjects();
     Json list = Json::array();
     list.push(Json::fromText(now));

@@ -3328,7 +3328,10 @@ private:
             if (where->Length == 0) { item->Visible = false; continue; }
             String^ shown = System::IO::File::Exists(where)
                                 ? System::IO::Path::GetFileNameWithoutExtension(where)
-                                : System::IO::Path::GetFileName(where);
+                                : System::IO::Path::GetFileName(where->TrimEnd('/', '\\'));
+            // Never a blank entry: a name that is all extension is shown by its folder.
+            if (shown->Length == 0)
+                shown = System::IO::Path::GetFileName(System::IO::Path::GetDirectoryName(where));
             item->Text = String::Format("&{0}. {1}", i + 1, shown);
             item->ToolTipText = where;
             item->Visible = true;
