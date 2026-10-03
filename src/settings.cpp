@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "about.h"
 #include "json.h"
 #include "path.h"
 #include "product.h"
@@ -289,6 +290,12 @@ void pretendInstalledAt(const std::string& directory) {
 }
 
 std::string installFile() {
+#ifdef _WIN32
+    // On Windows in a folder the user can see and open, named for the release: C:\Users\<you>\RIDE 4.7.
+    if (perUserInstallFile())
+        return path::join(path::join(path::homeDir(), std::string(product::kName) + " " + about::version()),
+                          "settings.json");
+#endif
     if (perUserInstallFile())
         return path::join(path::join(path::homeDir(), product::kStateDirectory), "settings.json");
     std::string base = installDir();

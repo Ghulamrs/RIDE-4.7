@@ -41,7 +41,7 @@ A Code Composer Studio 7.4 or 5.5 project for the TMS320C6747 opens without
 being converted. RIDE reads it, builds it with its own tools and writes nothing
 into its folder, so the same folder still opens in CCS.
 
-**1. The CCS switch is on.** `settings.json` - yours, in `.ride` under your home directory - starts with
+**1. The CCS switch is on.** `settings.json` - yours, in your home directory (`RIDE 4.7` on Windows, `.ride` on macOS and Linux) - starts with
 
 ```json
 "ccs": { "enabled": true, "root": "" }
@@ -148,8 +148,9 @@ and its `-D_STD_IO_` switch prints them through `printf`.
 
 A project is a `.pro` file and nothing else. Older releases also read a
 whole-directory project file under two earlier names; RIDE 4.0 reads neither.
-Its configuration is `settings.json` and what it remembers between sessions is
-`state.json`, both in `.ride` under your home directory.
+Its configuration is `settings.json`, in your home directory - in `RIDE 4.7` on
+Windows, in `.ride` on macOS and Linux - and what it remembers between sessions
+is `state.json` in `.ride` under your home directory.
 
 With no project at all, the pane on the left shows the files you have open, and
 nothing at all when none are.

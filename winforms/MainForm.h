@@ -648,7 +648,7 @@ private:
 
     static String^ StillWorking() { return "still working - Build > Stop (Ctrl+Break) ends it"; }
 
-    // %USERPROFILE%\.ride\settings.json, begun from the installation's defaults: the user's to change.
+    // %USERPROFILE%\RIDE 4.7\settings.json, begun from the installation's defaults: the user's to change.
     void OnSettingsFile(Object^, EventArgs^) {
         ride_write_install_file_if_absent();
         String^ file = FromUtf8(ride_install_file());

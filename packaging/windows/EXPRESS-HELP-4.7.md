@@ -232,7 +232,7 @@ default compiler, the assembler and linkers, `"askNative"`, the code font:
 
 | System  | settings.json - yours, to change       |
 |---------|----------------------------------------|
-| Windows | `%USERPROFILE%\.ride\settings.json`     |
+| Windows | `%USERPROFILE%\RIDE 4.7\settings.json`  |
 | macOS   | `~/.ride/settings.json`                |
 | Linux   | `~/.ride/settings.json`                |
 
