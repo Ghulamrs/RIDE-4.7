@@ -1441,7 +1441,7 @@ private:
                 }
             }
         }
-        return gcnew System::Drawing::Font("Courier New", 18.0f, System::Drawing::FontStyle::Regular);
+        return gcnew System::Drawing::Font("Courier New", 14.0f, System::Drawing::FontStyle::Regular);
     }
 
     ToolStripMenuItem^ Item(String^ label, Keys key, EventHandler^ handler) {

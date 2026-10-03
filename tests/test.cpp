@@ -5894,8 +5894,8 @@ void aboutSelf() {
     std::printf("about's last line: %s\n", last.c_str());
     const std::string self = editor::path::programFile();
     check(!self.empty(), "the program knows its own file");
-    std::string leaf = self.substr(self.find_last_of('/') + 1);
-    check(last.compare(0, leaf.size(), leaf) == 0, "About's last line names this program's file");
+    const std::string named = std::string(editor::about::name()) + " " + editor::about::version() + "  ";
+    check(last.compare(0, named.size(), named) == 0, "About's last line names the release, RIDE 4.7");
     check(last.find(" PKT") != std::string::npos, "and the time it was written, in PKT");
     const size_t at = last.find("CRC32 ");
     check(at != std::string::npos && last.size() == at + 14, "and its CRC-32, eight hex digits");

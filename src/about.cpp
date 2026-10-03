@@ -184,20 +184,17 @@ bool crc32Of(const std::string& file, unsigned long& crc) {
     return true;
 }
 
-// The box's last line: this program's file, when it was last written in Pakistan time (UTC+5, no
+// The box's last line: this program and its version, when its file was last written in Pakistan time (UTC+5, no
 // daylight saving, so it is UTC plus five hours whatever the machine's own zone), and its CRC-32.
 std::string selfLine() {
     const std::string file = path::programFile();
     if (file.empty()) return std::string();
-    std::string leaf = file;
-    const size_t slash = leaf.find_last_of('/');
-    if (slash != std::string::npos) leaf.erase(0, slash + 1);
 #ifdef _WIN32
     struct _stat64 st;
-    if (_stat64(file.c_str(), &st) != 0) return leaf;
+    if (_stat64(file.c_str(), &st) != 0) return std::string(name()) + " " + version();
 #else
     struct stat st;
-    if (stat(file.c_str(), &st) != 0) return leaf;
+    if (stat(file.c_str(), &st) != 0) return std::string(name()) + " " + version();
 #endif
     std::time_t pkt = static_cast<std::time_t>(st.st_mtime) + 5 * 3600;
     std::tm when;
@@ -208,7 +205,8 @@ std::string selfLine() {
 #endif
     char stamp[64];
     std::strftime(stamp, sizeof stamp, "%d-%m-%Y %H:%M:%S PKT", &when);
-    std::string said = leaf + "  " + stamp;
+    // Named by the release, "RIDE 4.7", the same in every window and in the console.
+    std::string said = std::string(name()) + " " + version() + "  " + stamp;
     unsigned long crc = 0;
     if (crc32Of(file, crc)) {
         char hex[16];
