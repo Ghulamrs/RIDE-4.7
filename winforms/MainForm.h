@@ -897,10 +897,8 @@ private:
                  gcnew EventHandler(this, &MainForm::OnBuildProject)));
         build->DropDownItems->Add("Run project", nullptr,
                                   gcnew EventHandler(this, &MainForm::OnRunProject));
-        // The command line Run and Run project hand the program, typed straight into the menu.
-        ToolStripMenuItem^ argsLabel = gcnew ToolStripMenuItem("Command-line arguments:");
-        argsLabel->Enabled = false;
-        build->DropDownItems->Add(argsLabel);
+        // The command line Run and Run project hand the program: a submenu, as Recent is, holding a box to type it in.
+        ToolStripMenuItem^ argsMenu = gcnew ToolStripMenuItem("Command-line arguments");
         argsBox_ = gcnew ToolStripTextBox();
         argsBox_->AutoSize = false;
         argsBox_->Width = 320;
@@ -908,9 +906,10 @@ private:
         argsBox_->ToolTipText = "Handed to the program by Run and Run project - e.g. -run sample.cpp; "
                                 "a word in quotes may hold spaces. Enter keeps it.";
         argsBox_->KeyDown += gcnew KeyEventHandler(this, &MainForm::OnArgsKey);
-        build->DropDownItems->Add(argsBox_);
-        build->DropDownOpening += gcnew EventHandler(this, &MainForm::OnBuildMenuOpening);
-        build->DropDownClosed += gcnew EventHandler(this, &MainForm::OnBuildMenuClosed);
+        argsMenu->DropDownItems->Add(argsBox_);
+        argsMenu->DropDownOpening += gcnew EventHandler(this, &MainForm::OnBuildMenuOpening);
+        argsMenu->DropDownClosed += gcnew EventHandler(this, &MainForm::OnBuildMenuClosed);
+        build->DropDownItems->Add(argsMenu);
         fileArgs_ = "";
         // Debug or Release, one of the two, in a submenu as Recent is; the check says which is in force.
         ToolStripMenuItem^ configuration = gcnew ToolStripMenuItem("Configuration");
@@ -3434,7 +3433,7 @@ private:
 
         msclr::auto_handle<OpenFileDialog> pick(gcnew OpenFileDialog());
         pick->Title = "Open project";
-        pick->Filter = "Projects (*" + suffix + ", CCS .project)|*" + suffix + ";.project"
+        pick->Filter = "Projects (*" + suffix + ", CCS .project)|*" + suffix + ";.project;.cproject;.ccsproject"
                        "|All files (*.*)|*.*";
         pick->InitialDirectory = ProjectsDir();
         if (pick->ShowDialog() != System::Windows::Forms::DialogResult::OK) {
@@ -4014,7 +4013,13 @@ private:
         if (e->KeyCode != Keys::Enter) return;
         e->SuppressKeyPress = true;
         CommitArgs();
-        argsBox_->Owner->Hide();
+        // Close the submenu and the Build menu with it.
+        ToolStripDropDown^ owner = dynamic_cast<ToolStripDropDown^>(argsBox_->Owner);
+        while (owner != nullptr) {
+            ToolStripItem^ parent = owner->OwnerItem;
+            owner->Close();
+            owner = parent != nullptr ? dynamic_cast<ToolStripDropDown^>(parent->Owner) : nullptr;
+        }
     }
 
     void OnRun(Object^, EventArgs^) {

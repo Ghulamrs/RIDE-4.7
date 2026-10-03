@@ -36,6 +36,23 @@
 @property(nonatomic) NSInteger staleFrom;
 @end
 
+// Project > Open: a .pro, a CCS project's own file, or a folder can be chosen; a source cannot - the panel
+// shows it greyed, macOS having no way to leave it out.
+@interface ProjectPick : NSObject <NSOpenSavePanelDelegate>
+@end
+
+@implementation ProjectPick
+- (BOOL)panel:(id)sender shouldEnableURL:(NSURL*)url {
+    (void)sender;
+    NSNumber* folder = nil;
+    [url getResourceValue:&folder forKey:NSURLIsDirectoryKey error:nil];
+    if (folder.boolValue) return YES;
+    NSString* leaf = url.lastPathComponent;
+    return [url.pathExtension isEqualToString:@"pro"] || [leaf isEqualToString:@".project"] ||
+           [leaf isEqualToString:@".cproject"] || [leaf isEqualToString:@".ccsproject"];
+}
+@end
+
 @implementation Sheet {
     std::vector<int> states_;
 }
@@ -468,7 +485,7 @@ static const CGFloat kJumpBarHeight = 26;
     NSProgressIndicator* statusSpinner_;
     CGFloat panelHeight_;      // remembered while the panel is hidden
     NSTextField* argsField_;  // Build > Command-line arguments: what Run and Run Project hand the program
-    NSMenu* buildMenu_;
+    NSMenu* buildMenu_;       // the Command-line arguments submenu
     NSString* fileArgs_;      // a file run on its own: this session's line; a project keeps its own
     NSButton* fold_;          // the panel's minimise button: on, the panel is only its tab strip
     BOOL folded_;
@@ -2210,8 +2227,10 @@ static NSColor* ColourOf(unsigned char kind) {
     NSOpenPanel* pick = [NSOpenPanel openPanel];
     pick.canChooseFiles = YES;
     pick.canChooseDirectories = YES;
-    pick.message = @"Choose a project's .pro file, the directory it is in, or a CCS workspace";
+    pick.message = @"Choose a project's .pro file, the directory it is in, or a CCS project's folder";
     pick.directoryURL = [NSURL fileURLWithPath:[self madeUnder:@"projects"]];
+    ProjectPick* only = [[ProjectPick alloc] init];
+    pick.delegate = only;
     if ([pick runModal] != NSModalResponseOK) { [self say:@"no project opened"]; return; }
     [self loadProject:pick.URL.path];
 }
@@ -3285,6 +3304,7 @@ static const NSUInteger kOutputMost = 2000000;
     (void)sender;
     [self commitArgs];
     [buildMenu_ cancelTracking];
+    [buildMenu_.supermenu cancelTracking];
 }
 
 - (void)menuWillOpen:(NSMenu*)menu {
@@ -4061,26 +4081,22 @@ static NSString* Key(unichar c) { return [NSString stringWithCharacters:&c lengt
     [build addItem:[NSMenuItem separatorItem]];
     [self add:@"Build Project" to:build action:@selector(buildProjectAction:) key:@"b" mods:cmd | shift];
     [self add:@"Run Project" to:build action:@selector(runProjectAction:) key:@"r" mods:cmd | shift];
-    // The command line Run and Run Project hand the program, typed straight into the menu.
+    // The command line Run and Run Project hand the program: a submenu, as Recent is, holding a box to type it in.
     {
-        NSView* holder = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 340, 46)];
-        NSTextField* label = [NSTextField labelWithString:@"Command-line arguments:"];
-        label.font = [NSFont menuFontOfSize:0];
-        label.textColor = [NSColor secondaryLabelColor];
-        label.frame = NSMakeRect(20, 26, 300, 17);
-        [holder addSubview:label];
-        argsField_ = [[NSTextField alloc] initWithFrame:NSMakeRect(20, 2, 304, 22)];
+        NSMenu* argsMenu = [self submenu:@"Command-line arguments" of:build];
+        NSView* holder = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 340, 30)];
+        argsField_ = [[NSTextField alloc] initWithFrame:NSMakeRect(14, 4, 312, 22)];
         argsField_.font = [NSFont monospacedSystemFontOfSize:12 weight:NSFontWeightRegular];
         argsField_.placeholderString = @"e.g. -run sample.cpp";
         argsField_.toolTip = @"Handed to the program by Run and Run Project; a word in quotes may hold spaces. Return keeps it.";
         argsField_.target = self;
         argsField_.action = @selector(argsEntered:);
         [holder addSubview:argsField_];
-        NSMenuItem* argsItem = [[NSMenuItem alloc] initWithTitle:@"Command-line arguments" action:nil keyEquivalent:@""];
+        NSMenuItem* argsItem = [[NSMenuItem alloc] initWithTitle:@"arguments" action:nil keyEquivalent:@""];
         argsItem.view = holder;
-        [build addItem:argsItem];
-        buildMenu_ = build;
-        build.delegate = self;
+        [argsMenu addItem:argsItem];
+        buildMenu_ = argsMenu;
+        argsMenu.delegate = self;
         fileArgs_ = @"";
     }
     [self add:@"Stop" to:build action:@selector(stopWork:) key:@"."];
