@@ -945,8 +945,11 @@ bool Project::loadCcs(const std::string& folder, std::string& error, const std::
     indent_.width = settings::indentWidth();
     indent_.tabs = settings::indentTabs();
 
-    Group sources, linked, excluded;
+    Group sources, headers, linked, excluded;
     sources.name = "Sources";
+    headers.name = "Headers";
+    // The folder's headers, as CCS's own Project Explorer lists them: opened by a click, never built.
+    for (size_t i = 0; i < reading.headers.size(); ++i) headers.files.push_back(reading.headers[i]);
     linked.name = "Linked";
     excluded.name = "Excluded";
     std::vector<std::string> built;
@@ -972,6 +975,7 @@ bool Project::loadCcs(const std::string& folder, std::string& error, const std::
     std::sort(sources.files.begin(), sources.files.end());
     groups_.clear();
     groups_.push_back(sources);
+    if (!headers.files.empty()) groups_.push_back(headers);
     if (!linked.files.empty()) groups_.push_back(linked);
     if (!excluded.files.empty()) groups_.push_back(excluded);
 

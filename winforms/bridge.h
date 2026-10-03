@@ -126,6 +126,13 @@ const char* ride_version(void);
 // A project's header directories and libraries, as one ';'-separated line
 // each, relative to the root as the file has them; setting one saves.
 const char* ride_project_includes(RIDEProject* project);
+/* The header a line or a selection names - "Quat.h" from #include "Quat.h", "cstdio" from
+   #include <cstdio>, or a selection that is itself a file name - or "" when it names none. */
+const char* ride_header_named(const char* text);
+/* That header found as a compiler looks for it - beside the file it is named from, the project's
+   folder and include paths, the shared include paths, the installation's include and lib - by its
+   full path, or "" where none has it. */
+const char* ride_find_header(RIDEProject* project, const char* fromFile, const char* name);
 const char* ride_project_libraries(RIDEProject* project);
 int ride_project_set_includes(RIDEProject* project, const char* line);
 int ride_project_set_libraries(RIDEProject* project, const char* line);

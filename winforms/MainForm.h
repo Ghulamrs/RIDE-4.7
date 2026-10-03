@@ -1135,6 +1135,8 @@ private:
         tree_->Indent = 16;
         tree_->NodeMouseDoubleClick +=
             gcnew TreeNodeMouseClickEventHandler(this, &MainForm::OnTreeOpen);
+        // One click opens a file, as on macOS; a group's row still only folds and unfolds.
+        tree_->NodeMouseClick += gcnew TreeNodeMouseClickEventHandler(this, &MainForm::OnTreeClick);
 
         tree_->KeyDown += gcnew KeyEventHandler(this, &MainForm::OnTreeKey);
         upper->Panel1->Controls->Add(tree_);
@@ -1660,6 +1662,9 @@ private:
         menu->Items->Add("Paste", nullptr, gcnew EventHandler(this, &MainForm::OnPaste));
         menu->Items->Add(gcnew ToolStripSeparator());
         menu->Items->Add("Select all", nullptr, gcnew EventHandler(this, &MainForm::OnSelectAll));
+        // A header the line or the selection names, opened as a compiler would find it.
+        menu->Items->Add(gcnew ToolStripSeparator());
+        menu->Items->Add("Open header", nullptr, gcnew EventHandler(this, &MainForm::OnOpenHeader));
         // Before it opens: Cut and Copy want a selection, Paste text on the
         // clipboard, Undo and Redo something to undo or redo.
         menu->Opening += gcnew System::ComponentModel::CancelEventHandler(this, &MainForm::OnEditMenuOpening);
@@ -1678,6 +1683,36 @@ private:
         menu->Items[4]->Enabled = selected;
         menu->Items[5]->Enabled = Clipboard::ContainsText();
         menu->Items[7]->Enabled = box->TextLength > 0;
+
+        // The selection when there is one, else the line the caret is on.
+        String^ text = box->SelectedText;
+        if (String::IsNullOrEmpty(text)) {
+            int line = box->GetLineFromCharIndex(box->SelectionStart);
+            int from = box->GetFirstCharIndexFromLine(line);
+            int to = box->GetFirstCharIndexFromLine(line + 1);
+            if (to < 0) to = box->TextLength;
+            text = from >= 0 ? TextBetween(box, from, to) : String::Empty;
+        }
+        Utf8 said(text);
+        String^ name = FromUtf8(ride_header_named(said.c()));
+        ToolStripItem^ open = menu->Items[9];
+        menu->Items[8]->Visible = name->Length > 0;
+        open->Visible = name->Length > 0;
+        if (name->Length == 0) return;
+        Utf8 wanted(name);
+        Utf8 from(path_ == nullptr ? String::Empty : path_);
+        String^ found = FromUtf8(ride_find_header(project_, from.c(), wanted.c()));
+        open->Tag = found->Length > 0 ? found : nullptr;
+        open->Enabled = found->Length > 0;
+        open->Text = found->Length > 0 ? "Open \"" + name + "\"" : "\"" + name + "\" is not in any include folder";
+        open->ToolTipText = found;
+    }
+
+    void OnOpenHeader(Object^ sender, EventArgs^) {
+        String^ found = safe_cast<String^>(safe_cast<ToolStripItem^>(sender)->Tag);
+        if (found == nullptr || found->Length == 0) return;
+        OpenPath(found);
+        what_->Text = found;
     }
 
     Sheet^ MakeSheet(String^ path, String^ contents) { return MakeSheet(path, contents, gcnew TextFile()); }
@@ -3460,6 +3495,12 @@ private:
         SayWhere();
     }
 
+
+    void OnTreeClick(Object^, TreeNodeMouseClickEventArgs^ e) {
+        if (e->Button != System::Windows::Forms::MouseButtons::Left) return;
+        if (e->Node == nullptr || e->Node->Tag == nullptr) return;
+        OpenPath(safe_cast<String^>(e->Node->Tag));
+    }
 
     void OnTreeOpen(Object^, TreeNodeMouseClickEventArgs^ e) {
         if (e->Node == nullptr || e->Node->Tag == nullptr) return;

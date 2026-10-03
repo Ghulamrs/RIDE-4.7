@@ -5590,10 +5590,15 @@ void ccsProjectsAsTheyAre() {
         checkEqual(project.name(), "K6747c", "named as CCS named it");
         checkEqual(project.arch(), "tms6747", "for the C6747");
         check(project.toolchain() == editor::ToolAuto, "each file to the compiler its extension picks");
-        check(project.groups().size() == 2 && project.groups()[0].name == "Sources" && project.groups()[1].name == "Linked",
-              "Sources and Linked are its groups");
+        check(project.groups().size() == 3 && project.groups()[0].name == "Sources" &&
+                  project.groups()[1].name == "Headers" && project.groups()[2].name == "Linked",
+              "Sources, Headers and Linked are its groups");
+        check(project.groups()[1].files.size() == 1 && project.groups()[1].files[0] == "inc/config.h",
+              "inc/config.h under Headers, to be opened, and in no target group");
+        check(std::find(project.target().groups.begin(), project.target().groups.end(), "Headers") == project.target().groups.end(),
+              "a header is never handed to a compiler");
         check(project.groups()[0].files.size() == 1 && project.groups()[0].files[0] == "main.c", "main.c in Sources, by its relative name");
-        check(project.groups()[1].files.size() == 1 && project.groups()[1].files[0] == "C:/cxx1/ccsref/src/util.c", "util.c in Linked, by its absolute one");
+        check(project.groups()[2].files.size() == 1 && project.groups()[2].files[0] == "C:/cxx1/ccsref/src/util.c", "util.c in Linked, by its absolute one");
         checkEqual(project.absolute("C:/cxx1/ccsref/src/util.c"), "C:/cxx1/ccsref/src/util.c", "which absolute() leaves whole");
         check(project.builds() && project.target().groups.size() == 2, "and both groups are built");
         std::vector<std::string> includes = project.includes();
@@ -5641,8 +5646,9 @@ void ccsProjectsAsTheyAre() {
         checkEqual(ccsFingerprint(k74c), before, "and not a byte of CCS's files, nor the folder's listing, has changed");
 
         editor::Project misc;
-        check(misc.load(p7, error) && misc.groups().size() == 2 && misc.groups()[1].name == "Excluded" &&
-                  misc.groups()[1].files.size() == 1 && misc.groups()[1].files[0] == "extra.c",
+        check(misc.load(p7, error) && misc.groups().size() == 3 && misc.groups()[1].name == "Headers" &&
+                  misc.groups()[2].name == "Excluded" &&
+                  misc.groups()[2].files.size() == 1 && misc.groups()[2].files[0] == "extra.c",
               "P7misc's extra.c is shown under Excluded");
         check(misc.target().groups.size() == 1 && misc.target().groups[0] == "Sources", "which the target does not build");
 

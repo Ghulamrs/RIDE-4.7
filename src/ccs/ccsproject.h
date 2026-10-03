@@ -53,6 +53,7 @@ struct Reading {
     std::vector<Config> configs;          // Debug first where there is one, then Release
     std::vector<std::string> linked;      // linked resources' absolute paths, files only
     std::vector<std::string> notBuilt;    // sources of a kind RIDE does not build: .asm, .sa, .lib, .obj
+    std::vector<std::string> headers;     // the folder's own headers, relative: shown and opened, never built
     std::vector<std::string> notes;       // anything else worth a line: a macro left unresolved, definitions missing
     std::map<std::string, std::string> macros;   // build variables, per project (the first configuration's), then the workspace's
     // The workspace the project was opened from (ccsworkspace.h), or "" for a folder opened alone,

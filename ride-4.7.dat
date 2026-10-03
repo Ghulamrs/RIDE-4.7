@@ -1,7 +1,7 @@
 ©2026 G. R. Akhtar - RIDE 4.7, the editor
 Release seal, version 4.7, sealed 03-10-2026
 Written by tools/seal; check it with `tools/seal check`.
-CRC32  size  file - 97 files, seal 40678D1D
+CRC32  size  file - 97 files, seal 74418B56
 ------------------------------------------------------------------
 06F11F39     18706  Makefile
 3A1FF49C      3207  RIDE.pro
@@ -19,7 +19,7 @@ A2B21358    971341  macos/RIDE.icns
 7E2C43FD      2767  macos/Text.h
 E818B9F2     22370  macos/Window.xcodeproj/project.pbxproj
 AEF649AE      1693  macos/WindowController.h
-19EADE76    183349  macos/WindowController.mm
+737B196D    184940  macos/WindowController.mm
 18F9EFDC      4599  macos/main.mm
 07969C88      3339  macos/make-icon.swift
 5ED755F0     12349  macos/make-xcodeproj.py
@@ -30,8 +30,8 @@ AEF649AE      1693  macos/WindowController.h
 985593C8      2268  src/buffer.h
 4CDAFF38      7717  src/ccs/ccsoptions.cpp
 0AED1057      2986  src/ccs/ccsoptions.h
-3A0F7869     32907  src/ccs/ccsproject.cpp
-3C0D659B      5531  src/ccs/ccsproject.h
+40A7BB41     33220  src/ccs/ccsproject.cpp
+94BB4133      5642  src/ccs/ccsproject.h
 D8374802      9429  src/ccs/ccsworkspace.cpp
 EF83F9F1      2439  src/ccs/ccsworkspace.h
 3A0B2ECF      7309  src/ccs/ccsxml.cpp
@@ -63,7 +63,7 @@ DD59BAFA      8601  src/options.cpp
 AA505B11     36918  src/process.cpp
 AAB34DCA      1876  src/process.h
 155E9F80      1344  src/product.h
-2C8D676E     40853  src/project.cpp
+8A6EB8D4     41156  src/project.cpp
 B734AED9      7989  src/project.h
 5ECF2F76     26675  src/settings.cpp
 3E0AC86E      6626  src/settings.h
@@ -88,14 +88,14 @@ CC9C965F      7196  src/toolchain.h
 D93038C5       572  src/utf8.h
 1DD9DC1C     12808  src/workspace.cpp
 F35C52A2      2086  src/workspace.h
-A36BD1E9    228904  winforms/MainForm.h
+83214887    231041  winforms/MainForm.h
 6BA8DA64      2289  winforms/Marshal.h
 3D89F3C4      6415  winforms/Program.cpp
 1F889F5F       157  winforms/RIDEGui.rc
 1BAC8258      9623  winforms/RIDEGui.vcxproj
 B2EA0EE1      4860  winforms/TextFile.h
-5411AAD2     78003  winforms/bridge.cpp
-51DF7643     25662  winforms/bridge.h
+F77E22E1     80495  winforms/bridge.cpp
+CC6FF02F     26228  winforms/bridge.h
 BBD2FAFE      2198  winforms/children.h
 BE6A6F09     72502  winforms/ride.ico
 BF74EBDD     11065  winforms/show.ps1

@@ -799,6 +799,60 @@ const char* ride_project_includes(RIDEProject* project) {
     return scratch().c_str();
 }
 
+const char* ride_header_named(const char* text) {
+    std::string s = text ? text : "";
+    size_t a = s.find_first_not_of(" \t\r\n");
+    size_t b = s.find_last_not_of(" \t\r\n");
+    s = a == std::string::npos ? std::string() : s.substr(a, b - a + 1);
+    std::string name;
+    if (!s.empty() && s[0] == '#') {
+        // #include "Quat.h" or #include <cstdio>, spaces anywhere the preprocessor allows them
+        size_t at = s.find_first_not_of(" \t", 1);
+        if (at != std::string::npos && s.compare(at, 7, "include") == 0) {
+            at = s.find_first_not_of(" \t", at + 7);
+            if (at != std::string::npos && (s[at] == '"' || s[at] == '<')) {
+                size_t end = s.find(s[at] == '"' ? '"' : '>', at + 1);
+                if (end != std::string::npos) name = s.substr(at + 1, end - at - 1);
+            }
+        }
+    } else {
+        // A selection that is itself a file name: Quat.h, "Quat.h" or <cstdio>
+        if (s.size() >= 2 && ((s[0] == '"' && s[s.size() - 1] == '"') || (s[0] == '<' && s[s.size() - 1] == '>')))
+            s = s.substr(1, s.size() - 2);
+        bool plain = !s.empty() && s.size() < 260 && s.find_first_of(" \t\r\n\"<>;(){}") == std::string::npos;
+        if (plain) name = s;
+    }
+    scratch() = name;
+    return scratch().c_str();
+}
+
+const char* ride_find_header(RIDEProject* project, const char* fromFile, const char* name) {
+    std::string want = name ? name : "";
+    scratch().clear();
+    if (want.empty()) return scratch().c_str();
+    std::vector<std::string> places;
+    std::string from = fromFile ? fromFile : "";
+    if (!from.empty()) places.push_back(editor::path::parent(from));
+    if (project && project->project.loaded()) {
+        places.push_back(project->project.root());
+        std::vector<std::string> own = project->project.absoluteIncludes();
+        places.insert(places.end(), own.begin(), own.end());
+    }
+    std::vector<std::string> shared = editor::settings::includes();
+    places.insert(places.end(), shared.begin(), shared.end());
+    places.push_back(editor::settings::includeDir());
+    places.push_back(editor::settings::libDir());
+    for (size_t i = 0; i < places.size(); ++i) {
+        if (places[i].empty()) continue;
+        std::string there = editor::path::join(places[i], want);
+        if (editor::path::exists(there) && !editor::path::isDirectory(there)) {
+            scratch() = editor::path::absolute(there);
+            break;
+        }
+    }
+    return scratch().c_str();
+}
+
 const char* ride_project_libraries(RIDEProject* project) {
     scratch() = project ? joinedList(project->project.libraries()) : std::string();
     return scratch().c_str();

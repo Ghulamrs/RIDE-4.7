@@ -33,12 +33,13 @@ std::string extensionOf(const std::string& name) {
 }
 
 // What CCS's makefile would take a file for, by its extension (FORMAT.md, "Source files").
-enum Kind { Compiled, Command, NotBuilt, Other };
+enum Kind { Compiled, Command, NotBuilt, Header, Other };
 Kind kindOf(const std::string& name) {
     std::string ext = extensionOf(name);
     if (ext == "c" || ext == "cpp" || ext == "cc" || ext == "cxx" || ext == "C" || ext == "c++") return Compiled;
     if (ext == "cmd") return Command;
     if (ext == "asm" || ext == "s" || ext == "sa" || ext == "lib" || ext == "a" || ext == "obj") return NotBuilt;
+    if (ext == "h" || ext == "hpp" || ext == "hh" || ext == "hxx") return Header;
     return Other;
 }
 
@@ -542,6 +543,8 @@ bool read(const std::string& where, Reading& out, std::string& error, const Work
     for (size_t i = 0; i < candidates.size(); ++i) {
         Kind kind = kindOf(candidates[i].first);
         if (kind == NotBuilt) { addUnique(out.notBuilt, candidates[i].first); continue; }
+        // A header of the folder's own is listed to be opened; one linked from elsewhere is reached by #include.
+        if (kind == Header) { if (i < under.size()) addUnique(out.headers, candidates[i].first); continue; }
         if (kind == Other) continue;
         for (size_t c = 0; c < out.configs.size(); ++c) {
             Config& config = out.configs[c];

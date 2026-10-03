@@ -1222,6 +1222,36 @@ static NSColor* ColourOf(unsigned char kind) {
 
 // ---- NSTextViewDelegate ----------------------------------------------------------
 
+// A header the line or the selection names, at the top of the right-click menu: opened as a
+// compiler would find it, or said not to be in any include folder.
+- (NSMenu*)textView:(NSTextView*)view menu:(NSMenu*)menu forEvent:(NSEvent*)event atIndex:(NSUInteger)charIndex {
+    (void)event;
+    NSString* all = view.string;
+    NSRange chosen = view.selectedRange;
+    NSString* text = chosen.length > 0 ? [all substringWithRange:chosen]
+                   : [all substringWithRange:[all lineRangeForRange:NSMakeRange(MIN(charIndex, all.length), 0)]];
+    NSString* name = Str(ride_header_named(Utf8(text)));
+    if (name.length == 0) return menu;
+    NSString* found = Str(ride_find_header(project_, Utf8(current_.path != nil ? current_.path : @""), Utf8(name)));
+    NSMenuItem* open = [[NSMenuItem alloc]
+        initWithTitle:found.length > 0 ? [NSString stringWithFormat:@"Open \u201C%@\u201D", name]
+                                       : [NSString stringWithFormat:@"\u201C%@\u201D is not in any include folder", name]
+               action:@selector(openHeaderItem:) keyEquivalent:@""];
+    open.target = self;
+    open.representedObject = found.length > 0 ? found : nil;
+    open.toolTip = found;
+    [menu insertItem:[NSMenuItem separatorItem] atIndex:0];
+    [menu insertItem:open atIndex:0];
+    return menu;
+}
+
+- (void)openHeaderItem:(NSMenuItem*)sender {
+    NSString* found = sender.representedObject;
+    if (found.length == 0) return;
+    [self openPath:found];
+    [self say:found];
+}
+
 - (NSUndoManager*)undoManagerForTextView:(NSTextView*)view {
     (void)view;
     return current_ != nil ? current_.undo : blank_.undo;
@@ -3633,6 +3663,7 @@ static const NSUInteger kOutputMost = 2000000;
 
 - (BOOL)validateMenuItem:(NSMenuItem*)item {
     SEL action = item.action;
+    if (action == @selector(openHeaderItem:)) return item.representedObject != nil;
     BOOL project = ride_project_loaded(project_) != 0;
     BOOL file = current_ != nil;
     // A build reads the project and settings.json on its own thread; a program running after it does not.
