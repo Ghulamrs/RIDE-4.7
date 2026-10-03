@@ -109,9 +109,9 @@ samples** when they are new or empty - nothing already there is ever replaced:
 --------------------------------------------------------------------------
 ## 5. Making and building a project
 
-**Project** menu: New…, Open…, Recent, Save As…, Close, New File…, Add
-Current File, Add Files…, Remove File, Rename File…, Move File to Group…,
-Delete File…, Include Paths…, Libraries…. The file items act on the open
+**Project** menu: New…, Open…, Recent, Save As…, Close; New File…, Add
+File (the one in front), Add… (files chosen), Remove, Rename…, Move to Group…,
+Delete…; Include Paths…, Libraries…. The file items act on the open
 project's files and are offered only while a project is open.
 
 **Build** menu: Compile File (Ctrl-B), Run File (F5), Build Project (F4), Run
