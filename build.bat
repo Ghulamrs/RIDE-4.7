@@ -246,7 +246,7 @@ cl /nologo /std:c++14 /W4 /WX /EHsc /permissive- /D_CRT_SECURE_NO_WARNINGS ^
    src\shalimar\channel.cpp src\shalimar\session.cpp ^
    winforms\bridge.cpp
 if errorlevel 1 goto :fail
-test.exe
+.\test.exe
 if errorlevel 1 goto :fail
 if not "%1"=="check" goto :done
 
@@ -259,7 +259,7 @@ if not exist obj\harness mkdir obj\harness
 cl /nologo /std:c++14 /W4 /WX /EHsc /permissive- /D_CRT_SECURE_NO_WARNINGS ^
    /I src /Fe:session.exe /Fo:obj\harness\ tests\session.cpp src\path.cpp
 if errorlevel 1 goto :fail
-session.exe %BINDIR%\%PRODUCT%Console.exe %CC1%
+.\session.exe %BINDIR%\%PRODUCT%Console.exe %CC1%
 if errorlevel 1 goto :fail
 
 rem The window has to reach main. Its start-up is mixed-mode, and a native

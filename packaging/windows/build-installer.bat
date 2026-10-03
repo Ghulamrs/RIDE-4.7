@@ -45,7 +45,7 @@ echo ===========================================================================
 
 echo [1/6] Building the compilers and the RIDE editor (build.bat solution) ...
 pushd "%ROOT%"
-call build.bat solution
+call "%ROOT%\build.bat" solution
 if errorlevel 1 (echo   BUILD FAILED & popd & exit /b 1)
 rem  **The window must start before it is shipped.** It is mixed-mode, and a
 rem  native global with a destructor corrupts its heap before main: it built,
@@ -86,8 +86,9 @@ exit /b 0
 rem ---- HTML docs ------------------------------------------------------------
 :genhtml
 set "PY="
-where python >nul 2>&1 && set "PY=python"
-if "%PY%"=="" where py >nul 2>&1 && set "PY=py"
+rem Run, not merely found: the Store's python.exe stub is found by where and runs nothing.
+python -c "print(1)" >nul 2>&1 && set "PY=python"
+if "%PY%"=="" py -c "print(1)" >nul 2>&1 && set "PY=py"
 if "%PY%"=="" (echo    Python not found - using the committed HTML docs. & goto :eof)
 set "MAN="
 for %%f in ("%ROOT%\help\manual\*.md") do set "MAN=!MAN! "%%f""
