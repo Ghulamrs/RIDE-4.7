@@ -1654,6 +1654,9 @@ private:
     // control's own ContextMenuStrip property.
     System::Windows::Forms::ContextMenuStrip^ EditMenuFor(RichTextBox^ box) {
         System::Windows::Forms::ContextMenuStrip^ menu = gcnew System::Windows::Forms::ContextMenuStrip();
+        // First, where it is looked for: a header the line or the selection names, opened as a compiler finds it.
+        menu->Items->Add("Open header", nullptr, gcnew EventHandler(this, &MainForm::OnOpenHeader));
+        menu->Items->Add(gcnew ToolStripSeparator());
         menu->Items->Add("Undo", nullptr, gcnew EventHandler(this, &MainForm::OnUndo));
         menu->Items->Add("Redo", nullptr, gcnew EventHandler(this, &MainForm::OnRedo));
         menu->Items->Add(gcnew ToolStripSeparator());
@@ -1662,9 +1665,6 @@ private:
         menu->Items->Add("Paste", nullptr, gcnew EventHandler(this, &MainForm::OnPaste));
         menu->Items->Add(gcnew ToolStripSeparator());
         menu->Items->Add("Select all", nullptr, gcnew EventHandler(this, &MainForm::OnSelectAll));
-        // A header the line or the selection names, opened as a compiler would find it.
-        menu->Items->Add(gcnew ToolStripSeparator());
-        menu->Items->Add("Open header", nullptr, gcnew EventHandler(this, &MainForm::OnOpenHeader));
         // Before it opens: Cut and Copy want a selection, Paste text on the
         // clipboard, Undo and Redo something to undo or redo.
         menu->Opening += gcnew System::ComponentModel::CancelEventHandler(this, &MainForm::OnEditMenuOpening);
@@ -1677,12 +1677,13 @@ private:
             safe_cast<System::Windows::Forms::ContextMenuStrip^>(sender);
         RichTextBox^ box = safe_cast<RichTextBox^>(menu->Tag);
         bool selected = box->SelectionLength > 0;
-        menu->Items[0]->Enabled = box->CanUndo;
-        menu->Items[1]->Enabled = box->CanRedo;
-        menu->Items[3]->Enabled = selected;
-        menu->Items[4]->Enabled = selected;
-        menu->Items[5]->Enabled = Clipboard::ContainsText();
-        menu->Items[7]->Enabled = box->TextLength > 0;
+        // Open header and its separator are items 0 and 1; the editing ones follow.
+        menu->Items[2]->Enabled = box->CanUndo;
+        menu->Items[3]->Enabled = box->CanRedo;
+        menu->Items[5]->Enabled = selected;
+        menu->Items[6]->Enabled = selected;
+        menu->Items[7]->Enabled = Clipboard::ContainsText();
+        menu->Items[9]->Enabled = box->TextLength > 0;
 
         // The selection when there is one, else the line the caret is on.
         String^ text = box->SelectedText;
@@ -1695,8 +1696,8 @@ private:
         }
         Utf8 said(text);
         String^ name = FromUtf8(ride_header_named(said.c()));
-        ToolStripItem^ open = menu->Items[9];
-        menu->Items[8]->Visible = name->Length > 0;
+        ToolStripItem^ open = menu->Items[0];
+        menu->Items[1]->Visible = name->Length > 0;
         open->Visible = name->Length > 0;
         if (name->Length == 0) return;
         Utf8 wanted(name);
@@ -2666,7 +2667,9 @@ private:
         if (remembered >= 0) { config_ = remembered; ShowChoices(); }
         String^ report = FromUtf8(ride_project_ccs_report(project_, config_));
         if (report->Length == 0) return;
-        Say(report + "\n");
+        // On a line of its own, never run on from the placeholder or whatever the pane ended with.
+        String^ before = console_->TextLength > 0 && !console_->Text->EndsWith("\n") ? "\n" : "";
+        Say(before + report + "\n");
         what_->Text = report->Split('\n')[0];
     }
 

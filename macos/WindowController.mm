@@ -2123,7 +2123,9 @@ static NSColor* ColourOf(unsigned char kind) {
     if (remembered >= 0) config_ = remembered;
     NSString* report = Str(ride_project_ccs_report(project_, config_));
     if (report.length == 0) return;
-    [self append:[report stringByAppendingString:@"\n"] to:output_];
+    // On a line of its own, never run on from whatever the pane ended with.
+    NSString* before = output_.string.length > 0 && ![output_.string hasSuffix:@"\n"] ? @"\n" : @"";
+    [self append:[NSString stringWithFormat:@"%@%@\n", before, report] to:output_];
     [self say:[report componentsSeparatedByString:@"\n"].firstObject];
     [self sayBuild];
 }
