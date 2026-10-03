@@ -5876,6 +5876,27 @@ void ccsWorkspacesOneProjectAtATime() {
 // beside it, the emulated target's .vm, RIDE's own folder for a CCS project, this process's scratch -
 // and never a source, the .pro, a folder of the project's that shares the program's name, or another
 // process's scratch.
+// About ends with this program's own file: its name, the PKT time it was last written, and its CRC-32.
+void aboutSelf() {
+    const std::vector<std::string> said = editor::about::lines();
+    const std::string last = said.empty() ? std::string() : said.back();
+    std::printf("about's last line: %s\n", last.c_str());
+    const std::string self = editor::path::programFile();
+    check(!self.empty(), "the program knows its own file");
+    std::string leaf = self.substr(self.find_last_of('/') + 1);
+    check(last.compare(0, leaf.size(), leaf) == 0, "About's last line names this program's file");
+    check(last.find(" PKT") != std::string::npos, "and the time it was written, in PKT");
+    const size_t at = last.find("CRC32 ");
+    check(at != std::string::npos && last.size() == at + 14, "and its CRC-32, eight hex digits");
+    // The CRC asked of the bytes a second way: zlib's check value of "123456789" is CBF43926.
+    FILE* f = std::fopen(self.c_str(), "rb");
+    unsigned long c = 0xFFFFFFFFUL; int ch;
+    while (f && (ch = std::fgetc(f)) != EOF) { c ^= (unsigned)ch; for (int k = 0; k < 8; ++k) c = (c & 1) ? 0xEDB88320UL ^ (c >> 1) : c >> 1; }
+    if (f) std::fclose(f);
+    char hex[16]; std::snprintf(hex, sizeof hex, "%08lX", (c ^ 0xFFFFFFFFUL) & 0xFFFFFFFFUL);
+    check(at != std::string::npos && last.substr(at + 6) == hex, "the CRC-32 is the file's");
+}
+
 void cleaning() {
     std::printf("Build > Clean\n");
     file::path dir = file::temp_directory_path() / "ride-clean-test";
@@ -5949,6 +5970,7 @@ int main(int argc, char** argv) {
     jsonIsALanguage();
     compilerOptions();
     cleaning();
+    aboutSelf();
     talkingToAChild();
     aProgramThatReads();
     theSeamsSmallPromises();

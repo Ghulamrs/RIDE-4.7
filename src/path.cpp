@@ -314,6 +314,26 @@ std::string homeDir() {
     return out;
 }
 
+std::string programFile() {
+#ifdef _WIN32
+    char buffer[MAX_PATH];
+    DWORD wrote = GetModuleFileNameA(NULL, buffer, sizeof buffer);
+    if (wrote == 0 || wrote >= sizeof buffer) return std::string();
+    return withSlashes(std::string(buffer, wrote));
+#elif defined(__APPLE__)
+    char buffer[4096];
+    uint32_t room = sizeof buffer;
+    if (_NSGetExecutablePath(buffer, &room) != 0) return std::string();
+    return absolute(withSlashes(std::string(buffer)));
+#else
+    char buffer[4096];
+    ssize_t wrote = readlink("/proc/self/exe", buffer, sizeof buffer - 1);
+    if (wrote <= 0) return std::string();
+    buffer[wrote] = 0;
+    return withSlashes(std::string(buffer));
+#endif
+}
+
 std::string programDirectory() {
 #ifdef _WIN32
     char buffer[MAX_PATH];

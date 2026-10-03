@@ -36,6 +36,8 @@ bool removeTree(const std::string& path);
 std::string tempDir();
 
 std::string programDirectory();
+// The running program's own file, by its full name; empty where the system will not say.
+std::string programFile();
 
 std::string besideProgram(const std::string& name);
 

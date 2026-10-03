@@ -5,7 +5,10 @@
 #include "toolchain.h"
 
 #include <cstdio>
+#include <ctime>
 #include <string>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #if defined(_WIN32)
 #define POPEN  _popen
@@ -159,6 +162,64 @@ std::vector<std::string> environment() {
     return said;
 }
 
+namespace {
+
+// CRC-32 as zip and PNG take it (reflected, polynomial EDB88320), over the file's bytes as they are on disk.
+bool crc32Of(const std::string& file, unsigned long& crc) {
+    FILE* f = std::fopen(file.c_str(), "rb");
+    if (!f) return false;
+    unsigned long table[256];
+    for (unsigned long n = 0; n < 256; ++n) {
+        unsigned long c = n;
+        for (int k = 0; k < 8; ++k) c = (c & 1) ? 0xEDB88320UL ^ (c >> 1) : c >> 1;
+        table[n] = c;
+    }
+    unsigned long c = 0xFFFFFFFFUL;
+    unsigned char buffer[65536];
+    size_t got;
+    while ((got = std::fread(buffer, 1, sizeof buffer, f)) > 0)
+        for (size_t i = 0; i < got; ++i) c = table[(c ^ buffer[i]) & 0xFF] ^ (c >> 8);
+    std::fclose(f);
+    crc = (c ^ 0xFFFFFFFFUL) & 0xFFFFFFFFUL;
+    return true;
+}
+
+// The box's last line: this program's file, when it was last written in Pakistan time (UTC+5, no
+// daylight saving, so it is UTC plus five hours whatever the machine's own zone), and its CRC-32.
+std::string selfLine() {
+    const std::string file = path::programFile();
+    if (file.empty()) return std::string();
+    std::string leaf = file;
+    const size_t slash = leaf.find_last_of('/');
+    if (slash != std::string::npos) leaf.erase(0, slash + 1);
+#ifdef _WIN32
+    struct _stat64 st;
+    if (_stat64(file.c_str(), &st) != 0) return leaf;
+#else
+    struct stat st;
+    if (stat(file.c_str(), &st) != 0) return leaf;
+#endif
+    std::time_t pkt = static_cast<std::time_t>(st.st_mtime) + 5 * 3600;
+    std::tm when;
+#ifdef _WIN32
+    gmtime_s(&when, &pkt);
+#else
+    gmtime_r(&pkt, &when);
+#endif
+    char stamp[64];
+    std::strftime(stamp, sizeof stamp, "%d-%m-%Y %H:%M:%S PKT", &when);
+    std::string said = leaf + "  " + stamp;
+    unsigned long crc = 0;
+    if (crc32Of(file, crc)) {
+        char hex[16];
+        std::snprintf(hex, sizeof hex, "%08lX", crc);
+        said += "  CRC32 " + std::string(hex);
+    }
+    return said;
+}
+
+}
+
 std::vector<std::string> lines() {
     std::vector<std::string> said;
     said.push_back(std::string(name()) + " " + version());
@@ -175,6 +236,8 @@ std::vector<std::string> lines() {
     // The sign docked to the year, the word left out: the user's wording.
     said.push_back("\xC2\xA9""2026 G. R. Akhtar");
     said.push_back("Islamabad, Pakistan");
+    const std::string self = selfLine();
+    if (!self.empty()) { said.push_back(""); said.push_back(self); }
     return said;
 }
 
