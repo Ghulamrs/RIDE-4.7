@@ -5898,14 +5898,38 @@ void aboutSelf() {
     check(last.compare(0, named.size(), named) == 0, "About's last line names the release, RIDE 4.7");
     check(last.find(" PKT") != std::string::npos, "and the time it was written, in PKT");
     const size_t at = last.find("CRC32 ");
-    check(at != std::string::npos && last.size() == at + 14, "and its CRC-32, eight hex digits");
+    check(at != std::string::npos && last.size() >= at + 14 && last.find_first_not_of("0123456789ABCDEF", at + 6) == at + 14,
+          "and its CRC-32, eight hex digits");
     // The CRC asked of the bytes a second way: zlib's check value of "123456789" is CBF43926.
     FILE* f = std::fopen(self.c_str(), "rb");
     unsigned long c = 0xFFFFFFFFUL; int ch;
     while (f && (ch = std::fgetc(f)) != EOF) { c ^= (unsigned)ch; for (int k = 0; k < 8; ++k) c = (c & 1) ? 0xEDB88320UL ^ (c >> 1) : c >> 1; }
     if (f) std::fclose(f);
     char hex[16]; std::snprintf(hex, sizeof hex, "%08lX", (c ^ 0xFFFFFFFFUL) & 0xFFFFFFFFUL);
-    check(at != std::string::npos && last.substr(at + 6) == hex, "the CRC-32 is the file's");
+    check(at != std::string::npos && last.substr(at + 6, 8) == hex, "the CRC-32 is the file's");
+
+    // Against the release record beside the program: none, the same, or changed since.
+    const std::string dir = editor::path::programDirectory();
+    const std::string record = editor::path::join(dir, "release.crc");
+    std::remove(record.c_str());
+    check(editor::about::lines().back().find("- no release record") != std::string::npos,
+          "with no release record About says so");
+    check(editor::about::writeReleaseRecord(dir) > 0, "the release record is written for the programs beside it");
+    check(editor::about::lines().back().find("- matches the release") != std::string::npos,
+          "and About then finds this program unchanged");
+    {
+        std::ifstream in(record.c_str());
+        std::stringstream all; all << in.rdbuf();
+        std::string text = all.str();
+        const size_t mine = text.find(" " + self.substr(self.find_last_of('/') + 1) + "\n");
+        const size_t start = text.rfind('\n', mine) + 1;
+        text.replace(start, 8, std::string(hex) == "00000000" ? "11111111" : "00000000");
+        std::ofstream outFile(record.c_str()); outFile << text;
+    }
+    const std::string changed = editor::about::lines().back();
+    check(changed.find("- CHANGED since the release (it was ") != std::string::npos,
+          "and a record that disagrees says the program has CHANGED, with what it was");
+    std::remove(record.c_str());
 }
 
 void cleaning() {

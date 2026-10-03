@@ -96,6 +96,9 @@ ditto "$ROOT/programs" "$R/programs"
 # TI's option definitions, read beside the program as on Windows and Linux.
 ditto "$ROOT/docs/ccs-reference" "$R/docs/ccs-reference"
 for f in "$R"/bin/*.exe; do codesign --force --sign - "$f"; done
+# The release record, after every signature: the console's programs, and the window's own executable, whose
+# bundle a file added now would break - so the window reads it here, in /usr/local/ride-<ver>/bin.
+"$R/bin/RIDE.exe" --release-record "$R/bin" "$APP/MacOS"
 for n in ride:RIDE $TOOLS; do
     name=${n%%:*}; file=${n#*:}
     [ "$name" = link ] && continue

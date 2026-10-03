@@ -2,7 +2,9 @@
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <vector>
 
+#include "about.h"
 #include "editor.h"
 #include "path.h"
 #include "product.h"
@@ -41,6 +43,16 @@ int main(int argc, char** argv) {
     int plain = 0;
     int tabs = -1;
     int caseIndent = -1;
+
+    // The installer's last step: the release record of the programs in a directory, for About to compare with.
+    if (argc >= 3 && std::strcmp(argv[1], "--release-record") == 0) {
+        std::vector<std::string> more;
+        for (int k = 3; k < argc; ++k) more.push_back(argv[k]);
+        const int wrote = editor::about::writeReleaseRecord(argv[2], more);
+        if (wrote < 0) { std::fprintf(stderr, "%s: cannot write the release record in %s\n", me.c_str(), argv[2]); return 2; }
+        std::printf("release record: %d programs in %s\n", wrote, argv[2]);
+        return 0;
+    }
 
     for (int i = 1; i < argc; ++i) {
         if (std::strcmp(argv[i], "--c90") == 0 && i + 1 < argc) {

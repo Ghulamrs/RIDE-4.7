@@ -73,6 +73,10 @@ if not "%VER%"=="3.0" (
   copy /y "%HERE%TI-BUILD.txt" "%STAGE%\bin\ti\" >nul
 )
 
+rem The release record, last: every program in bin by CRC-32 and size, which About compares its own with.
+"%STAGE%\bin\RIDEConsole.exe" --release-record "%STAGE%\bin"
+if errorlevel 1 (echo   RELEASE RECORD FAILED & exit /b 1)
+
 echo [5/6] Compiling the installer (Inno Setup) ...
 if "%ISCC%"=="" set "ISCC=%LOCALAPPDATA%\Programs\Inno Setup 6\ISCC.exe"
 if not exist "%ISCC%" set "ISCC=C:\Program Files (x86)\Inno Setup 6\ISCC.exe"

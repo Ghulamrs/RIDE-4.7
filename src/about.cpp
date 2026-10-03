@@ -5,7 +5,9 @@
 #include "toolchain.h"
 
 #include <cstdio>
+#include <algorithm>
 #include <ctime>
+#include <utility>
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -186,6 +188,8 @@ bool crc32Of(const std::string& file, unsigned long& crc) {
 
 // The box's last line: this program and its version, when its file was last written in Pakistan time (UTC+5, no
 // daylight saving, so it is UTC plus five hours whatever the machine's own zone), and its CRC-32.
+std::string recordedFor(const std::string& leaf, unsigned long& crc, long long& size);
+
 std::string selfLine() {
     const std::string file = path::programFile();
     if (file.empty()) return std::string();
@@ -212,10 +216,93 @@ std::string selfLine() {
         char hex[16];
         std::snprintf(hex, sizeof hex, "%08lX", crc);
         said += "  CRC32 " + std::string(hex);
+        // Against the record the installer wrote beside it: the same bytes, or changed since.
+        unsigned long was = 0;
+        long long wasSize = 0;
+        std::string leaf = file;
+        const size_t slash = leaf.find_last_of('/');
+        if (slash != std::string::npos) leaf.erase(0, slash + 1);
+        const std::string found = recordedFor(leaf, was, wasSize);
+        if (found.empty()) said += "  - no release record";
+        else if (was == crc && wasSize == static_cast<long long>(st.st_size)) said += "  - matches the release";
+        else {
+            char old[16];
+            std::snprintf(old, sizeof old, "%08lX", was);
+            said += "  - CHANGED since the release (it was " + std::string(old) + ")";
+        }
     }
     return said;
 }
 
+const char* kRecord = "release.crc";
+
+// The entry for `leaf` in release.crc beside this program - or, for the macOS window, whose bundle a file
+// added after signing would break, in the console's bin - its CRC and size, and the line, or "".
+std::string recordedFor(const std::string& leaf, unsigned long& crc, long long& size) {
+    FILE* f = std::fopen(path::join(path::programDirectory(), kRecord).c_str(), "r");
+#ifdef __APPLE__
+    if (!f) f = std::fopen((std::string("/usr/local/ride-") + version() + "/bin/" + kRecord).c_str(), "r");
+#endif
+    if (!f) return std::string();
+    char line[1024];
+    std::string found;
+    while (std::fgets(line, sizeof line, f)) {
+        unsigned long c = 0;
+        long long n = 0;
+        char name[768];
+        if (std::sscanf(line, "%lx %lld %767[^\r\n]", &c, &n, name) == 3 && leaf == name) {
+            crc = c;
+            size = n;
+            found = line;
+            break;
+        }
+    }
+    std::fclose(f);
+    return found;
+}
+
+}
+
+int writeReleaseRecord(const std::string& directory, const std::vector<std::string>& more) {
+    bool ok = false;
+    std::vector<path::Entry> listed = path::entries(directory, &ok);
+    if (!ok) return -1;
+    // The directory's own programs first, then any further directory's under names not yet listed, in name order.
+    std::vector<std::pair<std::string, std::string> > all;
+    for (size_t i = 0; i < listed.size(); ++i)
+        if (!listed[i].directory && listed[i].name != kRecord) all.push_back(std::make_pair(listed[i].name, directory));
+    for (size_t d = 0; d < more.size(); ++d) {
+        std::vector<path::Entry> extra = path::entries(more[d], &ok);
+        for (size_t i = 0; ok && i < extra.size(); ++i) {
+            bool seen = extra[i].directory || extra[i].name == kRecord;
+            for (size_t k = 0; !seen && k < all.size(); ++k) seen = all[k].first == extra[i].name;
+            if (!seen) all.push_back(std::make_pair(extra[i].name, more[d]));
+        }
+    }
+    std::sort(all.begin(), all.end());
+    const std::string target = path::join(directory, kRecord);
+    FILE* out = std::fopen(target.c_str(), "w");
+    if (!out) return -1;
+    std::fprintf(out, "# %s %s - the programs as released: CRC-32, size, name. About compares its own with this.\n",
+                 name(), version());
+    int wrote = 0;
+    for (size_t i = 0; i < all.size(); ++i) {
+        const std::string file = path::join(all[i].second, all[i].first);
+        unsigned long crc = 0;
+        if (!crc32Of(file, crc)) continue;
+#ifdef _WIN32
+        struct _stat64 st;
+        if (_stat64(file.c_str(), &st) != 0) continue;
+#else
+        struct stat st;
+        if (stat(file.c_str(), &st) != 0) continue;
+#endif
+        if ((st.st_mode & S_IFMT) != S_IFREG) continue;
+        std::fprintf(out, "%08lX %lld %s\n", crc, static_cast<long long>(st.st_size), all[i].first.c_str());
+        ++wrote;
+    }
+    std::fclose(out);
+    return wrote;
 }
 
 std::vector<std::string> lines() {

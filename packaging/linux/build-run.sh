@@ -33,6 +33,8 @@ for t in RIDE c90 cpp11 shalimar c2s vm6747 asm6x masm link lnk6x; do
     strip "$STAGE/bin/$t.exe" 2>/dev/null || true
 done
 cp -rp "$BIN/lib" "$STAGE/bin/lib"
+# The release record, after strip: every program in bin by CRC-32 and size, which About compares its own with.
+"$STAGE/bin/RIDE.exe" --release-record "$STAGE/bin"
 cp -rp "$CPP/include" "$STAGE/include"
 cp -p "$CPP"/lib/*.h "$STAGE/include/"
 cp -rp "$CC/lib" "$STAGE/lib"
