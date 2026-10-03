@@ -620,8 +620,9 @@ static NSString* FoundCompiler(NSString* variable, NSString* name) {
             if (font != nil) return font;
         }
     }
-    NSFont* menlo = [NSFont fontWithName:@"Menlo" size:13];
-    return menlo != nil ? menlo : [NSFont monospacedSystemFontOfSize:13 weight:NSFontWeightRegular];
+    // Courier New 18, regular: the default since 03-10-2026, the user's choice.
+    NSFont* courier = [NSFont fontWithName:@"CourierNewPSMT" size:18];
+    return courier != nil ? courier : [NSFont monospacedSystemFontOfSize:18 weight:NSFontWeightRegular];
 }
 
 - (NSDictionary*)codeAttributes {
