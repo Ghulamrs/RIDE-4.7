@@ -64,7 +64,7 @@ bool unreadable(const std::string& file) {
 }
 
 // The per-user state, ~/.ride/state.json: what was opened last and the choices
-// made in the window. The configuration is settings.json, beside the programs.
+// made in the window. The configuration is settings.json, beside it.
 std::string fileName() {
     std::string home = path::homeDir();
     if (home.empty()) return std::string();
@@ -190,15 +190,12 @@ namespace {
 // A pointer and never a std::string: in the C++/CLI window a native global with a destructor corrupts the onexit table before main (STATUS_HEAP_CORRUPTION under register_onexit_function); `moved` above is a pointer for the same reason.
 std::string* pretended = 0;
 
-// **On macOS settings.json is the user's, in ~/.ride beside state.json**: a file
-// written inside a signed RIDE.app breaks its signature, and /Applications is not
-// the user's to write. What it names is still resolved against the installation.
+// **settings.json is the user's, in ~/.ride beside state.json, on every system** - on macOS since
+// 4.5, on Windows and Linux since 03-10-2026: Program Files and /opt are not the user's to write, and
+// the one there could not be changed. The installation's own file is the defaults the user's starts
+// from; what either names is still resolved against the installation.
 bool perUserInstallFile() {
-#ifdef __APPLE__
     return !(pretended && !pretended->empty()) && !path::homeDir().empty();
-#else
-    return false;
-#endif
 }
 
 std::string installDir() {
@@ -207,8 +204,7 @@ std::string installDir() {
     return where.empty() ? std::string() : path::parent(where);
 }
 
-Json readInstall() {
-    std::string file = installFile();
+Json readJsonFile(const std::string& file) {
     if (file.empty() || !path::exists(file)) return Json::object();
 
     FILE* in = std::fopen(file.c_str(), "rb");
@@ -222,6 +218,23 @@ Json readInstall() {
     std::string why;
     Json root = Json::parse(text, why);
     if (!why.empty() || !root.is(Json::Object)) return Json::object();
+    return root;
+}
+
+// The installation's settings.json, which the per-user one is laid over: the installer's defaults.
+std::string defaultsFile() {
+    std::string base = installDir();
+    return base.empty() ? std::string() : path::join(base, "settings.json");
+}
+
+// The defaults with the user's own over them, key by key: a key the user's file has wins, and one it
+// lacks - one a later release added, say - comes from the installation.
+Json readInstall() {
+    Json mine = readJsonFile(installFile());
+    if (!perUserInstallFile()) return mine;
+    Json root = readJsonFile(defaultsFile());
+    if (mine.is(Json::Object))
+        for (size_t i = 0; i < mine.size(); ++i) root.set(mine.keyAt(i), mine.valueAt(i));
     return root;
 }
 
@@ -556,6 +569,11 @@ bool rememberCcsProjectState(const std::string& dir, const Json& state) {
 bool writeInstallFileIfAbsent() {
     std::string file = installFile();
     if (file.empty() || path::exists(file)) return true;
+    // The installation's own, where there is one - its assembler and linkers are named there.
+    if (perUserInstallFile() && path::exists(defaultsFile())) {
+        Json given = readJsonFile(defaultsFile());
+        if (given.is(Json::Object) && given.size() > 0) { writeInstall(given); return true; }
+    }
     Json root = Json::object();
     root.set("include", Json::fromText("include"));
     root.set("lib", Json::fromText("lib"));

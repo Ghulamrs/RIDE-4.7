@@ -230,11 +230,15 @@ install already on the machine (none of TI's tools ship with RIDE); see
 **settings.json** - the include paths and libraries every project gets, the
 default compiler, the assembler and linkers, `"askNative"`, the code font:
 
-| System  | settings.json                         |
-|---------|---------------------------------------|
-| Windows | beside `bin\`, in the install folder  |
-| macOS   | `~/.ride/settings.json` (made on first launch) |
-| Linux   | `/opt/ride/settings.json`             |
+| System  | settings.json - yours, to change       |
+|---------|----------------------------------------|
+| Windows | `%USERPROFILE%\.ride\settings.json`     |
+| macOS   | `~/.ride/settings.json`                |
+| Linux   | `~/.ride/settings.json`                |
+
+It is made the first time RIDE starts, from the installation's own
+`settings.json`, which stays as the defaults: whatever yours does not set is
+read from there. In the Windows window, **Tools ▸ Settings file...** opens it.
 
 What you were last doing - recent files and projects, Debug or Release - is
 in `~/.ride/state.json` on every system.

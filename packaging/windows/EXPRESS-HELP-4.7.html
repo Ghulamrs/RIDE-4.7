@@ -143,7 +143,8 @@ examples\, help\       worked programs; the full help pages
 settings.json  the installation&#x27;s settings (next section)</code></pre>
 <p><strong>macOS</strong>: RIDE.app in Applications holds everything the window needs; <code>/usr/local/ride</code> holds the console editor and the same <code>bin</code>, <code>include</code>, <code>lib</code>, <code>help</code>, <code>projects</code> and <code>programs</code>, with the commands linked into <code>/usr/local/bin</code>. <strong>Linux</strong>: <code>/opt/ride</code> (or <code>--prefix</code>), laid out the same.</p>
 <p><strong>settings.json</strong> - the include paths and libraries every project gets, the default compiler, the assembler and linkers, <code>&quot;askNative&quot;</code>, the code font:</p>
-<table><thead><tr><th>System</th><th>settings.json</th></tr></thead><tbody><tr><td>Windows</td><td>beside <code>bin\</code>, in the install folder</td></tr><tr><td>macOS</td><td><code>~/.ride/settings.json</code> (made on first launch)</td></tr><tr><td>Linux</td><td><code>/opt/ride/settings.json</code></td></tr></tbody></table>
+<table><thead><tr><th>System</th><th>settings.json - yours, to change</th></tr></thead><tbody><tr><td>Windows</td><td><code>%USERPROFILE%\.ride\settings.json</code></td></tr><tr><td>macOS</td><td><code>~/.ride/settings.json</code></td></tr><tr><td>Linux</td><td><code>~/.ride/settings.json</code></td></tr></tbody></table>
+<p>It is made the first time RIDE starts, from the installation's own <code>settings.json</code>, which stays as the defaults: whatever yours does not set is read from there. In the Windows window, <strong>Tools ▸ Settings file...</strong> opens it.</p>
 <p>What you were last doing - recent files and projects, Debug or Release - is in <code>~/.ride/state.json</code> on every system.</p>
 <hr>
 <h2 id="10-removing-ride">10. Removing RIDE</h2>

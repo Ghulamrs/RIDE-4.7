@@ -156,7 +156,7 @@ int ride_options_commit(RIDEProject* project);
 
 // The installation's settings.json, above bin/: where cxx1's headers (include) and cc1's (lib) are, and the vcvars64.bat named there if any.
 const char* ride_install_file(void);
-// Writes that file with the installer's defaults where there is none - on macOS ~/.ride/settings.json; 0 only when it is missing and cannot be written.
+// Writes that file with the installer's defaults where there is none - ~/.ride/settings.json, from the installation's; 0 only when it is missing and cannot be written.
 int ride_write_install_file_if_absent(void);
 // The installation's include directories and libraries, one ';'-separated
 // line each as settings.json has them; setting one writes the file.

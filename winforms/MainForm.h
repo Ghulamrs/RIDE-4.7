@@ -648,7 +648,21 @@ private:
 
     static String^ StillWorking() { return "still working - Build > Stop (Ctrl+Break) ends it"; }
 
+    // %USERPROFILE%\.ride\settings.json, begun from the installation's defaults: the user's to change.
+    void OnSettingsFile(Object^, EventArgs^) {
+        ride_write_install_file_if_absent();
+        String^ file = FromUtf8(ride_install_file());
+        if (file == nullptr || file->Length == 0 || !System::IO::File::Exists(file)) {
+            what_->Text = "there is no settings.json to open - no home directory";
+            return;
+        }
+        OpenPath(file);
+        what_->Text = file + " - what is saved here is used from the next build";
+    }
+
     void Start(String^ projectDirectory, array<String^>^ files) {
+        // The user's settings.json, made from the installation's the first time - as the console does.
+        ride_write_install_file_if_absent();
         project_ = ride_project_new();
         arch_ = "x86_64-windows";
         ride_ask_native(AskNativeInWindow);
@@ -1022,6 +1036,9 @@ private:
 
         tools->DropDownItems->Add("Font...", nullptr,
                                   gcnew EventHandler(this, &MainForm::OnFont));
+        // The user's own settings.json, opened here to read and change; a save is the next build's.
+        tools->DropDownItems->Add("Settings file...", nullptr,
+                                  gcnew EventHandler(this, &MainForm::OnSettingsFile));
         tools->DropDownItems->Add(gcnew ToolStripSeparator());
         tools->DropDownItems->Add("Header directories...", nullptr,
                                   gcnew EventHandler(this, &MainForm::OnHeaderDirs));

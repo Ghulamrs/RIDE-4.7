@@ -12,7 +12,7 @@ constexpr const char* kName = "RIDE";
 // As a file name wants it: ride-run.s, ride-parts, .ride.
 constexpr const char* kLower = "ride";
 // The per-user state - the recent projects and files, the frame, Debug or
-// Release. Not configuration: that is settings.json beside the programs, and a
+// Release. Not configuration: that is settings.json, also in .ride, and a
 // project's own is its .pro. Under the home directory.
 constexpr const char* kStateDirectory = ".ride";
 constexpr const char* kStateFile = "state.json";
