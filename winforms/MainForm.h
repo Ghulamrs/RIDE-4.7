@@ -3868,8 +3868,13 @@ private:
         int lines = ride_build_assembly_lines(built);
         ride_build_free(built);
 
-        panel_->SelectedIndex = 2;
-        what_->Text = String::Format("{0} lines of assembly", lines);
+        // Said in so many words, as Visual Studio and CCS do, and on the Console tab where it is looked for;
+        // the listing is on the Assembly tab beside it.
+        String^ name = System::IO::Path::GetFileName(source);
+        Say("\n========== Compilation succeeded: " + name + " - 0 errors ==========\n" +
+            lines + " lines of assembly, on the Assembly tab\n");
+        panel_->SelectedIndex = 0;
+        what_->Text = "Compilation succeeded: " + name + " - 0 errors, " + lines + " lines of assembly";
     }
 
     void OnRun(Object^, EventArgs^) {
@@ -4075,7 +4080,11 @@ private:
         }
 
         bool ok = ride_build_ok(made) != 0;
+        // What the build made is what runs - <program>.vm for a C6747 project - and never the target's name.
+        String^ madeProgram = FromUtf8(ride_build_made(made));
+        bool madeShalimar = ride_build_made_shalimar(made) != 0;
         ride_build_free(made);
+        if (madeProgram->Length == 0) madeProgram = program;
 
         if (!ok) {
             what_->Text = String::Join(", ", compilers->ToArray()) +
@@ -4083,19 +4092,21 @@ private:
             return;
         }
 
+        String^ succeeded = "Build succeeded: " + System::IO::Path::GetFileNameWithoutExtension(program) + " - " +
+                            howMany + (howMany == 1 ? " source" : " sources") + ", 0 errors";
+        Say("\n========== " + succeeded + " ==========\n");
         if (!andRun) {
-            Say("\n[built " + program + "]\n");
-            what_->Text = "built " + System::IO::Path::GetFileName(program) + " from " +
-                          howMany + (howMany == 1 ? " source" : " sources");
+            Say(madeProgram + "\n");
+            what_->Text = succeeded;
             return;
         }
 
-        Say("\n");
-        what_->Text = "running " + System::IO::Path::GetFileName(program) + " ...";
-        Utf8 built(program);
-        RIDERunning* running = ride_run_built_start(built.c(), &OutputToWindow,
-                                                    Runtime::InteropServices::GCHandle::ToIntPtr(self_).ToPointer());
-        StartedRunning(running, nullptr, nullptr, program);
+        Say("\n$ " + madeProgram + "\n");
+        what_->Text = "running " + System::IO::Path::GetFileName(madeProgram) + " ...";
+        Utf8 built(madeProgram);
+        RIDERunning* running = ride_run_made_start(built.c(), madeShalimar ? 1 : 0, &OutputToWindow,
+                                                   Runtime::InteropServices::GCHandle::ToIntPtr(self_).ToPointer());
+        StartedRunning(running, nullptr, nullptr, madeProgram);
     }
 
     bool SaveEveryDirty() {

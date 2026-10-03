@@ -100,6 +100,8 @@ struct Outcome {
     int status = 0;
     bool stopped = false;   // Build > Stop ended it
     std::string produced;   // a conversion's file
+    std::string made;       // what a project build made, which is what runs: <program>.vm for the C6747
+    bool madeShalimar = false;
 };
 
 // What a build said, copied off the core's object on the thread that ran it (L15: once, not thrice).
@@ -117,6 +119,8 @@ static Outcome OutcomeOf(RIDEBuild* built) {
     outcome.assembly = ride_build_assembly(built);
     outcome.assemblyLines = ride_build_assembly_lines(built);
     outcome.stopped = ride_build_stopped(built) != 0;
+    outcome.made = ride_build_made(built);
+    outcome.madeShalimar = ride_build_made_shalimar(built) != 0;
     return outcome;
 }
 
@@ -2846,9 +2850,11 @@ static NSColor* ColourOf(unsigned char kind) {
             [self append:StrLossy(outcome.assembly) to:output_];
             [output_ scrollRangeToVisible:NSMakeRange(0, 0)];
         }
-        NSString* verdict = [NSString stringWithFormat:@"%@ compiled - %d lines of assembly%@",
-                                                       path.lastPathComponent, outcome.assemblyLines,
-                                                       issues_.count > 0 ? @", with warnings" : @""];
+        // Said in so many words, as Xcode and CCS do: the first line of Output, and the status line.
+        NSString* verdict = [NSString stringWithFormat:@"Compilation succeeded%@: %@ - 0 errors, %d lines of assembly",
+                                                       issues_.count > 0 ? @" with warnings" : @"",
+                                                       path.lastPathComponent, outcome.assemblyLines];
+        [self append:[NSString stringWithFormat:@"\n========== %@ ==========\n", verdict] to:output_];
         [self endWork:verdict ok:YES];
         [self showPanel:issues_.count > 0 ? kPanelErrors : kPanelOutput];
         return;
@@ -3133,15 +3139,25 @@ static const NSUInteger kOutputMost = 2000000;
         return;
     }
     [self advanceWork:[@"linked " stringByAppendingString:program.lastPathComponent]];
+    NSString* succeeded = [NSString stringWithFormat:@"Build succeeded%@: %@ - %d %@, 0 errors",
+                                                     issues_.count > 0 ? @" with warnings" : @"",
+                                                     program.lastPathComponent.stringByDeletingPathExtension,
+                                                     ride_project_target_sources(project_),
+                                                     ride_project_target_sources(project_) == 1 ? @"source" : @"sources"];
+    [self append:[NSString stringWithFormat:@"\n========== %@ ==========\n", succeeded] to:output_];
     if (!andRun) {
-        [self append:[NSString stringWithFormat:@"\n[built %@]\n", program] to:output_];
-        [self endWork:[@"built " stringByAppendingString:program.lastPathComponent] ok:YES];
+        [self append:[NSString stringWithFormat:@"%@\n", outcome.made.empty() ? program : Str(outcome.made.c_str())]
+                  to:output_];
+        [self endWork:succeeded ok:YES];
         [self showPanel:issues_.count > 0 ? kPanelErrors : kPanelOutput];
         return;
     }
     [self showPanel:kPanelOutput];
-    [self startRun:ride_run_built_start(Utf8(program), RunOutput, (__bridge void*)self)
-            source:nil compiler:compilers program:program];
+    // What the build made is what runs - <program>.vm for a C6747 project - and never the target's name.
+    NSString* made = outcome.made.empty() ? program : Str(outcome.made.c_str());
+    [self append:[NSString stringWithFormat:@"\n$ %@\n", made] to:output_];
+    [self startRun:ride_run_made_start(Utf8(made), outcome.madeShalimar ? 1 : 0, RunOutput, (__bridge void*)self)
+            source:nil compiler:compilers program:made];
 }
 
 - (void)convertFile:(id)sender {

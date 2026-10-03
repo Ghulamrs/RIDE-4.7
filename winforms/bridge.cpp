@@ -297,6 +297,9 @@ struct RIDEBuild {
     editor::Build built;
     std::string assembly;
     bool stopped = false;
+    // What the build made, which is what runs: <program>.vm for the emulated target, not the target's name.
+    std::string program;
+    bool shalimar = false;
 };
 
 struct RIDERan {
@@ -1638,6 +1641,8 @@ RIDEBuild* ride_build_target(RIDEProject* project, const char* cc1, const char* 
     out->built.ok = made.ok;
     out->built.diag = made.diag;
     out->built.output = made.output;
+    out->program = made.program;
+    out->shalimar = made.shalimar;
     return out;
 }
 
@@ -1712,6 +1717,8 @@ RIDEBuild* ride_build(RIDEProject* project, const char* cc1, const char* cl, con
 void ride_build_free(RIDEBuild* built) { delete built; }
 
 int ride_build_ok(RIDEBuild* built) { return built && built->built.ok ? 1 : 0; }
+const char* ride_build_made(RIDEBuild* built) { return built ? built->program.c_str() : ""; }
+int ride_build_made_shalimar(RIDEBuild* built) { return built && built->shalimar ? 1 : 0; }
 const char* ride_build_output(RIDEBuild* built) { return built ? built->built.output.c_str() : ""; }
 const char* ride_build_assembly(RIDEBuild* built) { return built ? built->assembly.c_str() : ""; }
 int ride_build_assembly_lines(RIDEBuild* built) {
@@ -1752,6 +1759,7 @@ struct RIDERunning {
     std::string arch;
     editor::Configuration config;
     std::string program;
+    bool shalimar = false;      // a built Shalimar program, which the emulator runs beside its runtime
 
     editor::Process process;
     std::thread worker;
@@ -1798,7 +1806,7 @@ void runTheProgram(RIDERunning* running) {
         stopFirst = running->stopWanted;
     }
     editor::Built made;
-    bool shalimar = false;
+    bool shalimar = running->shalimar;
     std::string program = running->program;
     if (running->fromSource && !stopFirst) {
         made = editor::buildProgram(running->tool, running->kind, running->source, running->language,
@@ -1874,7 +1882,12 @@ RIDERunning* ride_run_start(RIDEProject* project, const char* cc1, const char* c
 }
 
 RIDERunning* ride_run_built_start(const char* program, RIDEOutput onOutput, void* user) {
+    return ride_run_made_start(program, 0, onOutput, user);
+}
+
+RIDERunning* ride_run_made_start(const char* program, int shalimar, RIDEOutput onOutput, void* user) {
     RIDERunning* running = new RIDERunning();
+    running->shalimar = shalimar != 0;
     running->onOutput = onOutput;
     running->user = user;
     running->fromSource = false;

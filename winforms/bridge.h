@@ -314,6 +314,10 @@ RIDEBuild* ride_build_target(RIDEProject* project, const char* cc1, const char* 
 void ride_build_free(RIDEBuild* built);
 
 int ride_build_ok(RIDEBuild* built);
+/* What the build made and what runs: the program, or <program>.vm for the emulated target; and
+   whether it is Shalimar, which the emulator runs beside its runtime. Run it with ride_run_made_start. */
+const char* ride_build_made(RIDEBuild* built);
+int ride_build_made_shalimar(RIDEBuild* built);
 const char* ride_build_output(RIDEBuild* built);
 const char* ride_build_assembly(RIDEBuild* built);
 int ride_build_assembly_lines(RIDEBuild* built);
@@ -360,6 +364,8 @@ RIDERunning* ride_run_start(RIDEProject* project, const char* cc1, const char* c
                             const char* arch, int config, RIDEOutput onOutput, void* user);
 /* A program already built, as ride_run_built runs it; it is left where it is. */
 RIDERunning* ride_run_built_start(const char* program, RIDEOutput onOutput, void* user);
+/* The same for what ride_build_made named, Shalimar or not. */
+RIDERunning* ride_run_made_start(const char* program, int shalimar, RIDEOutput onOutput, void* user);
 
 /* Bytes to its input as they are - a line wants its "\n"; held until it starts. 0 once it has
    ended or its input was closed. Any thread, as are the next three. */
