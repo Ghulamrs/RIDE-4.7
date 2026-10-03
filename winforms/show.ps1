@@ -27,16 +27,16 @@
     Run from the machine itself, it just works.
 
 .EXAMPLE
-    .\show.ps1 -Project C:\Users\me\Editor -Files examples\smart.cpp -Build
+    .\show.ps1 -Project C:\Users\me\Editor -Files programs\smart.cpp -Build
 
 .EXAMPLE
     .\show.ps1 -Project C:\work\thing -Out C:\temp\thing.png
 
 .EXAMPLE
-    .\show.ps1 -Files examples\hello.c -Keys "{F9}{F8}" -Panel Debug
+    .\show.ps1 -Files programs\hello.c -Keys "{F9}{F8}" -Panel Debug
 
 .EXAMPLE
-    .\show.ps1 -Files examples\smart.cpp -Keys "{F9}{F8}" -Then "{F6}","^2{DOWN 6}{ENTER}"
+    .\show.ps1 -Files programs\smart.cpp -Keys "{F9}{F8}" -Then "{F6}","^2{DOWN 6}{ENTER}"
 #>
 param(
     # The directory holding the .pro, and where paths are counted from.

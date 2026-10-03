@@ -190,7 +190,7 @@ part), then `cpp11` compiling `shape.cpp`, then the link, and Run project prints
    `main.c` back; Run project → `greet is 7`. The `.pro` no longer lists it.
 
 Every add and remove is reflected in the `.pro` immediately. This is exactly the
-`examples/demo` project shipped with the install.
+`projects/c-demo` project shipped with the install.
 
 --------------------------------------------------------------------------------
 ## 45. Converting between C and Shalimar

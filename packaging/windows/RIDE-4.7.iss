@@ -44,23 +44,19 @@ LicenseFile={#Stage}\README.md
 Source: "{#Stage}\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
 
 [Dirs]
-; Projects and single programs default to Documents\RIDE\projects and
-; Documents\RIDE\programs, made by the editor on first use - the user's own,
-; not the install's. examples\ is, and both shortcuts start the editor there; its projects are the
-; first thing anyone builds: without this line a build there died in the
-; linker ("LNK1104: cannot open file ...\examples\demo.exe") for every user
-; but an administrator - 2026-09-20, the first 4.0 install under Program
-; Files. The editor now refuses such a build and names the directory.
-Name: "{app}\examples"; Permissions: users-modify
+; Projects and single programs are Documents\RIDE\projects and Documents\RIDE\programs,
+; filled by the editor from {app}\projects and {app}\programs on first use - the user's own,
+; where a build can write. There is no examples\ since 03-10-2026, so nothing under
+; Program Files needs to be writable, and the shortcuts start in Documents.
 
 [Icons]
-Name: "{group}\{#MyName}"; Filename: "{app}\bin\{#PRODUCT}.exe"; WorkingDir: "{app}\examples"
-Name: "{group}\{#MyName} (console)"; Filename: "{app}\bin\{#PRODUCT}Console.exe"; WorkingDir: "{app}\examples"
+Name: "{group}\{#MyName}"; Filename: "{app}\bin\{#PRODUCT}.exe"; WorkingDir: "{userdocs}"
+Name: "{group}\{#MyName} (console)"; Filename: "{app}\bin\{#PRODUCT}Console.exe"; WorkingDir: "{userdocs}"
 Name: "{group}\Express Help"; Filename: "{app}\EXPRESS-HELP.html"; WorkingDir: "{app}"
 Name: "{group}\Manual"; Filename: "{app}\help\manual.html"; WorkingDir: "{app}"
 Name: "{group}\User Guide"; Filename: "{app}\help\guide.html"; WorkingDir: "{app}"
 Name: "{group}\Uninstall {#MyName}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyName}"; Filename: "{app}\bin\{#PRODUCT}.exe"; WorkingDir: "{app}\examples"; Tasks: desktopicon
+Name: "{autodesktop}\{#MyName}"; Filename: "{app}\bin\{#PRODUCT}.exe"; WorkingDir: "{userdocs}"; Tasks: desktopicon
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a desktop shortcut"

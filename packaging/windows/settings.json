@@ -14,5 +14,5 @@
   "font": "",
   "includes": [],
   "libraries": [],
-  "ccs": { "enabled": false, "root": "" }
+  "ccs": { "enabled": true, "root": "" }
 }

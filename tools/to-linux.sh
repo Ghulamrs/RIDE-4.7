@@ -63,13 +63,13 @@ say() { printf '%s\n' "$*"; }
 # ---- the editor -----------------------------------------------------------
 # help/ goes for tests/test.cpp's Help > Contents check, and tools/ for `make check`'s --check of the
 # projects. shc's runtime goes as 'shmrt-*' and not 'lib', which matched every lib/ at any depth and
-# dropped examples/ccs/P7misc/lib/util.c and its docs/ccs-reference twin.
+# dropped projects/ccs/P7misc/lib/util.c and its docs/ccs-reference twin.
 tar --no-mac-metadata \
     --exclude 'obj' --exclude '*.o' --exclude '*.d' --exclude '*.exe' \
     --exclude 'tests/test' --exclude 'tests/session' --exclude '* 2.*' \
     --exclude 'shmrt-*' --exclude 'x64' --exclude 'DerivedData' --exclude 'bin' \
     -czf "$TMP/ride-src.tgz" \
-    src tests winforms examples help tools docs packaging projects programs Makefile workspace.mk README.md 2>/dev/null || exit 2
+    src tests winforms help tools docs packaging projects programs Makefile workspace.mk README.md 2>/dev/null || exit 2
 
 # ---- what it drives ---------------------------------------------------------
 # Each repository's sources, tests and Makefile, and nothing built here.

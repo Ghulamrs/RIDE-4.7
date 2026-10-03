@@ -806,8 +806,8 @@ void pickingAProject(const std::string& ride) {
 // and picking one writes it - workspace and project and nothing else - and opens that project alone.
 void pickingACcsWorkspaceProject(const std::string& ride) {
     std::printf("opening one project of a CCS workspace\n");
-    const std::string examples = editor::path::absolute("examples/ccs");
-    if (!file::exists(file::path(examples) / "K6747c")) { std::printf("  (no examples/ccs here, so nothing is opened)\n"); return; }
+    const std::string examples = editor::path::absolute("projects/ccs");
+    if (!file::exists(file::path(examples) / "K6747c")) { std::printf("  (no projects/ccs here, so nothing is opened)\n"); return; }
 
     file::path dir = file::temp_directory_path() / "ride-session-ccs-workspace";
     file::remove_all(dir);

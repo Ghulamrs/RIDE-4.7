@@ -61,13 +61,13 @@ say() { printf '%s\n' "$*"; }
 # ---- the editor -----------------------------------------------------------
 # Built things go by name and suffix: a Mach-O RIDE.exe or tests/test sent over is "newer" than its
 # source there. help/ goes for tests/test.cpp's Help > Contents check. shc's runtime goes as 'shmrt-*'
-# and not 'lib', which matched every lib/ and dropped examples/ccs/P7misc/lib/util.c and its docs twin.
+# and not 'lib', which matched every lib/ and dropped projects/ccs/P7misc/lib/util.c and its docs twin.
 tar --no-mac-metadata \
     --exclude 'obj' --exclude '*.o' --exclude '*.d' --exclude '*.exe' \
     --exclude 'tests/test' --exclude 'tests/session' --exclude '* 2.*' \
     --exclude 'shmrt-*' --exclude 'x64' --exclude 'DerivedData' \
     -czf "$TMP/ride-src.tgz" \
-    src tests winforms examples help tools docs packaging projects programs \
+    src tests winforms help tools docs packaging projects programs \
     Makefile workspace.mk build.bat clean.cmd README.md RIDE.pro \
     RIDE.sln RIDEConsole.vcxproj product.props 2>/dev/null || exit 2
 

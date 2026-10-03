@@ -8,7 +8,7 @@
 # Build it on the oldest glibc it is meant for: the programs need the glibc and
 # libstdc++ they were linked against, and Amazon Linux 2023's 2.34 and GCC 11
 # are the floor of every distribution named above. The layout is the Windows
-# install's - bin include lib help examples, settings.json - and the header,
+# install's - bin include lib help projects programs, settings.json - and the header,
 # install-header.sh, checks the machine, installs and links the commands.
 set -eu
 
@@ -27,7 +27,7 @@ for t in RIDE c90 cpp11 shalimar c2s vm6747 asm6x masm link lnk6x; do
     [ -x "$BIN/$t.exe" ] || { echo "build-run.sh: no $BIN/$t.exe - build the workspace first"; exit 1; }
 done
 
-mkdir -p "$STAGE/bin" "$STAGE/examples"
+mkdir -p "$STAGE/bin"
 for t in RIDE c90 cpp11 shalimar c2s vm6747 asm6x masm link lnk6x; do
     cp -p "$BIN/$t.exe" "$STAGE/bin/"
     strip "$STAGE/bin/$t.exe" 2>/dev/null || true
@@ -39,8 +39,6 @@ cp -rp "$CC/lib" "$STAGE/lib"
 cp -rp "$ROOT/help" "$STAGE/help"
 cp -rp "$ROOT/projects" "$STAGE/projects"
 cp -rp "$ROOT/programs" "$STAGE/programs"
-for e in c h cpp shl pro; do cp -p "$ROOT"/examples/*."$e" "$STAGE/examples/" 2>/dev/null || true; done
-cp -rp "$ROOT/examples/ccs" "$STAGE/examples/ccs"
 # TI's option definitions, which give a CCS project's unstored options - --rom_model among them - CCS's defaults.
 mkdir -p "$STAGE/docs"
 cp -rp "$ROOT/docs/ccs-reference" "$STAGE/docs/ccs-reference"

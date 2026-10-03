@@ -5,7 +5,7 @@
 #                               drives and their headers and runtime inside it
 #   /usr/local/ride-<ver>/      the console editor and the same tools, laid
 #                               out as the Windows install is: bin include
-#                               lib help examples (examples/ccs: CCS samples)
+#                               lib help projects programs (projects/ccs: CCS samples)
 #   /usr/local/bin/<tool>-<ver> symbolic links into /usr/local/ride-<ver>/bin,
 #   /usr/local/bin/<tool>       and the plain names pointed at this version as
 #                               the newest - all but link, which macOS already
@@ -83,7 +83,7 @@ codesign --verify --deep "$STAGE/Applications/$APPNAME"
 
 # The console, as the Windows install lays itself out.
 R=$STAGE/usr/local/$RDIR
-mkdir -p "$R/bin" "$R/examples"
+mkdir -p "$R/bin"
 cp -p "$MAC/bin/RIDE.exe" "$R/bin/"
 for t in $TOOLS; do cp -p "$MAC/bin/$t.exe" "$R/bin/"; done
 ditto "$MAC/bin/lib" "$R/bin/lib"
@@ -93,8 +93,6 @@ ditto "$CC/lib" "$R/lib"
 ditto "$ROOT/help" "$R/help"
 ditto "$ROOT/projects" "$R/projects"
 ditto "$ROOT/programs" "$R/programs"
-for e in c h cpp shl pro; do cp -p "$ROOT"/examples/*."$e" "$R/examples/" 2>/dev/null || true; done
-ditto "$ROOT/examples/ccs" "$R/examples/ccs"
 # TI's option definitions, read beside the program as on Windows and Linux.
 ditto "$ROOT/docs/ccs-reference" "$R/docs/ccs-reference"
 for f in "$R"/bin/*.exe; do codesign --force --sign - "$f"; done

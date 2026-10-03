@@ -541,7 +541,7 @@ project and left a closed file's name sitting in it.
   "groups": {
     "Rules": ["src/indent.cpp", "src/syntax.cpp"],
     "Legacy": { "files": ["src/old.c"], "toolchain": "c++" },
-    "Examples": ["examples/hello.c", "examples/smart.cpp"]
+    "Samples": ["programs/hello.c", "programs/smart.cpp"]
   }
 }
 ```
@@ -773,10 +773,10 @@ which is the argument for asking rather than assuming a height.
 ## Trying it
 
 ```
-RIDE examples/smart.cpp --project examples
+RIDE programs/smart.cpp
 ```
 
-`examples/smart.cpp` is the one to open first. It is a small owning class - one
+`programs/smart.cpp` is the one to open first. It is a small owning class - one
 object, deleted once, moved rather than copied, copying refused by the compiler
 rather than by the destructor - and something that exercises it and prints what
 it is doing. It is C++ on purpose: c90 compiles C, so this is the file that
@@ -785,12 +785,12 @@ changes which of the three architectures it is for; Ctrl-K over to cl, or to
 clang++ or g++ off Windows, gives the same file under the machine's own
 compiler for comparison.
 
-The examples are written in the C++ every one of those reads. cpp11 takes a
+The samples are written in the C++ every one of those reads. cpp11 takes a
 subset of C++11 on purpose, so `smart.cpp` spells its refused copy the older
 way - private, declared, never defined - and `table.h` names its bound with an
 enumerator rather than a `static const int`; both say so where they do it.
 
-`examples/hello.c` is the C one, for c90, where Ctrl-T does the same.
+`projects/c-example/hello.c` is the C one, for c90, where Ctrl-T does the same.
 
 Handing C++ to c90, or C to cpp11, is caught before it is run: the editor says
 so and points at Ctrl-K, rather than letting the wrong compiler fail somewhere
@@ -1409,7 +1409,7 @@ window - which is how this front end has been looked at throughout, since it is
 written on a Mac and only runs on Windows:
 
 ```
-.\show.ps1 -Project C:\Users\me\Editor -Files examples\smart.cpp -Build
+.\show.ps1 -Project C:\Users\me\Editor -Files programs\smart.cpp -Build
 ```
 
 It photographs the editor's own window with `PrintWindow` rather than grabbing

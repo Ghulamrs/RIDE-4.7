@@ -9,7 +9,7 @@ opening one tells you what it says.
 **`docs/sample.pro` is the template**: every key there is, filled in, to read
 and copy. It is not a project and nothing opens it — a `.pro` is only looked
 for in the directory you actually open, never one below, which is what keeps a
-template a template. `examples/example.pro` is the opposite: a real, minimal
+template a template. `projects/c-example/example.pro` is the opposite: a real, minimal
 one that leaves four things to their defaults.
 
 | key | left out means |
@@ -41,20 +41,26 @@ A Code Composer Studio 7.4 or 5.5 project for the TMS320C6747 opens without
 being converted. RIDE reads it, builds it with its own tools and writes nothing
 into its folder, so the same folder still opens in CCS.
 
-**1. Turn the CCS switch on.** In `settings.json` beside the programs:
+**1. The CCS switch is on.** `settings.json` beside the programs ships with
 
 ```json
-"ccs": { "enabled": true, "root": "C:/ti/ccsv7" }
+"ccs": { "enabled": true, "root": "" }
 ```
 
-`root` is the CCS install, used to resolve `${CG_TOOL_ROOT}` in the project's
-paths. It may be left out on a machine with no CCS; the TI compiler directory a
-tms6747 build already links against stands in. On the console, `--ccs` does the
-same for one run, and `--ccs-root dir` names the install.
+`root` is the CCS install (`C:/ti/ccsv7`), used to resolve `${CG_TOOL_ROOT}`
+in the project's paths. It may be left empty on a machine with no CCS; the TI
+compiler directory a tms6747 build already links against stands in. With
+`enabled` false a CCS project registered in a CCS workspace still opens, and
+one on its own does not; on the console, `--ccs` turns it on for one run, and
+`--ccs-root dir` names the install.
 
-**2. Open the folder.** `Project ▸ Open...` and choose the folder that holds
-`.project`, `.ccsproject` and `.cproject` - the folder, not a file in it. On the
-console, give the folder: `ride Sample --ccs --run`. RIDE reads the three files
+**2. Open it.** `Project ▸ Open...` starts in `Documents/RIDE/projects`, where
+the five samples are, in `ccs`. On macOS choose the project's folder or one of
+its three files; on Windows choose its `.project` - the dialog lists RIDE's
+`.pro` files and CCS's `.project` files together. A CCS workspace opens the
+same way: choose the workspace folder (macOS) or any file in it (Windows), and
+RIDE asks which of its projects. On the console, give the folder:
+`ride Sample --run`. RIDE reads the three files
 afresh every time the project is opened or built, so an edit made in CCS is
 seen at once. What it remembers - which configuration you built last - goes
 into `settings.json` under the project's path, never into the project.
@@ -128,8 +134,10 @@ device named. The sources are every file in the folder by extension, the linked
 files from `.project`, minus what `.cproject` excludes. The **Compiler Options**
 dialog shows what was read and changes nothing - edit the project in CCS.
 
-**The four samples** in `examples/ccs` of the install - a C one, two C++ ones,
-one with a subfolder and an excluded file - say in their `README.md` what each
+**The five samples** in `projects/ccs` - a C one, three C++ ones, one with a
+subfolder and an excluded file - are copied into `Documents/RIDE/projects/ccs`
+the first time the editor opens, and any of them missing there is copied again
+later. They say in their `README.md` what each
 prints in Debug and in Release. `Sample` prints through `std::cout`: built by
 CCS itself and run on TI's simulator it prints nothing, because TI's
 `<iostream>` writes no console output there; its values are CCS's all the same,

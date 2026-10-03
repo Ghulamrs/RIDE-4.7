@@ -168,9 +168,9 @@ rem The two directories this fills, and not %PRODUCT_DIR% itself - see the Makef
 rem where PRODUCT_DIR is the caller's to set and a wholesale delete is a foot-gun.
 rem Here it is fixed, but the two rules are kept the same shape on purpose.
 if exist "%PRODUCT_DIR%\bin" rmdir /s /q "%PRODUCT_DIR%\bin"
-if exist "%PRODUCT_DIR%\examples" rmdir /s /q "%PRODUCT_DIR%\examples"
+if exist "%PRODUCT_DIR%\projects" rmdir /s /q "%PRODUCT_DIR%\projects"
+if exist "%PRODUCT_DIR%\programs" rmdir /s /q "%PRODUCT_DIR%\programs"
 if not exist "%PRODUCT_DIR%\bin" mkdir "%PRODUCT_DIR%\bin"
-if not exist "%PRODUCT_DIR%\examples" mkdir "%PRODUCT_DIR%\examples"
 copy /y "%BINDIR%\%PRODUCT%Console.exe" "%PRODUCT_DIR%\bin\" >nul
 if exist "%BINDIR%\%PRODUCT%.exe" copy /y "%BINDIR%\%PRODUCT%.exe" "%PRODUCT_DIR%\bin\" >nul
 
@@ -224,17 +224,10 @@ rem And the C6000 runtime directory, which the emulator takes beside a
 rem Shalimar program; the editor looks for it in lib/ beside itself.
 if exist "%BINDIR%\lib\shmrt-tms6747" xcopy /e /i /q "%BINDIR%\lib\shmrt-tms6747" "%PRODUCT_DIR%\bin\lib\shmrt-tms6747" >nul
 copy /y README.md "%PRODUCT_DIR%\" >nul
-rem All three languages, and the headers. This copied only *.c and *.cpp until
-rem 2026-08-24, which shipped table.cpp and vector3.cpp without the headers they
-rem include - neither compiles on arrival - and left out gcd.shl, primes.shl and
-rem rotmat.shl altogether, which is every Shalimar program here, in the product
-rem whose third language is Shalimar. example.pro goes too, so that there is a
-rem project to open rather than only loose files.
-copy /y examples\*.c "%PRODUCT_DIR%\examples\" >nul
-copy /y examples\*.h "%PRODUCT_DIR%\examples\" >nul
-copy /y examples\*.cpp "%PRODUCT_DIR%\examples\" >nul
-copy /y examples\*.shl "%PRODUCT_DIR%\examples\" >nul
-copy /y examples\*.pro "%PRODUCT_DIR%\examples\" >nul
+rem The samples: projects\ (each in its folder, the CCS ones in ccs\) and programs\
+rem (single files, with the headers they include). There is no examples\ since 03-10-2026.
+xcopy /e /i /q projects "%PRODUCT_DIR%\projects" >nul
+xcopy /e /i /q programs "%PRODUCT_DIR%\programs" >nul
 echo RIDE is in %PRODUCT_DIR%
 goto :done
 

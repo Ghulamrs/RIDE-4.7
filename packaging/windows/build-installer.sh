@@ -65,7 +65,7 @@ fi
 
 echo "[3/6] Staging the install tree ..."
 rm -rf "$STAGE"
-mkdir -p "$STAGE/bin/lib" "$STAGE/examples"
+mkdir -p "$STAGE/bin/lib"
 # The editor and the compilers, whatever the platform named them (this tree
 # builds them with a .exe suffix on every OS); everything in bin/ except the
 # build scratch and the runtime subdir.
@@ -85,7 +85,8 @@ cp -f "$ROOT"/bin/lib/*.a "$STAGE/bin/lib/" 2>/dev/null || true
 cp -f "$ROOT/packaging/linux/settings.json" "$STAGE/settings.json"   # the Unix tarball's, from the repository
 [ -d "$ROOT/help" ] && cp -rf "$ROOT/help" "$STAGE/help"
 [ -d "$ROOT/docs" ] && cp -rf "$ROOT/docs" "$STAGE/docs"
-for e in c h cpp shl pro; do cp -f "$ROOT"/examples/*."$e" "$STAGE/examples/" 2>/dev/null || true; done
+[ -d "$ROOT/projects" ] && cp -rf "$ROOT/projects" "$STAGE/projects"
+[ -d "$ROOT/programs" ] && cp -rf "$ROOT/programs" "$STAGE/programs"
 [ -f "$ROOT/README.md" ] && cp -f "$ROOT/README.md" "$STAGE/"
 
 echo "[4/6] Bundling Express Help ..."

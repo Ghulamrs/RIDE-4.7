@@ -573,7 +573,7 @@ bool writeInstallFileIfAbsent() {
     root.set("includes", Json::array());
     root.set("libraries", Json::array());
     Json ccs = Json::object();
-    ccs.set("enabled", Json::fromBool(false));
+    ccs.set("enabled", Json::fromBool(true));
     ccs.set("root", Json::fromText(""));
     root.set("ccs", ccs);
     writeInstall(root);   // declined where there is no installation, rightly

@@ -5378,7 +5378,8 @@ void ccsProjectsAsTheyAre() {
     editor::settings::writeInstallFileIfAbsent();
 
     // -- the switch
-    check(!editor::settings::ccsEnabled() && editor::settings::ccsRoot().empty(), "the switch starts off, with no root");
+    check(editor::settings::ccsEnabled() && editor::settings::ccsRoot().empty(), "the switch starts on, with no root");
+    check(editor::settings::rememberCcs(false, "") && !editor::settings::ccsEnabled(), "and is off where settings.json says false");
     check(editor::settings::rememberCcs(true, root) && editor::settings::ccsEnabled() &&
               editor::settings::ccsRoot() == root, "\"ccs\": { \"enabled\", \"root\" } in settings.json turns it on");
 

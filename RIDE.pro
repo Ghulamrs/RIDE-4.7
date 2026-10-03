@@ -86,19 +86,19 @@
       "tests/session.cpp",
       "tests/test.cpp"
     ],
-    "Examples": [
-      "examples/counter.c",
-      "examples/counter.h",
-      "examples/gcd.shl",
-      "examples/hello.c",
-      "examples/primes.shl",
-      "examples/projectile.c",
-      "examples/rotmat.shl",
-      "examples/smart.cpp",
-      "examples/table.cpp",
-      "examples/table.h",
-      "examples/vector3.cpp",
-      "examples/vector3.h"
+    "Samples": [
+      "projects/c-example/counter.c",
+      "projects/c-example/counter.h",
+      "programs/gcd.shl",
+      "projects/c-example/hello.c",
+      "programs/primes.shl",
+      "programs/projectile.c",
+      "programs/rotmat.shl",
+      "programs/smart.cpp",
+      "programs/table.cpp",
+      "programs/table.h",
+      "programs/vector3.cpp",
+      "programs/vector3.h"
     ],
     "Build": [
       "Makefile",

@@ -1896,6 +1896,17 @@ static NSColor* ColourOf(unsigned char kind) {
                     toPath:[made stringByAppendingPathComponent:item] error:NULL];
     if (samples.count > 0)
         [self say:[NSString stringWithFormat:@"the sample %@ were copied into %@ to start from", leaf, made]];
+    // The CCS samples reach a projects folder that already has others, each one it lacks.
+    if ([leaf isEqualToString:@"projects"]) {
+        NSString* from = [seed stringByAppendingPathComponent:@"ccs"];
+        NSString* to = [made stringByAppendingPathComponent:@"ccs"];
+        NSArray<NSString*>* ccs = [fm contentsOfDirectoryAtPath:from error:NULL];
+        if (ccs.count > 0) [fm createDirectoryAtPath:to withIntermediateDirectories:YES attributes:nil error:NULL];
+        for (NSString* item in ccs)
+            if (![fm fileExistsAtPath:[to stringByAppendingPathComponent:item]])
+                [fm copyItemAtPath:[from stringByAppendingPathComponent:item]
+                            toPath:[to stringByAppendingPathComponent:item] error:NULL];
+    }
     return made;
 }
 

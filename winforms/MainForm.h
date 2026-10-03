@@ -1290,6 +1290,19 @@ private:
         for each (String^ d in System::IO::Directory::GetDirectories(from))
             CopyTree(d, System::IO::Path::Combine(to, System::IO::Path::GetFileName(d)));
     }
+    // What of from is not in to yet - a whole folder or a file - is copied; nothing there is touched.
+    static void CopyMissing(String^ from, String^ to) {
+        if (!System::IO::Directory::Exists(from)) return;
+        System::IO::Directory::CreateDirectory(to);
+        for each (String^ d in System::IO::Directory::GetDirectories(from)) {
+            String^ there = System::IO::Path::Combine(to, System::IO::Path::GetFileName(d));
+            if (!System::IO::Directory::Exists(there)) CopyTree(d, there);
+        }
+        for each (String^ f in System::IO::Directory::GetFiles(from)) {
+            String^ there = System::IO::Path::Combine(to, System::IO::Path::GetFileName(f));
+            if (!System::IO::File::Exists(there)) System::IO::File::Copy(f, there, false);
+        }
+    }
     String^ MadeUnderDocuments(String^ leaf) {
         String^ docs = Environment::GetFolderPath(Environment::SpecialFolder::MyDocuments);
         if (docs == nullptr || docs->Length == 0) return MadeUnderApp(leaf);
@@ -1300,6 +1313,9 @@ private:
             if (System::IO::Directory::GetFileSystemEntries(d)->Length == 0 &&
                 System::IO::Directory::Exists(seed))
                 CopyTree(seed, d);
+            // The CCS samples reach a projects folder that already has others, each one it lacks.
+            if (leaf == "projects")
+                CopyMissing(System::IO::Path::Combine(seed, "ccs"), System::IO::Path::Combine(d, "ccs"));
         } catch (Exception^) { }
         return d;
     }

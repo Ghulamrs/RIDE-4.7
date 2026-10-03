@@ -310,8 +310,8 @@ product: confirm
 # whatever the caller says, so `make product PRODUCT_DIR=$$HOME` would turn a
 # wholesale rm -rf into deleting a home directory. Nothing here needs that risk
 # to do its job.
-	rm -rf "$(PRODUCT_DIR)/bin" "$(PRODUCT_DIR)/examples"
-	mkdir -p "$(PRODUCT_DIR)/bin/lib" "$(PRODUCT_DIR)/examples"
+	rm -rf "$(PRODUCT_DIR)/bin" "$(PRODUCT_DIR)/projects" "$(PRODUCT_DIR)/programs"
+	mkdir -p "$(PRODUCT_DIR)/bin/lib"
 	cp $(EDITOR) "$(PRODUCT_DIR)/bin/"
 	cp $(BINDIR)/c90.exe $(BINDIR)/cpp11.exe $(BINDIR)/vm6747.exe $(BINDIR)/shalimar.exe $(BINDIR)/c2s.exe "$(PRODUCT_DIR)/bin/"
 # The headers go with the compilers, one directory above bin/ - because
@@ -335,14 +335,10 @@ product: confirm
 	   $(BINDIR)/lib/shmrt-$(SHM_TARGET)-debug.a "$(PRODUCT_DIR)/bin/lib/"
 	cp -R $(BINDIR)/lib/shmrt-tms6747 "$(PRODUCT_DIR)/bin/lib/"
 	cp README.md "$(PRODUCT_DIR)/"
-# All three languages, and the headers. Copying only *.c and *.cpp shipped
-# table.cpp and vector3.cpp without the headers they include, so neither would
-# compile on arrival, and left out gcd.shl, primes.shl and rotmat.shl
-# altogether - which is every Shalimar program there is here, in the product
-# whose third language is Shalimar. example.pro goes too, so that there is a
-# project to open rather than only loose files.
-	cp examples/*.c examples/*.h examples/*.cpp examples/*.shl examples/*.pro \
-	   "$(PRODUCT_DIR)/examples/"
+# The samples: projects/ (each in its folder, the CCS ones in ccs/) and programs/ (single files,
+# with the headers they include). There is no examples/ since 03-10-2026.
+	cp -R projects "$(PRODUCT_DIR)/projects"
+	cp -R programs "$(PRODUCT_DIR)/programs"
 	@echo "$(PRODUCT) is in $(PRODUCT_DIR)"
 
 # build/ is Xcode's, not make's, and it lands inside the checkout unless the

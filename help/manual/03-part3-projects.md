@@ -169,7 +169,7 @@ Each of these is present and identical in both RIDE 3.0 and 3.5. A worked,
 step-by-step lifecycle — new project, add an empty file, give it content, add a
 second file, build, add an existing file, build and run, remove the file, change
 the call, run again — is the fastest way to learn them; the `demo` project in
-`examples/` is the end state of exactly that sequence.
+`projects/c-demo/` is the end state of exactly that sequence.
 
 **What you see as you work.** The left pane shows the groups and their files. The
 title bar shows the project and file. The bottom-right status shows the language,

@@ -9,7 +9,7 @@ rem The C compiler clone, for lib\ - c90's headers. Beside the C++ one unless na
 set CC=%~4
 if "%CC%"=="" set "CC=%CPP%\..\Compiler-Ci"
 if exist "%STAGE%" rmdir /s /q "%STAGE%"
-mkdir "%STAGE%\bin" "%STAGE%\bin\lib" "%STAGE%\examples"
+mkdir "%STAGE%\bin" "%STAGE%\bin\lib"
 for %%f in (%PRODUCT%.exe %PRODUCT%Console.exe c90.exe cpp11.exe shalimar.exe vm6747.exe asm6x.exe masm.exe link.exe lnk6x.exe c2s.exe) do (
   if exist "%SRC%\bin\%%f" copy /y "%SRC%\bin\%%f" "%STAGE%\bin\" >nul
 )
@@ -33,12 +33,6 @@ rem never asks, and the build fails as it failed. The user's design.
 rem settings.json is a file of the repository, packaging\windows\settings.json, so
 rem what is installed can be read and diffed before an installer ever runs.
 copy /y "%SRC%\packaging\windows\settings.json" "%STAGE%\settings.json" >nul
-for %%e in (c h cpp shl pro) do (
-  if exist "%SRC%\examples\*.%%e" copy /y "%SRC%\examples\*.%%e" "%STAGE%\examples\" >nul
-)
-rem example projects that live in their own subdirectory (a .pro with many
-rem files, e.g. compilerpp\) travel whole; the .iss recurses the stage tree
-for /d %%D in ("%SRC%\examples\*") do xcopy /e /i /q "%%D" "%STAGE%\examples\%%~nxD" >nul
 rem the sample projects (a .pro with its files in its own directory, e.g.
 rem projects\compilerpp) - shipped whole into {app}\projects; the editor copies
 rem them into Documents\RIDE\projects on first use, where a build can write

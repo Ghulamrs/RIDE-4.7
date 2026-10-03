@@ -122,6 +122,14 @@ for leaf in projects programs; do
         say "  samples in $dest"
     fi
 done
+# The CCS samples reach a projects folder that already has others, each one it lacks.
+if [ -d "$PREFIX/projects/ccs" ]; then
+    mkdir -p "$home/Documents/RIDE/projects/ccs"
+    for e in "$PREFIX/projects/ccs"/*; do
+        [ -e "$home/Documents/RIDE/projects/ccs/${e##*/}" ] || cp -R "$e" "$home/Documents/RIDE/projects/ccs/"
+    done
+    [ "$(id -u)" = 0 ] && chown -R "$owner" "$home/Documents/RIDE" 2>/dev/null || true
+fi
 
 # ---- does it work --------------------------------------------------------------
 say "RIDE $VER is in $PREFIX"

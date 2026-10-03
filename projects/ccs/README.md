@@ -15,15 +15,14 @@ it is and writes nothing into it; they are here to try that on.
 
 ## Opening one
 
-In the window, turn the CCS switch on in `settings.json` and open the folder:
+The CCS switch in `settings.json` ships on, `"ccs": { "enabled": true }`, and
+these five are copied into `Documents/RIDE/projects/ccs` - where
+`Project > Open...` starts. On Windows choose a project's `.project`; on macOS
+its folder. `"root"` may name a CCS install (`C:/ti/ccsv7`); on a machine
+without CCS it is left empty. On the console, give the folder:
 
-    "ccs": { "enabled": true }
-
-`"root"` may name a CCS install (`C:/ti/ccsv7`); on a machine without CCS it
-is left out. On the console, `--ccs` does the same for one run:
-
-    ride K6747c --ccs --run
-    ride K6747cpp --ccs --config release --run
+    ride K6747c --run
+    ride K6747cpp --config release --run
 
 RIDE takes the project's device, sources, include paths, defines and
 configurations (Debug and Release) and builds with its own cpp11 or c90,
