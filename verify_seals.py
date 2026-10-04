@@ -55,8 +55,17 @@ def read_seal(path):
     return value, rows
 
 
+# Source code, as tools/seal defines it (2026-10-05): written here again on purpose, not imported.
+SOURCE_EXT = {".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".inc", ".m", ".mm", ".s", ".asm"}
+
+
+def source(rel):
+    ext = os.path.splitext(rel)[1].lower()
+    return ext in SOURCE_EXT or (ext == "" and "/include/" in "/" + rel)
+
+
 def unlisted(project, listed):
-    """Files git tracks under the sealed directories that the seal leaves out."""
+    """Source files git tracks under the sealed directories that the seal leaves out."""
     conf = os.path.join(project, "tools", "seal.json")
     dirs = json.load(open(conf))["dirs"] if os.path.exists(conf) else ["src", "include", "lib"]   # source code only, never examples
     try:
@@ -65,7 +74,7 @@ def unlisted(project, listed):
     except (OSError, subprocess.CalledProcessError):
         return []
     names = [n for n in out.decode().split("\0") if n and os.path.isfile(os.path.join(project, n))]
-    return sorted(n for n in names if n not in listed and not n.endswith((".exe", ".o", ".obj")))
+    return sorted(n for n in names if n not in listed and source(n))
 
 
 def main():
