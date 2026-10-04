@@ -1,29 +1,16 @@
 ©2026 G. R. Akhtar - RIDE 4.7, the editor
-Release seal, version 4.7, sealed 04-10-2026
+Release seal, version 4.7, sealed 05-10-2026
 Written by tools/seal; check it with `tools/seal check`.
-CRC32  size  file - 97 files, seal ACC5C7E6
+CRC32  size  file - 78 files, seal DDD0BCCA
 ------------------------------------------------------------------
-06F11F39     18706  Makefile
-3A1FF49C      3207  RIDE.pro
-494C87DE      7105  RIDE.sln
-E30F8F6C      3997  RIDEConsole.vcxproj
-E8CB27AD     15792  build.bat
 1DBB2FBC      2412  macos/CodeView.h
 02B3F91E     14632  macos/CodeView.mm
-2FED410A      3110  macos/Info.plist
 8528B8CC       612  macos/LineNumbers.h
 A7F98CCC      5957  macos/LineNumbers.mm
-C19D715B      5827  macos/Makefile
-804521C3      8760  macos/README.md
-A2B21358    971341  macos/RIDE.icns
 7E2C43FD      2767  macos/Text.h
-E818B9F2     22370  macos/Window.xcodeproj/project.pbxproj
 AEF649AE      1693  macos/WindowController.h
 70EEF62E    199676  macos/WindowController.mm
 18F9EFDC      4599  macos/main.mm
-07969C88      3339  macos/make-icon.swift
-5ED755F0     12349  macos/make-xcodeproj.py
-35A578A1       400  product.props
 BEA48324     15040  src/about.cpp
 ABC4FB50      1108  src/about.h
 634B7DB9      8502  src/buffer.cpp
@@ -67,7 +54,6 @@ AAB34DCA      1876  src/process.h
 854C2958      8376  src/project.h
 D3726986     27448  src/settings.cpp
 3E0AC86E      6626  src/settings.h
-E46E1607      4314  src/shalimar/README.md
 4B7E8748      9069  src/shalimar/channel.cpp
 22E40405       577  src/shalimar/channel.h
 12F407C9      6457  src/shalimar/session.cpp
@@ -91,14 +77,9 @@ F35C52A2      2086  src/workspace.h
 C13B3429    262850  winforms/MainForm.h
 6BA8DA64      2289  winforms/Marshal.h
 3D89F3C4      6415  winforms/Program.cpp
-1F889F5F       157  winforms/RIDEGui.rc
-1BAC8258      9623  winforms/RIDEGui.vcxproj
 B2EA0EE1      4860  winforms/TextFile.h
 85654502     86682  winforms/bridge.cpp
 83F26DA3     28479  winforms/bridge.h
 BBD2FAFE      2198  winforms/children.h
-BE6A6F09     72502  winforms/ride.ico
-BF74EBDD     11065  winforms/show.ps1
-646AA652     10211  workspace.mk
 ------------------------------------------------------------------
-Sealed on 04-10-2026
+Sealed on 05-10-2026
