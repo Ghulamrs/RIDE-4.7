@@ -18,7 +18,7 @@ ROOT=$(cd "$HERE/../.." && pwd)
 CPP=${CPP:-$ROOT/../VM6747/Compiler-Cppi}
 CC=${CC:-$ROOT/../VM6747/Compiler-Ci}
 OUT=${OUT:-$ROOT/dist}
-BIN=$ROOT/bin
+BIN=${BIN:-$ROOT/bin}   # workspace.mk's installer target passes the BINDIR it built into
 STAGE=$(mktemp -d "${TMPDIR:-/tmp}/ride-run.XXXXXX")
 trap 'rm -rf "$STAGE" "$STAGE.tgz"' EXIT
 

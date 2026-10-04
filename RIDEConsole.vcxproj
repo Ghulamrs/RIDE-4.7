@@ -56,8 +56,8 @@
     <ClCompile Include="src\buffer.cpp" />
     <ClCompile Include="src\ccs\ccsoptions.cpp" />
     <ClCompile Include="src\ccs\ccsproject.cpp" />
-    <ClCompile Include="src\ccs\ccsxml.cpp" />
     <ClCompile Include="src\ccs\ccsworkspace.cpp" />
+    <ClCompile Include="src\ccs\ccsxml.cpp" />
     <ClCompile Include="src\compile.cpp" />
     <ClCompile Include="src\convert.cpp" />
     <ClCompile Include="src\debugger.cpp" />

@@ -24,6 +24,10 @@ rem ===========================================================================
 rem  The product's name, once, as product.props, the Makefile and the .iss spell it.
 set "PRODUCT=RIDE"
 set "VER=%~1"
+rem "from-solution <OutDir>": RIDE.sln's Installer project, after every other project built into OutDir.
+set "FROMSLN="
+set "BINSRC="
+if /i "%~2"=="from-solution" (set "FROMSLN=1" & set "BINSRC=%~f3")
 if "%VER%"=="" set "VER=4.7"
 rem  The 3.x releases are sealed and built from their own tree, not this one.
 if not "%VER%"=="4.7" (echo build-installer.bat: this tree builds 4.7 only & exit /b 2)
@@ -43,17 +47,24 @@ echo    headers : %CPP% (include), %CC% (lib)
 echo    output  : %OUT%
 echo ===========================================================================
 
+if "%BINSRC%"=="" set "BINSRC=%ROOT%\bin"
+if "%FROMSLN%"=="1" (echo [1/6] Built by RIDE.sln into %BINSRC% - not built again & pushd "%ROOT%" & goto :built)
 echo [1/6] Building the compilers and the RIDE editor (build.bat solution) ...
 pushd "%ROOT%"
+rem The solution's own Installer project steps aside: this script packages after its build.
+set "RIDE_NO_INSTALLER=1"
 call "%ROOT%\build.bat" solution
-if errorlevel 1 (echo   BUILD FAILED & popd & exit /b 1)
+set "BUILDRC=%errorlevel%"
+set "RIDE_NO_INSTALLER="
+if not "%BUILDRC%"=="0" (echo   BUILD FAILED & popd & exit /b 1)
+:built
 rem  **The window must start before it is shipped.** It is mixed-mode, and a
 rem  native global with a destructor corrupts its heap before main: it built,
 rem  the suites passed, and the installed window died on 2026-09-18 and again
 rem  on 2026-09-23. --version runs the same start-up and nothing else.
 rem  start /wait: cmd does not wait for a windowed program, so its errorlevel was 0 whatever happened;
 rem  and not 0 rather than errorlevel 1, the heap-corruption exit being negative. Both let 03-10-2026's through.
-start "" /wait "%ROOT%\bin\%PRODUCT%.exe" --version
+start "" /wait "%BINSRC%\%PRODUCT%.exe" --version
 set START_RC=%errorlevel%
 if not "%START_RC%"=="0" (echo   %PRODUCT%.exe DOES NOT START - exit %START_RC%, see %%TEMP%%\%PRODUCT%-fault.log & popd & exit /b 1)
 popd
@@ -63,7 +74,7 @@ call :genhtml
 
 echo [3/6] Staging the install tree ...
 if not exist "%OUT%" mkdir "%OUT%"
-call "%HERE%stage.cmd" "%ROOT%" "%CPP%" "%STAGE%" "%CC%"
+call "%HERE%stage.cmd" "%ROOT%" "%CPP%" "%STAGE%" "%CC%" "%BINSRC%"
 if errorlevel 1 (echo   STAGE FAILED & exit /b 1)
 
 echo [4/6] Bundling Express Help and the TI build path ...

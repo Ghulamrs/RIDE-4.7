@@ -61,11 +61,11 @@ LNK6X_DIR ?= ../LNK6x
 BINDIR ?= $(CURDIR)/bin
 OUT := $(abspath $(BINDIR))
 
-.PHONY: all cc1 cxx1 vm6747 asm6x masm link lnk6x shc c2s editor confirm bin check clean
+.PHONY: all cc1 cxx1 vm6747 asm6x masm link lnk6x shc c2s editor confirm installer bin check clean
 
-# `confirm` and not `editor`, so that the last thing a workspace build does is
-# check that what the editor drives is actually beside it.
-all: confirm
+# `installer`, which comes after `confirm`: a workspace build checks that what the
+# editor drives is beside it, and then packages it (2026-10-05).
+all: installer
 
 cc1:
 	$(MAKE) -C $(CC1_DIR) BINDIR=$(OUT) OBJDIR=$(OUT)/obj/cc1
@@ -181,6 +181,20 @@ endif
 # 686 and 115 and everything still read as green. A suite that skips is not a
 # suite that passes.
 	$(MAKE) BINDIR=$(OUT) OBJDIR=$(OUT)/obj/editor check CC1=$(OUT)/c90.exe CXX1=$(OUT)/cpp11.exe SHC=$(OUT)/shalimar.exe C2S=$(OUT)/c2s.exe
+
+# The installer is the workspace's last project: after every program is built and
+# confirmed, the platform's packager makes it from them - dist/RIDE-$(VER)-linux-x86_64.run
+# on Linux, dist/RIDE-$(VER)-macos.pkg on a Mac. NOINSTALLER=1 skips it: the packagers
+# pass it when they build the workspace themselves, so neither builds the other.
+VER ?= 4.7
+installer: confirm
+ifneq ($(NOINSTALLER),)
+	@echo "installer: skipped (NOINSTALLER)"
+else ifeq ($(HOST),Darwin)
+	sh packaging/macos/build-pkg.sh $(VER)
+else
+	BIN=$(OUT) sh packaging/linux/build-run.sh $(VER)
+endif
 
 # bin/ is where BINDIR points by default now, so `bin` is just an explicit
 # name for the ordinary build - kept so a script or a habit that says `make -f

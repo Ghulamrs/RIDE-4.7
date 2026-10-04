@@ -43,7 +43,7 @@ trap 'rm -rf "$STAGE" ${XC:+"$XC"}' EXIT
 say() { printf '%s\n' "$*"; }
 
 say "[1/6] The tools, for macOS 12, into $MAC/bin"
-MACOSX_DEPLOYMENT_TARGET=12.0 make -s -C "$ROOT" -f workspace.mk bin BINDIR="$MAC/bin" -j8 >/dev/null
+MACOSX_DEPLOYMENT_TARGET=12.0 make -s -C "$ROOT" -f workspace.mk bin BINDIR="$MAC/bin" NOINSTALLER=1 -j8 >/dev/null
 
 say "[2/6] RIDE.app, Release"
 # Built outside ~/Documents: iCloud Drive marks a bundle there with Finder info at

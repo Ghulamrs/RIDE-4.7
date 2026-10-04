@@ -31,4 +31,7 @@
    <FileRef
       location = "group:../Converter-C2S/c2s.xcodeproj">
    </FileRef>
+   <FileRef
+      location = "group:packaging/macos/Installer.xcodeproj">
+   </FileRef>
 </Workspace>

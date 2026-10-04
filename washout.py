@@ -15,8 +15,12 @@ winforms/ (its two windows), product.props, and help/, projects/ and programs/,
 which the macOS window's project copies into RIDE.app and cannot build without.
 RIDE's projects/ and programs/ go as their sources (2026-10-02), the CCS
 samples' .project, .cproject and .ccsproject with them, and the installers'
-settings.json. Nothing else goes: no Makefile, README, doc, test, script or seal. A source directory keeps only
-source and project files; ide/, lib/, include/ and msvc/compat are whole.
+settings.json. **And the installer project of every target** (2026-10-05): packaging/ whole - Windows'
+Installer.vcxproj with build-installer.bat, stage.cmd and the Inno script, the Xcode workspace's
+Installer.xcodeproj with build-pkg.sh, Linux's build-run.sh and install-header.sh - with workspace.mk and each
+project's Makefile, which the macOS and Linux installers build through, and docs/ and README.md, which every
+installer ships. Nothing else goes: no test, seal or other script. A source directory keeps only
+source and project files; ide/, lib/, include/, msvc/compat and packaging/ are whole.
 
 What was measured: every path the solutions, projects and workspaces name was
 listed and is here, and a copy builds - RIDE.sln on Windows, RIDE.xcworkspace and
@@ -32,20 +36,22 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 # (project, whole directories, source directories, named files): what compiling needs.
 # help/, projects/ and programs/ because the macOS window's project copies them into
 # RIDE.app as it builds, and fails without them; the Windows projects do not use them.
-RIDE_PLAN = (os.path.basename(ROOT), ["Editor.xcodeproj", "RIDE.xcworkspace", "help", "projects", "programs"],
+# packaging/, workspace.mk, the Makefile, docs/ and README.md: the installer projects of the three targets,
+# what they build through and what they ship (2026-10-05).
+RIDE_PLAN = (os.path.basename(ROOT), ["Editor.xcodeproj", "RIDE.xcworkspace", "help", "projects", "programs",
+                                      "packaging", "docs"],
              ["src", "macos", "winforms"],
-             ["RIDE.sln", "RIDEConsole.vcxproj", "product.props",
-              "packaging/windows/settings.json", "packaging/linux/settings.json"])
+             ["RIDE.sln", "RIDEConsole.vcxproj", "product.props", "workspace.mk", "Makefile", "README.md"])
 WORKSPACE = [
-    ("../VM6747/Compiler-Ci", ["ide", "lib", "msvc/compat"], ["src"], []),
-    ("../VM6747/Compiler-Cppi", ["ide", "lib", "include", "msvc/compat"], ["src"], []),
-    ("../VM6747/Compiler-Si", ["ide"], ["src", "runtime"], []),
-    ("../VM6747/Emulator", ["vm6747.xcodeproj"], ["src"], ["vm6747.vcxproj"]),
-    ("../Converter-C2S", ["c2s.xcodeproj"], ["src"], ["c2s.vcxproj"]),
-    ("../ASM6x", ["asm6x.xcodeproj"], ["src"], ["asm6x.vcxproj"]),
-    ("../MASM", ["masm.xcodeproj"], ["src"], ["masm.vcxproj"]),
-    ("../LINK", ["link.xcodeproj"], ["src"], ["link.vcxproj"]),
-    ("../LNK6x", ["lnk6x.xcodeproj"], ["src"], ["lnk6x.vcxproj"]),
+    ("../VM6747/Compiler-Ci", ["ide", "lib", "msvc/compat"], ["src"], ["Makefile"]),
+    ("../VM6747/Compiler-Cppi", ["ide", "lib", "include", "msvc/compat"], ["src"], ["Makefile"]),
+    ("../VM6747/Compiler-Si", ["ide"], ["src", "runtime"], ["Makefile"]),
+    ("../VM6747/Emulator", ["vm6747.xcodeproj"], ["src"], ["vm6747.vcxproj", "Makefile"]),
+    ("../Converter-C2S", ["c2s.xcodeproj"], ["src"], ["c2s.vcxproj", "Makefile"]),
+    ("../ASM6x", ["asm6x.xcodeproj"], ["src"], ["asm6x.vcxproj", "Makefile"]),
+    ("../MASM", ["masm.xcodeproj"], ["src"], ["masm.vcxproj", "Makefile"]),
+    ("../LINK", ["link.xcodeproj"], ["src"], ["link.vcxproj", "Makefile"]),
+    ("../LNK6x", ["lnk6x.xcodeproj"], ["src"], ["lnk6x.vcxproj", "Makefile"]),
 ]
 
 # What a source directory keeps: source, and the project files kept beside it (macos/Window.xcodeproj).
