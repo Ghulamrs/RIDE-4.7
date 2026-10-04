@@ -1,7 +1,7 @@
 ©2026 G. R. Akhtar - RIDE 4.7, the editor
-Release seal, version 4.7, sealed 03-10-2026
+Release seal, version 4.7, sealed 04-10-2026
 Written by tools/seal; check it with `tools/seal check`.
-CRC32  size  file - 97 files, seal 07E8E04E
+CRC32  size  file - 97 files, seal ACC5C7E6
 ------------------------------------------------------------------
 06F11F39     18706  Makefile
 3A1FF49C      3207  RIDE.pro
@@ -19,7 +19,7 @@ A2B21358    971341  macos/RIDE.icns
 7E2C43FD      2767  macos/Text.h
 E818B9F2     22370  macos/Window.xcodeproj/project.pbxproj
 AEF649AE      1693  macos/WindowController.h
-12CFAC6D    198742  macos/WindowController.mm
+70EEF62E    199676  macos/WindowController.mm
 18F9EFDC      4599  macos/main.mm
 07969C88      3339  macos/make-icon.swift
 5ED755F0     12349  macos/make-xcodeproj.py
@@ -45,8 +45,8 @@ EDA5FB1A      4293  src/debugger.h
 DA6DC095       811  src/demangle_win.cpp
 54362A6B    151096  src/editor.cpp
 4CB2D902     11302  src/editor.h
-C93A58DA      8040  src/find.cpp
-BB4788F4      1436  src/find.h
+8AB1EB8F      8102  src/find.cpp
+54991F96      1560  src/find.h
 FEE59884      2728  src/help.cpp
 909782C5       314  src/help.h
 0CAD9CA6      8636  src/indent.cpp
@@ -88,17 +88,17 @@ CC9C965F      7196  src/toolchain.h
 D93038C5       572  src/utf8.h
 1DD9DC1C     12808  src/workspace.cpp
 F35C52A2      2086  src/workspace.h
-215DD412    246719  winforms/MainForm.h
+C13B3429    262850  winforms/MainForm.h
 6BA8DA64      2289  winforms/Marshal.h
 3D89F3C4      6415  winforms/Program.cpp
 1F889F5F       157  winforms/RIDEGui.rc
 1BAC8258      9623  winforms/RIDEGui.vcxproj
 B2EA0EE1      4860  winforms/TextFile.h
-CB748B10     86406  winforms/bridge.cpp
-AC9D9867     28352  winforms/bridge.h
+85654502     86682  winforms/bridge.cpp
+83F26DA3     28479  winforms/bridge.h
 BBD2FAFE      2198  winforms/children.h
 BE6A6F09     72502  winforms/ride.ico
 BF74EBDD     11065  winforms/show.ps1
 646AA652     10211  workspace.mk
 ------------------------------------------------------------------
-Sealed on 03-10-2026
+Sealed on 04-10-2026
