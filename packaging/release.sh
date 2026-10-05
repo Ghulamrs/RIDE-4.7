@@ -4,7 +4,7 @@
 #
 #   packaging/release.sh [version]    -> <RELEASE_DIR>/<stamp>/RIDE-<ver>/dist/ and RELEASE.txt beside it
 #
-# What is final is each repository's default branch on GitHub (main or master; gcc-scheme for cpp11), never a
+# What is final is each repository's default branch on GitHub (main or master), never a
 # side branch: VM6747's Compiler-Cppi is taken at the head of its own default branch, not at the commit pinned.
 # RELEASE_DIR (default ~/ride-release, outside iCloud's ~/Documents), JOBS (8 on a Mac, 2 on Linux).
 set -eu

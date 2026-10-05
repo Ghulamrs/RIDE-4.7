@@ -4,7 +4,7 @@ rem git is the source of record, so nothing of a working tree reaches a release;
 rem
 rem   release.cmd [version]   -> %RELEASE_DIR%\<stamp>\RIDE-<ver>\dist\RIDE-<ver>-setup.exe and RELEASE.txt beside it
 rem
-rem What is final is each repository's default branch on GitHub (main or master; gcc-scheme for cpp11), never a
+rem What is final is each repository's default branch on GitHub (main or master), never a
 rem side branch: VM6747's Compiler-Cppi is taken at the head of its own default branch, not at the commit pinned.
 rem RELEASE_DIR (default %USERPROFILE%\ride-release).
 setlocal enabledelayedexpansion
