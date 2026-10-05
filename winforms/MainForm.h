@@ -1026,6 +1026,7 @@ private:
         ToolStripMenuItem^ build = gcnew ToolStripMenuItem("&Build");
         ToolStripMenuItem^ compile = gcnew ToolStripMenuItem(
             "Compile", nullptr, gcnew EventHandler(this, &MainForm::OnCompile));
+        compileItem_ = compile;
 
         compile->ShortcutKeys = static_cast<Keys>(Keys::Control | Keys::B);
         build->DropDownItems->Add(compile);
@@ -1033,13 +1034,15 @@ private:
             "Run", nullptr, gcnew EventHandler(this, &MainForm::OnRun));
         runIt->ShortcutKeys = Keys::F5;
         build->DropDownItems->Add(runIt);
+        runItem_ = runIt;
 
         build->DropDownItems->Add(gcnew ToolStripSeparator());
-        build->DropDownItems->Add(
-            Item("Build project", Keys::F4,
-                 gcnew EventHandler(this, &MainForm::OnBuildProject)));
-        build->DropDownItems->Add("Run project", nullptr,
-                                  gcnew EventHandler(this, &MainForm::OnRunProject));
+        buildProjectItem_ = Item("Build project", Keys::F4, gcnew EventHandler(this, &MainForm::OnBuildProject));
+        build->DropDownItems->Add(buildProjectItem_);
+        runProjectItem_ = gcnew ToolStripMenuItem("Run project", nullptr,
+                                                  gcnew EventHandler(this, &MainForm::OnRunProject));
+        build->DropDownItems->Add(runProjectItem_);
+        build->DropDownOpening += gcnew EventHandler(this, &MainForm::OnModeMenuOpening);
         // The command line Run and Run project hand the program: a submenu, as Recent is, holding a box to type it in.
         ToolStripMenuItem^ argsMenu = gcnew ToolStripMenuItem("Command-line arguments");
         argsBox_ = gcnew ToolStripTextBox();
@@ -1079,11 +1082,11 @@ private:
         build->DropDownItems->Add("Clean", nullptr, gcnew EventHandler(this, &MainForm::OnClean));
 
         ToolStripMenuItem^ debug = gcnew ToolStripMenuItem("&Debug");
-        debug->DropDownItems->Add(Item("Start / continue", Keys::F8,
-                                       gcnew EventHandler(this, &MainForm::OnDebug)));
-
-        debug->DropDownItems->Add("Debug project", nullptr,
-                                  gcnew EventHandler(this, &MainForm::OnDebugProject));
+        debugItem_ = Item("Start / continue", Keys::F8, gcnew EventHandler(this, &MainForm::OnDebug));
+        debug->DropDownItems->Add(debugItem_);
+        debugProjectItem_ = gcnew ToolStripMenuItem("Debug project", nullptr,
+                                                    gcnew EventHandler(this, &MainForm::OnDebugProject));
+        debug->DropDownItems->Add(debugProjectItem_);
 
         debug->DropDownItems->Add(gcnew ToolStripSeparator());
         debug->DropDownItems->Add(Item("Toggle breakpoint", Keys::F9,
@@ -2025,6 +2028,7 @@ private:
 
         Recolour();
         ReloadIfChanged(sheet);
+        RefreshModeItems();
     }
 
     literal int kDrawing = 0x000B;
@@ -3491,6 +3495,64 @@ private:
 
     void OnProjectMenuOpening(Object^, EventArgs^) { RefreshProjectMenu(); }
 
+    // File or project, as the file in front decides: one of the open project's files, or no file but a
+    // project, is the project's; a loose file - File > New, Open or Recent - or no project at all is the file's.
+    ToolStripMenuItem^ compileItem_;
+    ToolStripMenuItem^ runItem_;
+    ToolStripMenuItem^ buildProjectItem_;
+    ToolStripMenuItem^ runProjectItem_;
+    ToolStripMenuItem^ debugItem_;
+    ToolStripMenuItem^ debugProjectItem_;
+
+    bool ProjectMode() {
+        if (project_ == nullptr || ride_project_loaded(project_) == 0) return false;
+        Sheet^ sheet = Current();
+        if (text_ == nullptr || sheet == nullptr) return true;
+        // The blank sheet a window starts with is no file: a project opened beside it is in front.
+        if (path_ == nullptr || path_->Length == 0)
+            return sheets_->Count == 1 && text_->TextLength == 0 && !text_->Modified;
+        Utf8 here(path_);
+        return ride_project_holds(project_, here.c()) != 0;
+    }
+
+    void OnModeMenuOpening(Object^, EventArgs^) { RefreshModeItems(); }
+
+    // The menus and their keys alike: a debugger already running continues whichever started it.
+    void RefreshModeItems() {
+        if (compileItem_ == nullptr) return;
+        bool mode = ProjectMode();
+        bool idle = !busy_;
+        bool debugging = debugger_ != nullptr && ride_debugger_running(debugger_) != 0;
+        compileItem_->Enabled = idle && !mode;
+        runItem_->Enabled = idle && !mode;
+        buildProjectItem_->Enabled = idle && mode;
+        runProjectItem_->Enabled = idle && mode;
+        debugItem_->Enabled = idle && (!mode || debugging);
+        debugProjectItem_->Enabled = idle && (mode || debugging);
+    }
+
+    // What a key that reached a command out of its mode is told, instead of a build of the wrong thing.
+    bool InFileMode() {
+        if (!ProjectMode()) return true;
+        String^ owner = FromUtf8(ride_project_name(project_));
+        what_->Text = String::Concat("this is one of ", owner, "'s files - Build project (F4) or Run project builds it");
+        return false;
+    }
+
+    bool InProjectMode() {
+        if (ProjectMode()) return true;
+        bool project = project_ != nullptr && ride_project_loaded(project_) != 0;
+        if (!project) {
+            what_->Text = "no project is open - Compile (Ctrl+B) or Run (F5) builds this file";
+            return false;
+        }
+        String^ name = "this file";
+        if (path_ != nullptr) name = System::IO::Path::GetFileName(path_);
+        what_->Text = name + " is not in " + FromUtf8(ride_project_name(project_)) +
+                      " - Compile or Run builds it on its own, Project > Add File puts it in";
+        return false;
+    }
+
     // As the macOS window decides it: a file item needs a project, the last three a file of it; a CCS
     // project's own files are CCS's, so what would change them is offered disabled; nothing while a build runs.
     void RefreshProjectMenu() {
@@ -3511,11 +3573,13 @@ private:
         }
         projSaveAs_->Enabled = project && !ccs && idle;
         projClose_->Enabled = project && idle;
-        projNewFile_->Enabled = project && !ccs && idle;
+        // A loose file in front is the File menu's: of the project's file items only Add File, which takes it in.
+        bool mode = ProjectMode();
+        projNewFile_->Enabled = mode && !ccs && idle;
         projAddFile_->Enabled = project && !ccs && idle && fresh;
-        projRemove_->Enabled = held && !ccs && idle;
-        projRename_->Enabled = held && idle;
-        projDelete_->Enabled = held && idle;
+        projRemove_->Enabled = mode && held && !ccs && idle;
+        projRename_->Enabled = mode && held && idle;
+        projDelete_->Enabled = mode && held && idle;
         projIncludes_->Enabled = project && !ccs && idle;
         projLibraries_->Enabled = project && !ccs && idle;
         bool any = false;
@@ -4262,6 +4326,7 @@ private:
     }
 
     void OnCompile(Object^, EventArgs^) {
+        if (!InFileMode()) return;
         int kind = 0, language = 0;
         if (!SingleFileReady(kind, language)) return;
 
@@ -4408,6 +4473,7 @@ private:
     }
 
     void OnRun(Object^, EventArgs^) {
+        if (!InFileMode()) return;
         int kind = 0, language = 0;
         if (!SingleFileReady(kind, language)) return;
 
@@ -4571,8 +4637,8 @@ private:
         if (closeWhenIdle_) BeginInvoke(gcnew Action(this, &MainForm::CloseNow));
     }
 
-    void OnBuildProject(Object^, EventArgs^) { BuildProject(false); }
-    void OnRunProject(Object^, EventArgs^) { BuildProject(true); }
+    void OnBuildProject(Object^, EventArgs^) { if (InProjectMode()) BuildProject(false); }
+    void OnRunProject(Object^, EventArgs^) { if (InProjectMode()) BuildProject(true); }
 
     void BuildProject(bool andRun) {
         if (busy_) { what_->Text = StillWorking(); return; }
@@ -4802,6 +4868,7 @@ private:
         for each (ToolStripMenuItem^ item in gated_) item->Enabled = !on;
         stopItem_->Enabled = on;
         RefreshProjectMenu();
+        RefreshModeItems();
         if (!on && treeStale_) FillTree();
     }
 
@@ -4907,6 +4974,7 @@ private:
             DebugStep(Job::DebugResume);
             return;
         }
+        if (project ? !InProjectMode() : !InFileMode()) return;
 
         ForgetError();
         Toolchain^ tools = ToolsNow();
@@ -5060,6 +5128,7 @@ private:
     }
 
     void OnDebugMenuOpening(Object^, EventArgs^) {
+        RefreshModeItems();
         bool itsOwn = !busy_ && ride_debugging_shalimar(debugger_) != 0;
         upTheStack_->Enabled = !busy_ && !itsOwn;
         downTheStack_->Enabled = !busy_ && !itsOwn;

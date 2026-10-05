@@ -3908,6 +3908,14 @@ static const NSUInteger kOutputMost = 2000000;
 
 // ---- menu state -----------------------------------------------------------------
 
+// One of the open project's files in front, or no file and a project open: the project's. A loose file -
+// File > New, Open or Recent - or no project at all: the file's.
+- (BOOL)projectMode {
+    if (ride_project_loaded(project_) == 0) return NO;
+    if (current_ == nil) return YES;
+    return current_.path != nil && ride_project_holds(project_, Utf8(current_.path)) != 0;
+}
+
 - (BOOL)validateMenuItem:(NSMenuItem*)item {
     SEL action = item.action;
     if (action == @selector(openHeaderItem:)) return item.representedObject != nil;
@@ -3976,11 +3984,13 @@ static const NSUInteger kOutputMost = 2000000;
                          ? NSControlStateValueOn : NSControlStateValueOff;
         return YES;
     }
-    if (action == @selector(compileFile:) || action == @selector(runFile:) ||
-        action == @selector(convertFile:))
-        return file && !busy_;
-    if (action == @selector(buildProjectAction:) || action == @selector(runProjectAction:))
-        return project && !busy_;
+    // File or project, as the file in front decides (projectMode): a file's commands for a loose file, the
+    // project's for one of its files. The navigator's own menu is always about the project file clicked.
+    BOOL mode = [self projectMode];
+    BOOL onNavigator = navigator_.clickedRow >= 0 || self.window.firstResponder == navigator_;
+    if (action == @selector(compileFile:) || action == @selector(runFile:)) return file && !busy_ && !mode;
+    if (action == @selector(convertFile:)) return file && !busy_;
+    if (action == @selector(buildProjectAction:) || action == @selector(runProjectAction:)) return mode && !busy_;
     if (action == @selector(nextCompiler:) || action == @selector(nextTarget:))
         return !busy_;
     if (action == @selector(saveDocument:) || action == @selector(saveDocumentAs:) ||
@@ -4001,7 +4011,7 @@ static const NSUInteger kOutputMost = 2000000;
                                                     !ride_project_holds(project_, Utf8(current_.path));
     if (action == @selector(removeFromProject:) || action == @selector(moveToGroup:)) {
         NSString* target = [self targetFile];
-        return project && target != nil && !busy_ && ride_project_holds(project_, Utf8(target));
+        return project && (mode || onNavigator) && target != nil && !busy_ && ride_project_holds(project_, Utf8(target));
     }
     // A file opens while a program runs - it may be waiting on input for minutes; a project does not.
     if (action == @selector(openDocument:) || action == @selector(openRecentFile:)) return !building;
@@ -4010,10 +4020,10 @@ static const NSUInteger kOutputMost = 2000000;
     // The Project menu's file items act on the open project's files, so each wants a project.
     if (action == @selector(renameFile:) || action == @selector(deleteFile:)) {
         NSString* target = [self targetFile];
-        return project && target != nil && !busy_ && ride_project_holds(project_, Utf8(target));
+        return project && (mode || onNavigator) && target != nil && !busy_ && ride_project_holds(project_, Utf8(target));
     }
     if (action == @selector(nextIssue:) || action == @selector(clearIssuesAction:)) return issues_.count > 0;
-    if (action == @selector(newProjectFile:)) return project && !busy_;
+    if (action == @selector(newProjectFile:)) return project && (mode || onNavigator) && !busy_;
     if (action == @selector(newProject:) || action == @selector(openProject:))
         return !busy_;
     return YES;
