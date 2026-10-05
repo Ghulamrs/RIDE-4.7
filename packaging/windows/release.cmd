@@ -36,7 +36,11 @@ del "%W%\RELEASE.txt.repos"
 echo [2/3] Every program, then the installer - RIDE.sln, whose Installer project comes last
 set "R=%W%\RIDE-%VER%"
 set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
-for /f "usebackq delims=" %%p in (`"%VSWHERE%" -latest -products * -version "[17.0,18.0)" -property installationPath`) do set "VSPATH=%%p"
+rem Through a file, as build.bat does: for /f cannot run a quoted path that has a space in it.
+"%VSWHERE%" -latest -products * -version "[17.0,18.0)" -property installationPath > "%TEMP%\ride-release-vspath.txt"
+set "VSPATH="
+set /p VSPATH=<"%TEMP%\ride-release-vspath.txt"
+del "%TEMP%\ride-release-vspath.txt"
 if "%VSPATH%"=="" (echo could not find Visual Studio 2022 & exit /b 1)
 call "%VSPATH%\VC\Auxiliary\Build\vcvars64.bat" >nul
 set "RIDE_NO_INSTALLER="
