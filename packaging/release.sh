@@ -52,6 +52,12 @@ say "  VM6747/Compiler-Cppi  $(echo "$CPPI" | cut -c1-7)  default branch$( [ "$C
     say "VM6747/Compiler-Cppi  $CPPI  default branch of Compiler-Cpp-Optimize; VM6747 pins $PIN"
 } > "$W/RELEASE.txt"
 
+# The sources as sealed, before a line is compiled: a release of code that does not match its seal is refused (T1).
+say "[1b] The seals - verify_seals.py, MASTER.SEAL down to every project"
+python3 "$W/RIDE-$VER/verify_seals.py" > "$W/SEALS.txt" 2>&1 || {
+    tail -30 "$W/SEALS.txt"; say "release.sh: the sources do not match their seals - reseal (tools/seal write, then RIDE's tools/master-seal write), commit, push, and run again"; exit 1; }
+say "  $(tail -1 "$W/SEALS.txt")"
+
 say "[2/3] Every program, then the installer - workspace.mk's all"
 R=$W/RIDE-$VER
 if [ "$HOST" = Darwin ]; then

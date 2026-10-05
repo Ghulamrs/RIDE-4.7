@@ -38,6 +38,8 @@ ArchitecturesAllowed=x64compatible
 WizardStyle=modern
 ; Tell Explorer the environment changed, so a new console sees the PATH.
 ChangesEnvironment=yes
+; The per-user areas are meant: the PATH entry is the user's own (HKCU), and the shortcuts start in their Documents.
+UsedUserAreasWarning=no
 LicenseFile={#Stage}\README.md
 
 [Files]

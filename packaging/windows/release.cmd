@@ -33,6 +33,16 @@ for /f %%h in ('git -C "%W%\VM6747\Compiler-Cppi" rev-parse HEAD') do (echo   VM
 (echo RIDE %VER%, built %DATE% %TIME% on %COMPUTERNAME% ^(Windows^) from fresh checkouts& type "%W%\RELEASE.txt.repos") > "%W%\RELEASE.txt"
 del "%W%\RELEASE.txt.repos"
 
+rem The sources as sealed, before a line is compiled: a release of code that does not match its seal is refused (T1).
+echo [1b] The seals - verify_seals.py, MASTER.SEAL down to every project
+python -c "print(1)" >nul 2>&1
+if errorlevel 1 (
+  echo   WARNING: no Python on this machine, so the seals were NOT checked here - release.sh checks the same commits
+) else (
+  python "%W%\RIDE-%VER%\verify_seals.py" > "%W%\SEALS.txt" 2>&1
+  if errorlevel 1 (type "%W%\SEALS.txt" & echo release.cmd: the sources do not match their seals - reseal, commit, push, run again & exit /b 1)
+)
+
 echo [2/3] Every program, then the installer - RIDE.sln, whose Installer project comes last
 set "R=%W%\RIDE-%VER%"
 set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
