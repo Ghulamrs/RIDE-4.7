@@ -1,10 +1,10 @@
-©2026 G. R. Akhtar - RIDE 4.7 and the programs it drives
+©2026 G. R. Akhtar - RIDE 5.0 and the programs it drives
 Master seal: each project's seal, listed and combined into one
 Written by tools/master-seal; check it with `tools/master-seal check`.
-10 projects, 424 files, master seal FF25C258
+11 projects, 451 files, master seal 130A51F9
 ------------------------------------------------------------------------
 program   seal     file CRC  files  seal file
-RIDE      F79F82F9 578FBC48     78  ride-4.7.dat
+RIDE      87CEE78C CED44A5E     78  ride-5.0.dat
 c90       AE9A48FB 3F557FEB     52  ../VM6747/Compiler-Ci/c90-1.1.dat
 cpp11     49198CEA 733837E9    151  ../VM6747/Compiler-Cppi/cxx1-1.5.dat
 shalimar  5B9B1954 8BA9549D     52  ../VM6747/Compiler-Si/shalimar-1.2.dat
@@ -14,6 +14,7 @@ asm6x     C1EBDE82 0E7D4D94     10  ../ASM6x/asm6x-1.0.dat
 masm      5E4155D7 162F02E2     11  ../MASM/masm-1.0.dat
 link      E35FB5A3 3513B069      6  ../LINK/link-1.0.dat
 lnk6x     5A3B4284 7DA34077      8  ../LNK6x/lnk6x-1.0.dat
+vm6747sim 4382BE49 3E0945D2     27  ../VM6747-sim/vm6747sim-1.0.dat
 ------------------------------------------------------------------------
-Master seal FF25C258
-Sealed on 05-10-2026
+Master seal 130A51F9
+Sealed on 06-10-2026
