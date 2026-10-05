@@ -1,7 +1,7 @@
 ©2026 G. R. Akhtar - RIDE 4.7, the editor
 Release seal, version 4.7, sealed 05-10-2026
 Written by tools/seal; check it with `tools/seal check`.
-CRC32  size  file - 78 files, seal DDD0BCCA
+CRC32  size  file - 78 files, seal F79F82F9
 ------------------------------------------------------------------
 1DBB2FBC      2412  macos/CodeView.h
 02B3F91E     14632  macos/CodeView.mm
@@ -9,7 +9,7 @@ CRC32  size  file - 78 files, seal DDD0BCCA
 A7F98CCC      5957  macos/LineNumbers.mm
 7E2C43FD      2767  macos/Text.h
 AEF649AE      1693  macos/WindowController.h
-70EEF62E    199676  macos/WindowController.mm
+275195AD    200487  macos/WindowController.mm
 18F9EFDC      4599  macos/main.mm
 BEA48324     15040  src/about.cpp
 ABC4FB50      1108  src/about.h
@@ -74,7 +74,7 @@ CC9C965F      7196  src/toolchain.h
 D93038C5       572  src/utf8.h
 1DD9DC1C     12808  src/workspace.cpp
 F35C52A2      2086  src/workspace.h
-C13B3429    262850  winforms/MainForm.h
+08B935B8    266328  winforms/MainForm.h
 6BA8DA64      2289  winforms/Marshal.h
 3D89F3C4      6415  winforms/Program.cpp
 B2EA0EE1      4860  winforms/TextFile.h
