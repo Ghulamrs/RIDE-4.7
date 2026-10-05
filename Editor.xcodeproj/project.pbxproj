@@ -112,6 +112,7 @@
 		C6FDAB869EEB7E10AE5FD082 /* masm.exe.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = masm.exe.xcodeproj; path = "../MASM/masm.xcodeproj"; sourceTree = "<group>"; };
 		50D81AC569E0F891754877FB /* link.exe.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = link.exe.xcodeproj; path = "../LINK/link.xcodeproj"; sourceTree = "<group>"; };
 		9D247B3447C62B7635D2921C /* lnk6x.exe.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = lnk6x.exe.xcodeproj; path = "../LNK6x/lnk6x.xcodeproj"; sourceTree = "<group>"; };
+		2ED97604B0299DEB4D95C0D0 /* vm6747sim.exe.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = vm6747sim.exe.xcodeproj; path = "../VM6747-sim/vm6747sim.xcodeproj"; sourceTree = "<group>"; };
 		20F47CFB1AFB49F45A779D94 /* shalimar.exe.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = shalimar.exe.xcodeproj; path = "../VM6747/Compiler-Si/ide/shc.xcodeproj"; sourceTree = "<group>"; };
 		BC9013065FB079B5AABE7840 /* c2s.exe.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = c2s.exe.xcodeproj; path = "../Converter-C2S/c2s.xcodeproj"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -215,6 +216,20 @@
 			remoteGlobalIDString = 0AF269B5D180058A3A373CDD;
 			remoteInfo = lnk6x.exe;
 		};
+		D53D58E42F0E56B8DBB59EC5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2ED97604B0299DEB4D95C0D0 /* vm6747sim.exe.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = A6D16C1F5B156175C01B1B5A;
+			remoteInfo = vm6747sim.exe;
+		};
+		268A23C00DC28AF8F8399C3F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2ED97604B0299DEB4D95C0D0 /* vm6747sim.exe.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = 2564CB7A74E42A161DBF03ED;
+			remoteInfo = vm6747sim.exe;
+		};
 		15AE588F317C502585E71E35 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 20F47CFB1AFB49F45A779D94 /* shalimar.exe.xcodeproj */;
@@ -267,6 +282,7 @@
 				C6FDAB869EEB7E10AE5FD082 /* masm.exe.xcodeproj */,
 				50D81AC569E0F891754877FB /* link.exe.xcodeproj */,
 				9D247B3447C62B7635D2921C /* lnk6x.exe.xcodeproj */,
+				2ED97604B0299DEB4D95C0D0 /* vm6747sim.exe.xcodeproj */,
 				20F47CFB1AFB49F45A779D94 /* shalimar.exe.xcodeproj */,
 				BC9013065FB079B5AABE7840 /* c2s.exe.xcodeproj */,
 				C18780E713D0BF364A69C720 /* Products */,
@@ -406,6 +422,14 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		012713F5EA8BDE488F58D17D /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				C9ACD510B0D23B52E9D4745F /* vm6747sim.exe */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		A3CADF3D129D12576654102A /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -474,6 +498,13 @@
 			remoteRef = 059FE6429DCF410E55006E30 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
+		C9ACD510B0D23B52E9D4745F /* vm6747sim.exe */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.executable";
+			path = vm6747sim.exe;
+			remoteRef = D53D58E42F0E56B8DBB59EC5 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
 		47E9456A4D30B2A0D282BFDD /* shalimar.exe */ = {
 			isa = PBXReferenceProxy;
 			fileType = "compiled.mach-o.executable";
@@ -509,6 +540,7 @@
 				798AA8065CE552C784396C3D /* PBXTargetDependency */,
 				545C3C90E63EDC28BBBF1096 /* PBXTargetDependency */,
 				178E83B15A97E4AD9DE4F752 /* PBXTargetDependency */,
+				8A9A9B645B372B413754F001 /* PBXTargetDependency */,
 				94F0B70E90121F03E07652E0 /* PBXTargetDependency */,
 				27CF405BAD4F100DEC0EB38F /* PBXTargetDependency */,
 			);
@@ -554,6 +586,11 @@
 			isa = PBXTargetDependency;
 			name = lnk6x.exe;
 			targetProxy = 0E662B3717904866837E32FE /* PBXContainerItemProxy */;
+		};
+		8A9A9B645B372B413754F001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = vm6747sim.exe;
+			targetProxy = 268A23C00DC28AF8F8399C3F /* PBXContainerItemProxy */;
 		};
 		94F0B70E90121F03E07652E0 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -612,6 +649,10 @@
 				{
 					ProductGroup = 8CB98803EE656E618DF0A0B3 /* Products */;
 					ProjectRef = 9D247B3447C62B7635D2921C /* lnk6x.exe.xcodeproj */;
+				},
+				{
+					ProductGroup = 012713F5EA8BDE488F58D17D /* Products */;
+					ProjectRef = 2ED97604B0299DEB4D95C0D0 /* vm6747sim.exe.xcodeproj */;
 				},
 				{
 					ProductGroup = A3CADF3D129D12576654102A /* Products */;

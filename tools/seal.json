@@ -1,5 +1,5 @@
 {"name": "ride",
- "version": "4.7",
- "banner": "©2026 G. R. Akhtar - RIDE 4.7, the editor",
+ "version": "5.0",
+ "banner": "©2026 G. R. Akhtar - RIDE 5.0, the editor",
  "dirs": ["src", "macos", "winforms"],
  "files": []}

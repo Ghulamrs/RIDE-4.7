@@ -70,6 +70,9 @@ Menu::Menu() : active_(false), dropped_(false), column_(0), item_(0) {
     build.items.push_back({"Release", "Ctrl-D", ActionConfigRelease});
     // Last, so every item above keeps its place: what a build made, removed, as the windows' Clean does.
     build.items.push_back({"Clean", "", ActionClean});
+    // After Clean for the same reason: tms6747's .out on the simulator, and the two runs compared (5.0).
+    build.items.push_back({"Run on Simulator", "", ActionRunSimulator});
+    build.items.push_back({"Verify", "", ActionVerify});
     columns_.push_back(build);
 
     MenuColumn debug;

@@ -291,7 +291,7 @@ void pretendInstalledAt(const std::string& directory) {
 
 std::string installFile() {
 #ifdef _WIN32
-    // On Windows in a folder the user can see and open, named for the release: C:\Users\<you>\RIDE 4.7.
+    // On Windows in a folder the user can see and open, named for the release: C:\Users\<you>\RIDE 5.0.
     if (perUserInstallFile())
         return path::join(path::join(path::homeDir(), std::string(product::kName) + " " + about::version()),
                           "settings.json");
@@ -575,9 +575,9 @@ bool rememberCcsProjectState(const std::string& dir, const Json& state) {
 
 #ifdef _WIN32
 namespace {
-// The newest earlier release's settings.json in the home directory - C:\Users\<you>\RIDE 4.51 before
-// RIDE 4.7, say - so that a new release starts from what the user had chosen. Versions read as
-// decimals, which is how this product's ran: 4.5, 4.51, 4.7. Empty when there is none.
+// The newest earlier release's settings.json in the home directory - C:\Users\<you>\RIDE 4.7 before
+// RIDE 5.0, say - so that a new release starts from what the user had chosen. Versions read as
+// decimals, which is how this product's ran: 4.5, 4.51, 4.7, 5.0. Empty when there is none.
 std::string earlierReleaseFile() {
     std::string home = path::homeDir();
     if (home.empty()) return std::string();

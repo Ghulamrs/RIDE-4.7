@@ -39,6 +39,7 @@ int main(int argc, char** argv) {
     std::string ccsRoot;
     bool ccs = false;
     bool build = false, runIt = false;
+    int runner = 0;
     long width = 0;
     int plain = 0;
     int tabs = -1;
@@ -107,6 +108,10 @@ int main(int argc, char** argv) {
             build = true;
         } else if (std::strcmp(argv[i], "--run") == 0) {
             build = true; runIt = true;
+        } else if (std::strcmp(argv[i], "--simulate") == 0) {
+            build = true; runIt = true; runner = 1;
+        } else if (std::strcmp(argv[i], "--verify") == 0) {
+            build = true; runIt = true; runner = 2;
         } else if (std::strcmp(argv[i], "--plain") == 0) {
             plain = 1;
         } else if (std::strcmp(argv[i], "--tabs") == 0) {
@@ -121,7 +126,8 @@ int main(int argc, char** argv) {
                 "           [--shalimar path] [--cxx path] [--c2s path]\n"
                 "           [--width n] [--tabs] [--case-indent] [--plain]\n"
                 "       %s <project.pro or dir> [--arch a] [--assembler path] [--linker path]\n"
-                "           [--ti dir [--tilib dir] [--tilinker path]] [--ccs [--ccs-root dir]] --build | --run\n"
+                "           [--ti dir [--tilib dir] [--tilinker path]] [--ccs [--ccs-root dir]]\n"
+                "           --build | --run | --simulate | --verify\n"
                 "       %s --crc32 file...      each file's CRC-32, as About and release.crc compute it\n"
                 "  %s - the console half, which is %s.exe on Linux and\n"
                 "  macOS and %sConsole.exe on Windows. %s.exe on Windows is the\n"
@@ -164,6 +170,10 @@ int main(int argc, char** argv) {
                 "                 --ccs opens a CCS 7.4 or 5.5 C6747 project folder as it\n"
                 "                 is, which settings.json's \"ccs\" switch does for every run,\n"
                 "                 and --ccs-root names the CCS install ${CG_TOOL_ROOT} is under\n"
+                "  --simulate,    for tms6747, as --run with the linked .out run on\n"
+                "  --verify       vm6747sim, the C6747 simulator, in place of the\n"
+                "                 emulator - or, for --verify, run on both and the two\n"
+                "                 outputs compared: 0 they agree, 3 they differ\n"
                 "  --width n      columns per indent step (4)\n"
                 "  --tabs         indent with tabs instead of spaces\n"
                 "  --plain        frame the screen with - | + instead of the box\n"
@@ -283,7 +293,7 @@ int main(int argc, char** argv) {
             std::fprintf(stderr, "%s: %s\n", me.c_str(), ed.lastMessage().empty() ? "no project there" : ed.lastMessage().c_str());
             return 2;
         }
-        ed.buildProjectBatch(runIt);
+        ed.buildProjectBatch(runIt, runner);
         const std::vector<std::string>& lines = ed.consoleLines();
         for (size_t i = 0; i < lines.size(); ++i) std::printf("%s\n", lines[i].c_str());
         if (!ed.lastBuildOk()) return 1;

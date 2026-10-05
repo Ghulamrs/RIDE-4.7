@@ -2716,8 +2716,19 @@ void Editor::buildAndRun() {
     say(std::string("building and running with ") + toolchainName(kind) + " ...");
     refresh();
 
-    Ran result = runProgram(toolFor(), kind, buf_.path(), lang_, kArches[arch_], config_,
-                            consoleSink, this);
+    Ran result;
+    if (runner_ == 0) {
+        result = runProgram(toolFor(), kind, buf_.path(), lang_, kArches[arch_], config_, consoleSink, this);
+    } else {
+        Toolchain linking = toolFor();
+        linking.linkSingleFile = true;
+        Built made = buildProgram(linking, kind, buf_.path(), lang_, kArches[arch_], config_, consoleSink, this);
+        result.output = made.output;
+        result.diag = made.diag;
+        result.built = made.ok;
+        if (made.ok) result = runChosen(made.program, made.shalimar, std::vector<std::string>());
+        removeProgram(made);
+    }
 
     lastDiag_ = result.diag;
 
@@ -2743,6 +2754,39 @@ void Editor::buildAndRun() {
 
     // Rows, not lines: a long command wraps, and counting lines left "[program returned N]" under the frame.
     panelOff_ = panelTopForEnd();
+}
+
+// **Build > Run on Simulator and Build > Verify (5.0).** The same build a Run makes - the project when
+// one is open and the file is its own, the file otherwise - with what runs the program changed for
+// that one run. Both are tms6747's: the simulator runs the .out the build linked.
+void Editor::runWith(int runner) {
+    if (std::string(kArches[arch_]) != "tms6747") {
+        say("Run on Simulator and Verify are for tms6747 - choose it under Target");
+        return;
+    }
+    runner_ = runner;
+    const bool held = !buf_.path().empty() &&
+                      project_.groupOf(project_.relative(buf_.path())) < project_.groups().size();
+    if (project_.loaded() && (buf_.path().empty() || held))
+        buildProject(true);
+    else
+        buildAndRun();
+    runner_ = 0;
+}
+
+Ran Editor::runChosen(const std::string& program, bool shalimar, const std::vector<std::string>& args) {
+    if (runner_ == 2) return verifyBuilt(program, shalimar, args, consoleSink, this);
+    if (runner_ == 1) {
+        Ran result;
+        result.built = true;
+        const std::string why = simulationMissing(program);
+        if (!why.empty()) { console_.push_back(why); result.status = 2; return result; }
+        console_.push_back("$ vm6747sim --run " + baseName(tiProgramOf(program)));
+        result.ran = true;
+        result.status = runCaptured(simulateCommand(tiProgramOf(program)), result.output, consoleSink, this);
+        return result;
+    }
+    return runBuilt(program, consoleSink, this, shalimar, args);
 }
 
 bool Editor::saveEveryDirty() {
@@ -2890,8 +2934,8 @@ void Editor::buildProject(bool andRun) {
         std::string shown = project_.relative(made.program);
         for (size_t a = 0; a < project_.targetArgs().size(); ++a)
             shown += " " + project_.targetArgs()[a];
-        console_.push_back("$ " + shown);
-        Ran result = runBuilt(made.program, consoleSink, this, made.shalimar, args);
+        if (runner_ == 0) console_.push_back("$ " + shown);
+        Ran result = runChosen(made.program, made.shalimar, args);
         lastRunStatus_ = result.status;
         console_.push_back("[program returned " + number(static_cast<size_t>(result.status)) + "]");
         say("ran " + project_.relative(program) + " - it returned " +
@@ -3431,6 +3475,8 @@ void Editor::perform(Action action) {
         case ActionRun:          buildAndRun(); break;
         case ActionBuildProject: buildProject(false); break;
         case ActionRunProject:   buildProject(true); break;
+        case ActionRunSimulator: runWith(1); break;
+        case ActionVerify:       runWith(2); break;
         case ActionClean:        clean(); break;
         case ActionToggleBreak:  toggleBreak(); break;
         case ActionDebug:        debug(false); break;

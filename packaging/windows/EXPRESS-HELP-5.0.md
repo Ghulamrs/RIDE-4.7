@@ -1,4 +1,4 @@
-# RIDE 4.7 — Express Help
+# RIDE 5.0 — Express Help
 
 Three languages, four targets, one editor on three systems - a window on
 Windows and on macOS, a console editor on all three, and the project's own
@@ -10,9 +10,9 @@ quick reference; the full pages are under `help/`.
 
 | System  | Installer                          | Window (GUI)        | Console editor              |
 |---------|------------------------------------|---------------------|-----------------------------|
-| Windows | `RIDE-4.7-setup.exe`               | `RIDE.exe`          | `RIDEConsole.exe`           |
-| macOS   | `RIDE-4.7-macos.pkg` (macOS 12+, Apple silicon) | **RIDE 4.7** in Applications | `ride-4.7` and `ride` (in `/usr/local/bin`) |
-| Linux   | `RIDE-4.7-linux-x86_64.run` (Ubuntu 22.04+, Debian 12, RHEL 9, Amazon Linux 2023) | - | `ride-4.7` and `ride` |
+| Windows | `RIDE-5.0-setup.exe`               | `RIDE.exe`          | `RIDEConsole.exe`           |
+| macOS   | `RIDE-5.0-macos.pkg` (macOS 12+, Apple silicon) | **RIDE 5.0** in Applications | `ride-5.0` and `ride` (in `/usr/local/bin`) |
+| Linux   | `RIDE-5.0-linux-x86_64.run` (Ubuntu 22.04+, Debian 12, RHEL 9, Amazon Linux 2023) | - | `ride-5.0` and `ride` |
 
 The programs RIDE drives, the same on all three:
 
@@ -29,10 +29,10 @@ The programs RIDE drives, the same on all three:
 | `c2s`       | C-to-Shalimar converter                                 |
 
 On Windows they are `.exe` files in `bin\`; on macOS they are in
-`/usr/local/ride-4.7/bin` and on Linux in `/opt/ride-4.7/bin`, on `PATH` by
-name twice: `cpp11-4.7` always, and `cpp11` pointing at 4.7 as the newest
-installed. RIDE 4.7.app on macOS carries its own copy of every one inside the
-app. 4.7 installs beside 4.5 and 4.51 and leaves them where they were.
+`/usr/local/ride-5.0/bin` and on Linux in `/opt/ride-5.0/bin`, on `PATH` by
+name twice: `cpp11-5.0` always, and `cpp11` pointing at 4.7 as the newest
+installed. RIDE 5.0.app on macOS carries its own copy of every one inside the
+app. 5.0 installs beside 4.5, 4.51 and 4.7 and leaves them where they were.
 
 The sample CCS 7.4 projects - Hello, Sample and SampleExt - are in
 `projects/ccs`, beside the other sample projects in `Documents/RIDE/projects`; its README says how RIDE opens one and what each prints.
@@ -123,7 +123,7 @@ and empties the panes - never a source or the .pro), Configuration ▸ Debug / R
 Issue, Clear Issues.
 
 The bottom panel shows **Errors**, **Progress** and **Output**. The title bar
-shows `RIDE 4.7 - <project> - <file>`, the status bar the language, the
+shows `RIDE 5.0 - <project> - <file>`, the status bar the language, the
 configuration, the compiler (`*` when the file chose it) and the target.
 
 On macOS the menus are in the menu bar at the top of the screen **and** in a
@@ -233,7 +233,7 @@ default compiler, the assembler and linkers, `"askNative"`, the code font:
 
 | System  | settings.json - yours, to change       |
 |---------|----------------------------------------|
-| Windows | `%USERPROFILE%\RIDE 4.7\settings.json`  |
+| Windows | `%USERPROFILE%\RIDE 5.0\settings.json`  |
 | macOS   | `~/.ride/settings.json`                |
 | Linux   | `~/.ride/settings.json`                |
 

@@ -110,7 +110,11 @@ enum Action {
     ActionOwnIncludes,
     ActionOwnLibraries,
     // The tabbed Compiler Options dialog (options.h) - the windows' alone; the terminal shows it disabled.
-    ActionCompilerOptions
+    ActionCompilerOptions,
+    // Build > Run on Simulator and Build > Verify (5.0): tms6747's linked .out on vm6747sim, and that
+    // run compared with the emulator's.
+    ActionRunSimulator,
+    ActionVerify
 };
 
 struct MenuItem {

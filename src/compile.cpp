@@ -499,6 +499,8 @@ Build build(const Toolchain& tool, ToolchainKind kind, const std::string& source
 
 namespace {
 
+void makeTiProgram(Built& result, const Toolchain& tool, const std::string& program, LineSink sink, void* context);
+
 Built buildProgramOnce(const Toolchain& tool, ToolchainKind kind, const std::string& sourcePath,
                        Language lang, const std::string& arch, Configuration config,
                        LineSink sink, void* context) {
@@ -531,6 +533,9 @@ Built buildProgramOnce(const Toolchain& tool, ToolchainKind kind, const std::str
         result.output += hint + "\n";
         if (sink) sink(context, hint);
     }
+    // Run on Simulator and Verify run the .out: a single file's build links one beside its .s (5.0).
+    if (result.ok && tool.linkSingleFile && isEmulated(arch) && isEmulatedProgram(result.program))
+        makeTiProgram(result, tool, result.program.substr(0, result.program.size() - 2), sink, context);
     return result;
 }
 
@@ -604,7 +609,14 @@ void makeTiProgram(Built& result, const Toolchain& tool, const std::string& prog
     std::string as = c6xAssembler();
     if (as.empty()) return;
     std::string dir = result.program;
-    std::vector<std::string> sources = assemblyIn(dir);
+    std::vector<std::string> sources;
+    // A single file's build is one .s, not a .vm directory: it is linked as well, beside itself (5.0).
+    if (!path::isDirectory(dir) && isEmulatedProgram(dir)) {
+        sources.push_back(dir);
+        dir = path::parent(dir);
+    } else {
+        sources = assemblyIn(dir);
+    }
     if (sources.empty()) return;
     std::string say;
     if (result.shalimar) {
@@ -955,10 +967,19 @@ Ran runBuilt(const std::string& program, LineSink sink, void* context, bool shal
 }
 
 void removeProgram(const Built& built) {
-    // A program for the emulated target is a .s file or a .vm directory.
-    if (!built.program.empty() && path::isDirectory(built.program))
+    // A program for the emulated target is a .s file or a .vm directory, and the .out linked beside it.
+    if (!built.program.empty() && path::isDirectory(built.program)) {
         path::removeTree(built.program);
-    else if (!built.program.empty()) std::remove(built.program.c_str());
+        std::remove(tiProgramOf(built.program).c_str());
+    }
+    else if (!built.program.empty()) {
+        std::remove(built.program.c_str());
+        // a single file's .s, and what its TI link left beside it: the object and the .out (5.0)
+        if (isEmulatedProgram(built.program)) {
+            std::remove(tiProgramOf(built.program).c_str());
+            std::remove((built.program.substr(0, built.program.size() - 2) + ".obj").c_str());
+        }
+    }
     for (size_t i = 0; i < built.leftovers.size(); ++i)
         std::remove(built.leftovers[i].c_str());
 #ifdef __APPLE__
@@ -967,6 +988,77 @@ void removeProgram(const Built& built) {
     // Left behind, the temporary directory filled with ride-run-<pid>.dSYM bundles, one per F8.
     if (!built.program.empty()) path::removeTree(built.program + ".dSYM");
 #endif
+}
+
+std::string simulationMissing(const std::string& program) {
+    if (simulatorProgram().empty())
+        return "no vm6747sim beside " + std::string(product::kName) + " - the C6747 simulator ships with it from 5.0";
+    const std::string out = tiProgramOf(program);
+    if (!path::exists(out))
+        return "no " + path::filename(out) + ": a tms6747 build links one only with asm6x beside " +
+               product::kName + " and TI's runtime (rts6740_elf_eh.lib) named under Tools";
+    return std::string();
+}
+
+bool startSimulated(Process& process, const std::string& program) {
+    if (!simulationMissing(program).empty()) return false;
+    return process.startInteractive(simulateCommand(tiProgramOf(program)));
+}
+
+namespace {
+
+std::vector<std::string> outputLines(const std::string& text, bool simulator) {
+    std::vector<std::string> lines;
+    size_t at = 0;
+    while (at < text.size()) {
+        size_t nl = text.find('\n', at);
+        std::string line = text.substr(at, nl == std::string::npos ? std::string::npos : nl - at);
+        if (!line.empty() && line.back() == '\r') line.pop_back();
+        at = nl == std::string::npos ? text.size() : nl + 1;
+        if (simulator && line.compare(0, 7, "CYCLES ") == 0) continue;   // the count, not the program's
+        lines.push_back(line);
+    }
+    return lines;
+}
+
+}
+
+Ran verifyBuilt(const std::string& program, bool shalimar, const std::vector<std::string>& args,
+                LineSink sink, void* context) {
+    Ran result;
+    if (program.empty()) return result;
+    result.built = true;
+    auto say = [&](const std::string& line) { result.output += line + "\n"; if (sink) sink(context, line); };
+    const std::string missing = simulationMissing(program);
+    if (!missing.empty()) { say("[verify] " + missing); result.status = 2; return result; }
+    if (!args.empty()) say("[verify] the simulator takes no command line - both run without one");
+
+    std::string emulated, simulated;
+    const int emuStatus = runCaptured(launchCommand(program, shalimar), emulated);
+    const int simStatus = runCaptured(simulateCommand(tiProgramOf(program)), simulated);
+    result.ran = true;
+    const std::vector<std::string> a = outputLines(emulated, false), b = outputLines(simulated, true);
+    std::string cycles;
+    for (const std::string& line : outputLines(simulated, false))
+        if (line.compare(0, 7, "CYCLES ") == 0) cycles = line.substr(7);
+
+    for (const std::string& line : a) say(line);
+    say("[verify] emulator  (vm6747, the assembly):    " + std::to_string(a.size()) + " lines, exit " + std::to_string(emuStatus));
+    say("[verify] simulator (vm6747sim, " + path::filename(tiProgramOf(program)) + "): " +
+        std::to_string(b.size()) + " lines" + (cycles.empty() ? std::string() : ", " + cycles));
+    size_t k = 0;
+    while (k < a.size() && k < b.size() && a[k] == b[k]) ++k;
+    if (k == a.size() && k == b.size()) {
+        say("[verify] the two agree, line for line");
+        result.status = 0;
+    } else {
+        say("[verify] they differ at line " + std::to_string(k + 1) + ":");
+        say("  emulator : " + (k < a.size() ? a[k] : std::string("(no more output)")));
+        say("  simulator: " + (k < b.size() ? b[k] : std::string("(no more output)")));
+        result.status = 1;
+    }
+    (void)simStatus;
+    return result;
 }
 
 Ran runProgram(const Toolchain& tool, ToolchainKind kind, const std::string& sourcePath,

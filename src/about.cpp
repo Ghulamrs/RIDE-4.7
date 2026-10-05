@@ -25,7 +25,7 @@ namespace about {
 
 const char* name() { return product::kName; }
 
-const char* version() { return "4.7"; }
+const char* version() { return "5.0"; }
 
 namespace {
 
@@ -209,7 +209,7 @@ std::string selfLine() {
 #endif
     char stamp[64];
     std::strftime(stamp, sizeof stamp, "%d-%m-%Y %H:%M:%S PKT", &when);
-    // Named by the release, "RIDE 4.7", the same in every window and in the console.
+    // Named by the release, "RIDE 5.0", the same in every window and in the console.
     std::string said = std::string(name()) + " " + version() + "  " + stamp;
     unsigned long crc = 0;
     if (crc32Of(file, crc)) {

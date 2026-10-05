@@ -98,7 +98,7 @@ public:
     // afterwards. What TriLab and a script drive; a person still uses the keys.
     void setBatch(bool b) { batch_ = b; }
     bool setArchNamed(const std::string& name);
-    void buildProjectBatch(bool andRun) { buildProject(andRun); }
+    void buildProjectBatch(bool andRun, int runner = 0) { runner_ = runner; buildProject(andRun); runner_ = 0; }
     // For --build and --run, which draw no screen: whether a project opened, and the line that said why not.
     bool projectLoaded() const { return project_.loaded(); }
     const std::string& lastMessage() const { return message_; }
@@ -188,6 +188,9 @@ private:
     void convertFile();
 
     void buildProject(bool andRun);
+    // Run on Simulator and Verify: Run again with what runs the program changed, and then put back.
+    void runWith(int runner);
+    Ran runChosen(const std::string& program, bool shalimar, const std::vector<std::string>& args);
     void clean();
     bool saveEveryDirty();
 
@@ -319,6 +322,8 @@ private:
     bool batch_ = false;
     bool lastBuildOk_ = false;
     int lastRunStatus_ = 0;
+    // What a Run runs: 0 the program (or the emulator), 1 the simulator on the .out, 2 both compared.
+    int runner_ = 0;
     bool numbers_;
 
     bool menuItemIsCurrent(Action action) const;

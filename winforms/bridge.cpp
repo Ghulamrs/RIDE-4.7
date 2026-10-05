@@ -1876,6 +1876,7 @@ struct RIDERunning {
     std::string program;
     bool shalimar = false;      // a built Shalimar program, which the emulator runs beside its runtime
     std::vector<std::string> args;  // its command line, Build > Command-line arguments
+    int runner = RIDE_RUN_PROGRAM;  // the program, the simulator on its .out, or both compared (5.0)
 
     editor::Process process;
     std::thread worker;
@@ -1894,6 +1895,7 @@ struct RIDERunning {
     bool ran = false;
     int status = 0;
     bool stopped = false;
+    bool verified = false;      // Verify ran both itself; status is its answer
     editor::Diagnostic diag;
     std::string buildOutput;
 };
@@ -1914,6 +1916,16 @@ void runningChunk(void* context, const char* bytes, size_t size, bool isStderr) 
                           isStderr ? RIDE_STREAM_ERR : RIDE_STREAM_OUT);
 }
 
+// What the next ride_*_start runs (bridge.h): taken by it and reset, so a Run after it is a plain run.
+std::atomic<int> nextRunner{RIDE_RUN_PROGRAM};
+
+void runningSay(void* context, const std::string& line) {
+    RIDERunning* running = static_cast<RIDERunning*>(context);
+    std::string text = line + "\n";
+    if (running->onOutput)
+        running->onOutput(running->user, text.data(), static_cast<int>(text.size()), RIDE_STREAM_OUT);
+}
+
 void runTheProgram(RIDERunning* running) {
     editor::BuildScope scope;
     bool stopFirst = false;
@@ -1925,6 +1937,7 @@ void runTheProgram(RIDERunning* running) {
     bool shalimar = running->shalimar;
     std::string program = running->program;
     if (running->fromSource && !stopFirst) {
+        running->tool.linkSingleFile = running->runner != RIDE_RUN_PROGRAM;
         made = editor::buildProgram(running->tool, running->kind, running->source, running->language,
                                     running->arch, running->config, runningLine, running);
         running->buildOutput = made.output;
@@ -1937,7 +1950,24 @@ void runTheProgram(RIDERunning* running) {
         std::lock_guard<std::mutex> held(running->state);
         std::lock_guard<std::mutex> in(running->input);
         running->built = !program.empty() && !stopFirst;
-        if (running->built && !running->stopWanted && !editor::buildCancelled()) {
+        if (running->built && running->runner != RIDE_RUN_PROGRAM) {
+            // Run on Simulator, or Verify: neither is for a program the emulator does not run.
+            std::string why = editor::isEmulatedProgram(program) ? editor::simulationMissing(program)
+                : "Run on Simulator and Verify are for a tms6747 build - choose tms6747 under Target";
+            if (!why.empty()) { runningSay(running, why); running->status = 2; }
+        }
+        if (running->built && running->runner == RIDE_RUN_VERIFY && !running->stopWanted && !editor::buildCancelled()
+            && editor::isEmulatedProgram(program) && editor::simulationMissing(program).empty()) {
+            editor::Ran both = editor::verifyBuilt(program, shalimar, running->args, runningSay, running);
+            running->verified = true;
+            running->status = both.status;
+        } else if (running->built && running->runner == RIDE_RUN_SIMULATOR) {
+            if (!running->stopWanted && !editor::buildCancelled() && editor::isEmulatedProgram(program)
+                && editor::simulationMissing(program).empty()) {
+                runningSay(running, "[simulator] vm6747sim " + editor::path::filename(editor::tiProgramOf(program)));
+                running->ran = editor::startSimulated(running->process, program);
+            }
+        } else if (running->built && running->runner == RIDE_RUN_PROGRAM && !running->stopWanted && !editor::buildCancelled()) {
             running->ran = editor::startProgram(running->process, program, shalimar, running->args);
             if (running->ran) {
                 if (!running->waiting.empty())
@@ -1960,7 +1990,7 @@ void runTheProgram(RIDERunning* running) {
     {
         std::lock_guard<std::mutex> held(running->state);
         std::lock_guard<std::mutex> in(running->input);
-        running->status = running->ran ? running->process.finish() : 0;
+        if (!running->verified) running->status = running->ran ? running->process.finish() : running->status;
         running->stopped = running->stopWanted;
         running->finished = true;
         running->done = 1;
@@ -1970,6 +2000,7 @@ void runTheProgram(RIDERunning* running) {
 }
 
 RIDERunning* startRunning(RIDERunning* running) {
+    running->runner = nextRunner.exchange(RIDE_RUN_PROGRAM);
     try {
         running->worker = std::thread(runTheProgram, running);
     } catch (...) {
@@ -1980,6 +2011,12 @@ RIDERunning* startRunning(RIDERunning* running) {
 }
 
 }
+
+void ride_run_next(int runner) {
+    nextRunner = runner == RIDE_RUN_SIMULATOR || runner == RIDE_RUN_VERIFY ? runner : RIDE_RUN_PROGRAM;
+}
+
+int ride_simulator_here(void) { return editor::simulatorProgram().empty() ? 0 : 1; }
 
 RIDERunning* ride_run_start(RIDEProject* project, const char* cc1, const char* cl, const char* shc,
                             const char* cxx1, int kind, const char* source, int language,

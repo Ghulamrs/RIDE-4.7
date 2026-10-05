@@ -5,7 +5,7 @@
 	<key>CFBundleName</key>
 	<string>RIDE</string>
 	<key>CFBundleDisplayName</key>
-	<string>RIDE 4.7</string>
+	<string>RIDE 5.0</string>
 	<key>CFBundleIconFile</key>
 	<string>RIDE</string>
 	<key>CFBundleExecutable</key>
@@ -15,11 +15,11 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>4.7</string>
+	<string>5.0</string>
 	<key>CFBundleVersion</key>
 	<string>20261002</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>RIDE 4.7 - G. R. Akhtar</string>
+	<string>RIDE 5.0 - G. R. Akhtar</string>
 	<key>NSDocumentsFolderUsageDescription</key>
 	<string>RIDE keeps new programs and projects in Documents/RIDE, and copies its sample programs there the first time.</string>
 	<key>CFBundleInfoDictionaryVersion</key>

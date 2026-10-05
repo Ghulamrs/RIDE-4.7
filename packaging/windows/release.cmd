@@ -9,7 +9,7 @@ rem side branch: VM6747's Compiler-Cppi is taken at the head of its own default 
 rem RELEASE_DIR (default %USERPROFILE%\ride-release).
 setlocal enabledelayedexpansion
 set "VER=%~1"
-if "%VER%"=="" set "VER=4.7"
+if "%VER%"=="" set "VER=5.0"
 if "%RELEASE_DIR%"=="" set "RELEASE_DIR=%USERPROFILE%\ride-release"
 for /f %%t in ('powershell -NoProfile -Command "Get-Date -Format yyyyMMdd-HHmmss"') do set "STAMP=%%t"
 set "W=%RELEASE_DIR%\%STAMP%"
@@ -26,6 +26,7 @@ call :clone LNK6x LNK6X || exit /b 1
 call :clone LINK LINK || exit /b 1
 call :clone MASM MASM || exit /b 1
 call :clone Converter-C2S Converter-C2S || exit /b 1
+call :clone VM6747-sim VM6747-sim || exit /b 1
 rem The submodule at the head of its default branch, which .gitmodules names, with the pin recorded beside it.
 for /f "tokens=3" %%h in ('git -C "%W%\VM6747" ls-tree HEAD Compiler-Cppi') do set "PIN=%%h"
 %GIT% -C "%W%\VM6747" submodule -q update --init --remote Compiler-Cppi || exit /b 1

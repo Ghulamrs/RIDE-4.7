@@ -6,7 +6,7 @@ rem
 rem  Steps: compile every compiler project + the RIDE editor, (re)generate the
 rem  HTML docs, stage the install tree, and compile the Inno Setup installer.
 rem
-rem  Usage:   build-installer.bat [4.7]
+rem  Usage:   build-installer.bat [5.0]
 rem  Env overrides (all optional):
 rem     CPP    the C++ compiler clone that carries include\ and lib\ headers
 rem            (default: <repo>\..\VM6747\Compiler-Cppi, else <repo>\..\Compiler-Cpp)
@@ -28,9 +28,9 @@ rem "from-solution <OutDir>": RIDE.sln's Installer project, after every other pr
 set "FROMSLN="
 set "BINSRC="
 if /i "%~2"=="from-solution" (set "FROMSLN=1" & set "BINSRC=%~f3")
-if "%VER%"=="" set "VER=4.7"
+if "%VER%"=="" set "VER=5.0"
 rem  The 3.x releases are sealed and built from their own tree, not this one.
-if not "%VER%"=="4.7" (echo build-installer.bat: this tree builds 4.7 only & exit /b 2)
+if not "%VER%"=="5.0" (echo build-installer.bat: this tree builds 5.0 only & exit /b 2)
 set "NV=%VER:.=%"
 set "HERE=%~dp0"
 for %%I in ("%HERE%..\..") do set "ROOT=%%~fI"

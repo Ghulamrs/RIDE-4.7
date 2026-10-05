@@ -1,4 +1,4 @@
-; Inno Setup script for RIDE 4.7 - three languages (C, C++, Shalimar),
+; Inno Setup script for RIDE 5.0 - three languages (C, C++, Shalimar),
 ; four targets (x86_64-windows, x86_64-linux, arm64-darwin, tms6747), the
 ; VM6747 C6000 emulator, the C<->Shalimar converter, and the project's own
 ; assemblers for both machine targets: asm6x for the C6000 and, new in 4.0,
@@ -10,7 +10,7 @@
 ; {#PRODUCT}Console.exe. The Makefile's PRODUCT, product.props and
 ; src/product.h spell it the same.
 #define PRODUCT "RIDE"
-#define MyVer  "4.7"
+#define MyVer  "5.0"
 #define MyName PRODUCT + " " + MyVer
 #ifndef Stage
 #define Stage "C:\Users\GRA\ride-pkg\stage40"
@@ -73,7 +73,7 @@ Name: "{autodesktop}\{#MyName}"; Filename: "{app}\bin\{#PRODUCT}.exe"; WorkingDi
 Name: "desktopicon"; Description: "Create a desktop shortcut"
 ; bin holds a link.exe of the project's own. Appended, it sits after everything
 ; already on PATH, and a Developer Command Prompt puts Microsoft's first anyway.
-Name: "addtopath"; Description: "Add the bin folder to PATH (c90, cpp11, shalimar, masm, asm6x, vm6747, c2s on the command line)"; Flags: unchecked
+Name: "addtopath"; Description: "Add the bin folder to PATH (c90, cpp11, shalimar, masm, asm6x, vm6747, vm6747sim, c2s on the command line)"; Flags: unchecked
 
 [Registry]
 ; The user's own PATH, HKCU\Environment, on purpose. The machine-wide one is

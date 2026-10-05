@@ -75,6 +75,9 @@ struct Toolchain {
     std::vector<std::string> libraries;
     // A CCS project's link, for tms6747; given nowhere else.
     TiLink tiLink;
+    // A single file's tms6747 build links its .out as well - what Run on Simulator and Verify run (5.0).
+    // A project's build always does; a single file's Run has no use for it, so only when this asks.
+    bool linkSingleFile = false;
 
     Toolchain()
         : kind(ToolAuto), cc1("c90.exe"), cl("cl"), shc("shalimar.exe"),
@@ -107,6 +110,16 @@ std::string c6xAssembler();
 // with it.
 std::string launchCommand(const std::string& program, bool shalimar = false,
                           const std::vector<std::string>& args = std::vector<std::string>());
+// **The C6747 simulator, beside the emulator (5.0).** vm6747sim runs the TI program a tms6747 build
+// links, <program>.out - TI's boot and runtime, instruction by instruction - where vm6747 runs the
+// assembly. $VM6747SIM names one elsewhere; empty when there is none.
+std::string simulatorProgram();
+// Whether a built program is the emulated target's: a .s file or a <program>.vm directory.
+bool isEmulatedProgram(const std::string& program);
+// The .out a tms6747 build linked beside <program>.vm, or the name it would have: <program>.out.
+std::string tiProgramOf(const std::string& program);
+// The command that runs it: the simulator, --run, and -c for the cycle count on stderr.
+std::string simulateCommand(const std::string& out);
 // The directory of runtime assembly a Shalimar program needs on the emulator.
 std::string shalimarRuntimeDir();
 // Where a project's program goes for the emulated target: <program>.vm, a directory of assembly, the Windows .exe dropped.

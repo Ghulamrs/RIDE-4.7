@@ -9,7 +9,7 @@
 # RELEASE_DIR (default ~/ride-release, outside iCloud's ~/Documents), JOBS (8 on a Mac, 2 on Linux).
 set -eu
 
-VER=${1:-4.7}
+VER=${1:-5.0}
 BASE=${RELEASE_DIR:-$HOME/ride-release}
 STAMP=$(TZ=Asia/Karachi date +%Y%m%d-%H%M%S)
 W=$BASE/$STAMP
@@ -26,7 +26,8 @@ ASM6x:ASM6x
 LNK6x:LNK6X
 LINK:LINK
 MASM:MASM
-Converter-C2S:Converter-C2S"
+Converter-C2S:Converter-C2S
+VM6747-sim:VM6747-sim"
 
 mkdir -p "$W"
 say "RIDE $VER release in $W"

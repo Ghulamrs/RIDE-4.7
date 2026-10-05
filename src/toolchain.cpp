@@ -276,6 +276,36 @@ std::string emulatorProgram() {
     return beside.empty() ? std::string("vm6747") : beside;
 }
 
+std::string simulatorProgram() {
+    const char* fromEnv = std::getenv("VM6747SIM");
+    if (fromEnv && *fromEnv) return fromEnv;
+    std::string beside = path::besideProgram("vm6747sim.exe");
+    if (beside.empty()) beside = path::besideProgram("vm6747sim");
+    return beside;
+}
+
+bool isEmulatedProgram(const std::string& program) {
+    std::string leaf = path::filename(program);
+    while (!leaf.empty() && (leaf.back() == '/' || leaf.back() == '\\')) leaf.pop_back();
+    return (leaf.size() > 2 && leaf.compare(leaf.size() - 2, 2, ".s") == 0) ||
+           (leaf.size() > 3 && leaf.compare(leaf.size() - 3, 3, ".vm") == 0);
+}
+
+std::string tiProgramOf(const std::string& program) {
+    std::string stem = program;
+    while (!stem.empty() && (stem.back() == '/' || stem.back() == '\\')) stem.pop_back();
+    const char* ends[] = {".vm", ".exe", ".s", ".out"};
+    for (const char* e : ends) {
+        const size_t n = std::strlen(e);
+        if (stem.size() > n && stem.compare(stem.size() - n, n, e) == 0) { stem.resize(stem.size() - n); break; }
+    }
+    return stem + ".out";
+}
+
+std::string simulateCommand(const std::string& out) {
+    return quote(simulatorProgram()) + " --run -c " + quote(out);
+}
+
 std::string c6xAssembler() {
     const char* fromEnv = std::getenv("ASM6X");
     if (fromEnv && *fromEnv) return fromEnv;

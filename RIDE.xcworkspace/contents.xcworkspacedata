@@ -26,6 +26,9 @@
       location = "group:../LINK/link.xcodeproj">
    </FileRef>
    <FileRef
+      location = "group:../VM6747-sim/vm6747sim.xcodeproj">
+   </FileRef>
+   <FileRef
       location = "group:../LNK6x/lnk6x.xcodeproj">
    </FileRef>
    <FileRef

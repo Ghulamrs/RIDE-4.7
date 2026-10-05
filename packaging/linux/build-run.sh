@@ -12,7 +12,7 @@
 # install-header.sh, checks the machine, installs and links the commands.
 set -eu
 
-VER=${1:-4.7}
+VER=${1:-5.0}
 HERE=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$HERE/../.." && pwd)
 CPP=${CPP:-$ROOT/../VM6747/Compiler-Cppi}
@@ -23,12 +23,12 @@ STAGE=$(mktemp -d "${TMPDIR:-/tmp}/ride-run.XXXXXX")
 trap 'rm -rf "$STAGE" "$STAGE.tgz"' EXIT
 
 [ "$(uname -s)" = Linux ] || { echo "build-run.sh: build this on Linux"; exit 1; }
-for t in RIDE c90 cpp11 shalimar c2s vm6747 asm6x masm link lnk6x; do
+for t in RIDE c90 cpp11 shalimar c2s vm6747 vm6747sim asm6x masm link lnk6x; do
     [ -x "$BIN/$t.exe" ] || { echo "build-run.sh: no $BIN/$t.exe - build the workspace first"; exit 1; }
 done
 
 mkdir -p "$STAGE/bin"
-for t in RIDE c90 cpp11 shalimar c2s vm6747 asm6x masm link lnk6x; do
+for t in RIDE c90 cpp11 shalimar c2s vm6747 vm6747sim asm6x masm link lnk6x; do
     cp -p "$BIN/$t.exe" "$STAGE/bin/"
     strip "$STAGE/bin/$t.exe" 2>/dev/null || true
 done

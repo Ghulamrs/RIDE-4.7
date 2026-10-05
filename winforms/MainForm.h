@@ -596,7 +596,7 @@ protected:
     static String^ ProductName() { return gcnew String(ride_product_name()); }
 
     // The window title: the product and its version, then the project it is in, then the file in
-    // front - "RIDE 4.7 - demo - main.c"; "RIDE 4.7 - main.c" with no project, "RIDE 4.7" with
+    // front - "RIDE 5.0 - demo - main.c"; "RIDE 5.0 - main.c" with no project, "RIDE 5.0" with
     // neither. One place, so opening, loading or closing a project and saving-as all say it the same way.
     void RefreshTitle() {
         String^ title = ProductName() + " " + FromUtf8(ride_version());
@@ -793,7 +793,7 @@ private:
 
     static String^ StillWorking() { return "still working - Build > Stop (Ctrl+Break) ends it"; }
 
-    // %USERPROFILE%\RIDE 4.7\settings.json, begun from the installation's defaults: the user's to change.
+    // %USERPROFILE%\RIDE 5.0\settings.json, begun from the installation's defaults: the user's to change.
     void OnSettingsFile(Object^, EventArgs^) {
         ride_write_install_file_if_absent();
         String^ file = FromUtf8(ride_install_file());
@@ -1042,6 +1042,12 @@ private:
         runProjectItem_ = gcnew ToolStripMenuItem("Run project", nullptr,
                                                   gcnew EventHandler(this, &MainForm::OnRunProject));
         build->DropDownItems->Add(runProjectItem_);
+        // tms6747's linked .out on vm6747sim, the C6747 simulator, and that run compared with the emulator's (5.0).
+        runSimulatorItem_ = gcnew ToolStripMenuItem("Run on Simulator", nullptr,
+                                                    gcnew EventHandler(this, &MainForm::OnRunSimulator));
+        build->DropDownItems->Add(runSimulatorItem_);
+        verifyItem_ = gcnew ToolStripMenuItem("Verify", nullptr, gcnew EventHandler(this, &MainForm::OnVerify));
+        build->DropDownItems->Add(verifyItem_);
         build->DropDownOpening += gcnew EventHandler(this, &MainForm::OnModeMenuOpening);
         // The command line Run and Run project hand the program: a submenu, as Recent is, holding a box to type it in.
         ToolStripMenuItem^ argsMenu = gcnew ToolStripMenuItem("Command-line arguments");
@@ -3501,6 +3507,8 @@ private:
     ToolStripMenuItem^ runItem_;
     ToolStripMenuItem^ buildProjectItem_;
     ToolStripMenuItem^ runProjectItem_;
+    ToolStripMenuItem^ runSimulatorItem_;
+    ToolStripMenuItem^ verifyItem_;
     ToolStripMenuItem^ debugItem_;
     ToolStripMenuItem^ debugProjectItem_;
 
@@ -3527,6 +3535,9 @@ private:
         runItem_->Enabled = idle && !mode;
         buildProjectItem_->Enabled = idle && mode;
         runProjectItem_->Enabled = idle && mode;
+        bool c6747 = arch_ != nullptr && String::Equals(arch_, "tms6747", StringComparison::Ordinal);
+        runSimulatorItem_->Enabled = idle && c6747;
+        verifyItem_->Enabled = idle && c6747;
         debugItem_->Enabled = idle && (!mode || debugging);
         debugProjectItem_->Enabled = idle && (mode || debugging);
     }
@@ -4473,6 +4484,26 @@ private:
     }
 
     void OnRun(Object^, EventArgs^) {
+        ride_run_next(RIDE_RUN_PROGRAM);
+        RunFile();
+    }
+
+    // **Build > Run on Simulator and Build > Verify (5.0), for tms6747.** The Run the file or the project in
+    // front would make, with the bridge told which runs the program: the build's linked .out on vm6747sim, or
+    // both that and the emulator, compared. Said to the next start (ride_run_next), which takes it.
+    void RunOn(int runner) {
+        if (arch_ == nullptr || !String::Equals(arch_, "tms6747", StringComparison::Ordinal)) {
+            what_->Text = "Run on Simulator and Verify are for tms6747 - choose it under Target";
+            return;
+        }
+        ride_run_next(runner);
+        if (ProjectMode()) BuildProject(true);
+        else RunFile();
+    }
+    void OnRunSimulator(Object^, EventArgs^) { RunOn(RIDE_RUN_SIMULATOR); }
+    void OnVerify(Object^, EventArgs^) { RunOn(RIDE_RUN_VERIFY); }
+
+    void RunFile() {
         if (!InFileMode()) return;
         int kind = 0, language = 0;
         if (!SingleFileReady(kind, language)) return;
@@ -4638,7 +4669,7 @@ private:
     }
 
     void OnBuildProject(Object^, EventArgs^) { if (InProjectMode()) BuildProject(false); }
-    void OnRunProject(Object^, EventArgs^) { if (InProjectMode()) BuildProject(true); }
+    void OnRunProject(Object^, EventArgs^) { ride_run_next(RIDE_RUN_PROGRAM); if (InProjectMode()) BuildProject(true); }
 
     void BuildProject(bool andRun) {
         if (busy_) { what_->Text = StillWorking(); return; }

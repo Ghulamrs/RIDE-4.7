@@ -17,21 +17,21 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <NMakeBuildCommandLine>echo Installer: made from Release builds only - build the Release configuration for dist\RIDE-4.7-setup.exe</NMakeBuildCommandLine>
-    <NMakeReBuildCommandLine>echo Installer: made from Release builds only - build the Release configuration for dist\RIDE-4.7-setup.exe</NMakeReBuildCommandLine>
-    <NMakeCleanCommandLine>if exist "$(SolutionDir)dist\RIDE-4.7-setup.exe" del "$(SolutionDir)dist\RIDE-4.7-setup.exe"</NMakeCleanCommandLine>
-    <NMakeOutput>$(SolutionDir)dist\RIDE-4.7-setup.exe</NMakeOutput>
+    <NMakeBuildCommandLine>echo Installer: made from Release builds only - build the Release configuration for dist\RIDE-5.0-setup.exe</NMakeBuildCommandLine>
+    <NMakeReBuildCommandLine>echo Installer: made from Release builds only - build the Release configuration for dist\RIDE-5.0-setup.exe</NMakeReBuildCommandLine>
+    <NMakeCleanCommandLine>if exist "$(SolutionDir)dist\RIDE-5.0-setup.exe" del "$(SolutionDir)dist\RIDE-5.0-setup.exe"</NMakeCleanCommandLine>
+    <NMakeOutput>$(SolutionDir)dist\RIDE-5.0-setup.exe</NMakeOutput>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <NMakeBuildCommandLine>if "%RIDE_NO_INSTALLER%"=="1" (echo Installer: skipped - build-installer.bat packages after its own build) else call "$(ProjectDir)build-installer.bat" 4.7 from-solution "$(OutDir)."</NMakeBuildCommandLine>
-    <NMakeReBuildCommandLine>if "%RIDE_NO_INSTALLER%"=="1" (echo Installer: skipped - build-installer.bat packages after its own build) else call "$(ProjectDir)build-installer.bat" 4.7 from-solution "$(OutDir)."</NMakeReBuildCommandLine>
-    <NMakeCleanCommandLine>if exist "$(SolutionDir)dist\RIDE-4.7-setup.exe" del "$(SolutionDir)dist\RIDE-4.7-setup.exe"</NMakeCleanCommandLine>
-    <NMakeOutput>$(SolutionDir)dist\RIDE-4.7-setup.exe</NMakeOutput>
+    <NMakeBuildCommandLine>if "%RIDE_NO_INSTALLER%"=="1" (echo Installer: skipped - build-installer.bat packages after its own build) else call "$(ProjectDir)build-installer.bat" 5.0 from-solution "$(OutDir)."</NMakeBuildCommandLine>
+    <NMakeReBuildCommandLine>if "%RIDE_NO_INSTALLER%"=="1" (echo Installer: skipped - build-installer.bat packages after its own build) else call "$(ProjectDir)build-installer.bat" 5.0 from-solution "$(OutDir)."</NMakeReBuildCommandLine>
+    <NMakeCleanCommandLine>if exist "$(SolutionDir)dist\RIDE-5.0-setup.exe" del "$(SolutionDir)dist\RIDE-5.0-setup.exe"</NMakeCleanCommandLine>
+    <NMakeOutput>$(SolutionDir)dist\RIDE-5.0-setup.exe</NMakeOutput>
   </PropertyGroup>
   <ItemGroup>
     <None Include="build-installer.bat" />
     <None Include="stage.cmd" />
-    <None Include="RIDE-4.7.iss" />
+    <None Include="RIDE-5.0.iss" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>

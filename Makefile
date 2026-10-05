@@ -249,7 +249,7 @@ check: test session
 # the x86-64 assembler that stands in for ml64 when settings.json names it,
 # and the two linkers: link.exe for x86-64, in place of Microsoft's, and
 # lnk6x.exe for the C6000, in place of TI's, each when settings.json names it.
-DEPENDENCIES := c90.exe cpp11.exe vm6747.exe asm6x.exe masm.exe link.exe lnk6x.exe shalimar.exe c2s.exe \
+DEPENDENCIES := c90.exe cpp11.exe vm6747.exe vm6747sim.exe asm6x.exe masm.exe link.exe lnk6x.exe shalimar.exe c2s.exe \
        lib/shmrt-$(SHM_TARGET).a lib/shmrt-$(SHM_TARGET)-debug.a \
        lib/shmrt-tms6747/Runtime.s
 

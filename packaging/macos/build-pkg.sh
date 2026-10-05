@@ -28,7 +28,7 @@
 # Mac asks the user to open it from Finder's context menu the first time.
 set -eu
 
-VER=${1:-4.7}
+VER=${1:-5.0}
 HERE=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$HERE/../.." && pwd)
 CPP=${CPP:-$ROOT/../VM6747/Compiler-Cppi}
@@ -61,7 +61,7 @@ rm -rf "$STAGE"
 mkdir -p "$STAGE/Applications" "$STAGE/usr/local/$RDIR" "$STAGE/usr/local/bin"
 ditto "$APPSRC" "$STAGE/Applications/$APPNAME"
 APP=$STAGE/Applications/$APPNAME/Contents
-TOOLS="c90 cpp11 shalimar c2s vm6747 asm6x masm link lnk6x"
+TOOLS="c90 cpp11 shalimar c2s vm6747 vm6747sim asm6x masm link lnk6x"
 
 # The window: the macOS-12 tools beside it, and what they read in Resources -
 # cpp11's headers (C++ and the C ones they wrap, one directory, as installed on

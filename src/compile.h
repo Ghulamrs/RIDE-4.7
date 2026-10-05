@@ -115,6 +115,18 @@ Ran runBuilt(const std::string& program, LineSink sink = 0, void* context = 0,
 
 void removeProgram(const Built& built);
 
+// **Build > Run on Simulator and Build > Verify (5.0), for tms6747.** A build links <program>.out
+// when asm6x is beside RIDE and TI's runtime is named under Tools; vm6747sim runs that TI program
+// as TI's simulator does. Why a simulated run cannot happen, or empty when it can.
+std::string simulationMissing(const std::string& program);
+// The .out run on the simulator with a real input, as startProgram runs the emulator.
+bool startSimulated(Process& process, const std::string& program);
+// Both runs, captured: the emulator on the assembly and the simulator on the .out, their outputs
+// compared line for line - the simulator's cycle line aside. Status 0 when they agree, 1 when they
+// differ, 2 when one of them could not run; the report goes to the sink line by line.
+Ran verifyBuilt(const std::string& program, bool shalimar, const std::vector<std::string>& args,
+                LineSink sink = 0, void* context = 0);
+
 Ran runProgram(const Toolchain& tool, ToolchainKind kind, const std::string& sourcePath,
                Language lang, const std::string& arch, Configuration config,
                LineSink sink = 0, void* context = 0);
