@@ -1,19 +1,19 @@
 ©2026 G. R. Akhtar - RIDE 4.7 and the programs it drives
 Master seal: each project's seal, listed and combined into one
 Written by tools/master-seal; check it with `tools/master-seal check`.
-10 projects, 424 files, master seal 30063DDE
+10 projects, 424 files, master seal 004005FE
 ------------------------------------------------------------------------
 program   seal     file CRC  files  seal file
 RIDE      DDD0BCCA 3C7C8522     78  ride-4.7.dat
-c90       A82CC072 F61008E1     52  ../VM6747/Compiler-Ci/c90-1.1.dat
-cpp11     3DA4CE51 DC148633    151  ../VM6747/Compiler-Cppi/cxx1-1.5.dat
+c90       AE9A48FB 3F557FEB     52  ../VM6747/Compiler-Ci/c90-1.1.dat
+cpp11     49198CEA 733837E9    151  ../VM6747/Compiler-Cppi/cxx1-1.5.dat
 shalimar  5B9B1954 8BA9549D     52  ../VM6747/Compiler-Si/shalimar-1.2.dat
 c2s       35C8D226 E8FBE556     46  ../Converter-C2S/c2s-1.2.dat
-vm6747    F3B41844 BF8B117C     10  ../VM6747/Emulator/vm6747-1.0.dat
+vm6747    7E5B716D EBDA7F4D     10  ../VM6747/Emulator/vm6747-1.0.dat
 asm6x     C1EBDE82 0E7D4D94     10  ../ASM6x/asm6x-1.0.dat
 masm      5E4155D7 162F02E2     11  ../MASM/masm-1.0.dat
 link      E35FB5A3 3513B069      6  ../LINK/link-1.0.dat
-lnk6x     57EA26D5 F1A0CF3F      8  ../LNK6x/lnk6x-1.0.dat
+lnk6x     5A3B4284 7DA34077      8  ../LNK6x/lnk6x-1.0.dat
 ------------------------------------------------------------------------
-Master seal 30063DDE
+Master seal 004005FE
 Sealed on 05-10-2026
