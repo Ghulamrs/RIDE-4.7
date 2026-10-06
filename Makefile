@@ -251,7 +251,7 @@ check: test session
 # lnk6x.exe for the C6000, in place of TI's, each when settings.json names it.
 DEPENDENCIES := c90.exe cpp11.exe vm6747.exe vm6747sim.exe asm6x.exe masm.exe link.exe lnk6x.exe shalimar.exe c2s.exe \
        lib/shmrt-$(SHM_TARGET).a lib/shmrt-$(SHM_TARGET)-debug.a \
-       lib/shmrt-tms6747/Runtime.s lib/rts6x-tms6747/rts6x.lib
+       lib/shmrt-tms6747/Runtime.s lib/rts6x-tms6747/rts6x.lib lib/rts6x-tms6747/rts6xd.lib
 
 confirm: $(EDITOR)
 	@missing=0; \

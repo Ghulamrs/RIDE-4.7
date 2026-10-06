@@ -1173,14 +1173,14 @@ def solution_text(entries):
 
 def rts6x_vcxproj_text():
     """RTS6x on Windows: a Makefile project running its own build.cmd with the cpp11.exe and
-    asm6x.exe the solution has just built, then putting rts6x.lib and printf6x.lib in
+    asm6x.exe the solution has just built, then putting rts6x.lib and printf6x.lib, and their Debug
+    builds rts6xd.lib and printf6xd.lib, in
     lib\\rts6x-tms6747 beside the editor, where src/toolchain.cpp looks (5.1)."""
     command = ('set "CPP11=$(OutDir)cpp11.exe"\n'
                'set "ASM6X=$(OutDir)asm6x.exe"\n'
                'call "$(ProjectDir)build.cmd" || exit /b 1\n'
                'if not exist "$(OutDir)lib\\rts6x-tms6747" mkdir "$(OutDir)lib\\rts6x-tms6747"\n'
-               'copy /y "$(ProjectDir)build\\rts6x.lib" "$(OutDir)lib\\rts6x-tms6747\\rts6x.lib" || exit /b 1\n'
-               'copy /y "$(ProjectDir)build\\printf6x.lib" "$(OutDir)lib\\rts6x-tms6747\\printf6x.lib" || exit /b 1')
+               'for %%l in (rts6x rts6xd printf6x printf6xd) do copy /y "$(ProjectDir)build\\%%l.lib" "$(OutDir)lib\\rts6x-tms6747\\%%l.lib" || exit /b 1')
     configs = "".join(
         '    <ProjectConfiguration Include="%s|x64">\n'
         '      <Configuration>%s</Configuration>\n'
@@ -1379,12 +1379,13 @@ lnk6x:
 vm6747sim:
 	$(MAKE) -C $(SIM_DIR) BINDIR=$(OUT) OBJDIR=$(OUT)/obj/vm6747sim TARGET=$(OUT)/vm6747sim.exe
 
-# RTS6x is cpp11's and asm6x's output, so it waits for both, as shc waits for cpp11; its two
-# libraries go to lib/rts6x-tms6747, where the editor looks for them (src/toolchain.cpp).
+# RTS6x is cpp11's and asm6x's output, so it waits for both, as shc waits for cpp11; its libraries,
+# Release and Debug, go to lib/rts6x-tms6747, where the editor looks for them (src/toolchain.cpp).
 rts6x: cxx1 asm6x
 	$(MAKE) -C $(RTS_DIR) CPP11=$(OUT)/cpp11.exe ASM6X=$(OUT)/asm6x.exe OBJDIR=$(OUT)/obj/rts6x BINDIR=$(OUT)/obj/rts6x-bin
 	mkdir -p $(OUT)/lib/rts6x-tms6747
-	cp $(OUT)/obj/rts6x-bin/rts6x.lib $(OUT)/obj/rts6x-bin/printf6x.lib $(OUT)/lib/rts6x-tms6747/
+	cp $(OUT)/obj/rts6x-bin/rts6x.lib $(OUT)/obj/rts6x-bin/printf6x.lib \
+	   $(OUT)/obj/rts6x-bin/rts6xd.lib $(OUT)/obj/rts6x-bin/printf6xd.lib $(OUT)/lib/rts6x-tms6747/
 
 # The dependency, said the same way it is said in the other three: the editor
 # is built after the things it drives. Nothing of them ends up inside it.

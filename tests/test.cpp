@@ -5805,6 +5805,7 @@ void rts6xLinksTheOut() {
     if (!editor::path::exists(lnk)) missing += " lnk6x";
     if (!editor::path::exists(sim)) missing += " vm6747sim";
     if (!editor::path::exists(editor::path::join(rts, "rts6x.lib"))) missing += " rts6x.lib";
+    if (!editor::path::exists(editor::path::join(rts, "rts6xd.lib"))) missing += " rts6xd.lib";
     if (!missing.empty()) { std::printf("  (not here, so nothing is built:%s)\n", missing.c_str()); return; }
 
     file::path dir = file::temp_directory_path() / "ride-rts6x-run";
@@ -5832,17 +5833,22 @@ void rts6xLinksTheOut() {
 #else
     setenv("ASM6X", asm6x.c_str(), 1); setenv("VM6747SIM", sim.c_str(), 1); setenv("RTS6X", rts.c_str(), 1);
 #endif
-    std::string command = "\"" + ride + "\" \"" + (dir / "p").string() + "\" --simulate --config release" +
-                          " --cpp11 \"" + std::string(cxx1) + "\" --tilinker \"" + lnk + "\"";
-    std::string output;
-    int status = editor::runCaptured(command, output);
-    check(status == 0, "builds and runs on vm6747sim (status " + std::to_string(status) + "):\n" + output);
-    check(output.find("rts6x.lib") != std::string::npos, "lnk6x links against rts6x.lib:\n" + output);
-    check(output.find("rts6740") == std::string::npos, "and nothing of TI's runtime is named:\n" + output);
-    check(output.find("[linked ") != std::string::npos, "the .out is linked");
-    check(output.find("caught 21") != std::string::npos && output.find("caught 28") != std::string::npos,
-          "both exceptions are caught by RTS6x's unwinder:\n" + output);
-    check(output.find("sum 3 0.75") != std::string::npos, "and printf6x prints what the program computed:\n" + output);
+    // Release links rts6x.lib, built at -O2; Debug links rts6xd.lib, built at -O0 with _DEBUG.
+    const char* configs[2] = { "release", "debug" };
+    const char* libs[2] = { "rts6x.lib", "rts6xd.lib" };
+    for (int c = 0; c < 2; ++c) {
+        std::string command = "\"" + ride + "\" \"" + (dir / "p").string() + "\" --simulate --config " + configs[c] +
+                              " --cpp11 \"" + std::string(cxx1) + "\" --tilinker \"" + lnk + "\"";
+        std::string output, what = configs[c];
+        int status = editor::runCaptured(command, output);
+        check(status == 0, what + " builds and runs on vm6747sim (status " + std::to_string(status) + "):\n" + output);
+        check(output.find(std::string("objects, ") + libs[c]) != std::string::npos, what + ": lnk6x links against " + libs[c] + ":\n" + output);
+        check(output.find("rts6740") == std::string::npos, what + ": and nothing of TI's runtime is named:\n" + output);
+        check(output.find("[linked ") != std::string::npos, what + ": the .out is linked");
+        check(output.find("caught 21") != std::string::npos && output.find("caught 28") != std::string::npos,
+              what + ": both exceptions are caught by RTS6x's unwinder:\n" + output);
+        check(output.find("sum 3 0.75") != std::string::npos, what + ": and printf6x prints what the program computed:\n" + output);
+    }
     sayWhereHomeIs(homeWas);
     file::remove_all(dir);
 }

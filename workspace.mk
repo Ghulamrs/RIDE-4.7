@@ -114,12 +114,13 @@ lnk6x:
 vm6747sim:
 	$(MAKE) -C $(SIM_DIR) BINDIR=$(OUT) OBJDIR=$(OUT)/obj/vm6747sim TARGET=$(OUT)/vm6747sim.exe
 
-# RTS6x is cpp11's and asm6x's output, so it waits for both, as shc waits for cpp11; its two
-# libraries go to lib/rts6x-tms6747, where the editor looks for them (src/toolchain.cpp).
+# RTS6x is cpp11's and asm6x's output, so it waits for both, as shc waits for cpp11; its libraries,
+# Release and Debug, go to lib/rts6x-tms6747, where the editor looks for them (src/toolchain.cpp).
 rts6x: cxx1 asm6x
 	$(MAKE) -C $(RTS_DIR) CPP11=$(OUT)/cpp11.exe ASM6X=$(OUT)/asm6x.exe OBJDIR=$(OUT)/obj/rts6x BINDIR=$(OUT)/obj/rts6x-bin
 	mkdir -p $(OUT)/lib/rts6x-tms6747
-	cp $(OUT)/obj/rts6x-bin/rts6x.lib $(OUT)/obj/rts6x-bin/printf6x.lib $(OUT)/lib/rts6x-tms6747/
+	cp $(OUT)/obj/rts6x-bin/rts6x.lib $(OUT)/obj/rts6x-bin/printf6x.lib \
+	   $(OUT)/obj/rts6x-bin/rts6xd.lib $(OUT)/obj/rts6x-bin/printf6xd.lib $(OUT)/lib/rts6x-tms6747/
 
 # The dependency, said the same way it is said in the other three: the editor
 # is built after the things it drives. Nothing of them ends up inside it.

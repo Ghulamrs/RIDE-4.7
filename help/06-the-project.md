@@ -122,12 +122,14 @@ RIDE's defaults - reinstall to put it back.
 
 **A `.out` for the board.** The emulator runs the assembly; a file CCS can load
 onto a C6747 is linked against a run-time library. **By default that is RTS6x**,
-RIDE's own C6747 runtime, installed in `bin/lib/rts6x-tms6747` (`rts6x.lib`, and
-`printf6x.lib` for the printf family): RIDE's `asm6x` and `lnk6x` and RTS6x make
+RIDE's own C6747 runtime, installed in `bin/lib/rts6x-tms6747` in two builds -
+`rts6x.lib` at -O2 for a Release build and `rts6xd.lib` at -O0 with `_DEBUG` for a
+Debug one, with `printf6x.lib` and `printf6xd.lib` for the printf family alone.
+RIDE's `asm6x` and `lnk6x` and RTS6x make
 the `.out`, and nothing of TI's is on the link line - the console says
-`$ lnk6x N objects, rts6x.lib` and release builds end with
+`$ lnk6x N objects, rts6x.lib` (`rts6xd.lib` in Debug) and builds end with
 `[linked <program>.out]`. A CCS project's `libc.a` or `rts6740*` library is read
-as `rts6x.lib`. To link against TI's runtime instead, name TI's compiler
+as the configuration's RTS6x library. To link against TI's runtime instead, name TI's compiler
 directory under **Tools ▸ TI compiler for tms6747...** (`ti-cgt-c6000_x.y.z`, the
 one with `bin/lnk6x`) and a directory holding `rts6740_elf_eh.lib` - CCS ships
 only the build without exceptions; `bin/ti/ti-build` makes the other - or pass

@@ -499,7 +499,8 @@ Build build(const Toolchain& tool, ToolchainKind kind, const std::string& source
 
 namespace {
 
-void makeTiProgram(Built& result, const Toolchain& tool, const std::string& program, LineSink sink, void* context);
+void makeTiProgram(Built& result, const Toolchain& tool, const std::string& program, Configuration config,
+                   LineSink sink, void* context);
 
 Built buildProgramOnce(const Toolchain& tool, ToolchainKind kind, const std::string& sourcePath,
                        Language lang, const std::string& arch, Configuration config,
@@ -535,7 +536,7 @@ Built buildProgramOnce(const Toolchain& tool, ToolchainKind kind, const std::str
     }
     // Run on Simulator and Verify run the .out: a single file's build links one beside its .s (5.0).
     if (result.ok && tool.linkSingleFile && isEmulated(arch) && isEmulatedProgram(result.program))
-        makeTiProgram(result, tool, result.program.substr(0, result.program.size() - 2), sink, context);
+        makeTiProgram(result, tool, result.program.substr(0, result.program.size() - 2), config, sink, context);
     return result;
 }
 
@@ -604,7 +605,8 @@ std::vector<std::string> assemblyIn(const std::string& dir) {
 // **A tms6747 build makes a real TI program too.** The emulator runs the assembly in <program>.vm;
 // with asm6x beside the editor each .s becomes a TI object, and with TI's compiler directory named
 // under Tools lnk6x links them into <program>.out for the board. A refusal or a failed link fails the build: what the emulator runs must be a TI program.
-void makeTiProgram(Built& result, const Toolchain& tool, const std::string& program, LineSink sink, void* context) {
+void makeTiProgram(Built& result, const Toolchain& tool, const std::string& program, Configuration config,
+                   LineSink sink, void* context) {
     if (!result.ok) return;
     std::string as = c6xAssembler();
     if (as.empty()) return;
@@ -694,7 +696,9 @@ void makeTiProgram(Built& result, const Toolchain& tool, const std::string& prog
     }
     // the exception-handling build of TI's runtime where there is one (CCS
     // ships the other; the C++ programs need this one), else the shipped one
-    std::string rts = rts6x ? "rts6x.lib" : eh ? "rts6740_elf_eh.lib" : "rts6740_elf.lib";
+    // RTS6x comes in two: rts6x.lib built at -O2 for a Release build, rts6xd.lib at -O0 with _DEBUG for a Debug one.
+    const std::string ours6x = config == ConfigDebug ? "rts6xd.lib" : "rts6x.lib";
+    std::string rts = rts6x ? ours6x : eh ? "rts6740_elf_eh.lib" : "rts6740_elf.lib";
     std::string out = program;
     if (out.size() > 4 && out.compare(out.size() - 4, 4, ".exe") == 0) out.resize(out.size() - 4);
     out += ".out";
@@ -719,10 +723,12 @@ void makeTiProgram(Built& result, const Toolchain& tool, const std::string& prog
         link += " --rom_model";
     for (size_t i = 0; i < objects.size(); ++i) link += " " + q(objects[i]);
     if (given.given && !given.libraries.empty()) {
-        // With RTS6x a project's TI runtime - libc.a, read as rts6740_elf_eh.lib, or either rts6740 - is rts6x.lib.
+        // With RTS6x a project's TI runtime - libc.a, read as rts6740_elf_eh.lib, or either rts6740 - is RTS6x's
+        // for the configuration, rts6x.lib or rts6xd.lib; a project naming rts6x.lib itself gets the same choice.
         std::vector<std::string> libs = given.libraries;
         for (size_t i = 0; rts6x && i < libs.size(); ++i)
-            if (libs[i] == "libc.a" || libs[i].compare(0, 7, "rts6740") == 0) libs[i] = "rts6x.lib";
+            if (libs[i] == "libc.a" || libs[i].compare(0, 7, "rts6740") == 0 || libs[i] == "rts6x.lib" || libs[i] == "rts6xd.lib")
+                libs[i] = ours6x;
         rts = libs[0];
         for (size_t i = 0; i < libs.size(); ++i) link += " -l " + libs[i];
     } else {
@@ -823,7 +829,7 @@ Built buildTargetOnce(const Toolchain& tool, ToolchainKind kind,
     for (size_t i = 0; i < result.leftovers.size(); ++i)
         std::remove(result.leftovers[i].c_str());
     result.leftovers.clear();
-    if (isEmulated(arch)) makeTiProgram(result, tool, program, sink, context);
+    if (isEmulated(arch)) makeTiProgram(result, tool, program, config, sink, context);
     return result;
 }
 
@@ -919,7 +925,7 @@ Built buildPartsOnce(const Toolchain& tool, const std::vector<Part>& parts,
         result.ok = true;
         for (size_t i = 0; i < parts.size(); ++i)
             if (toolchainOf(tool, parts[i]) == ToolShc) result.shalimar = true;
-        makeTiProgram(result, tool, program, sink, context);
+        makeTiProgram(result, tool, program, config, sink, context);
         return result;
     }
 
