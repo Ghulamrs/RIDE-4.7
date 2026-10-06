@@ -1,6 +1,6 @@
 @echo off
 setlocal
-rem  The product's name, once, as product.props and the .iss spell it.
+rem  The product's name, once, as product.props and make-setup.ps1 spell it.
 set "PRODUCT=RIDE"
 set SRC=%~1
 set CPP=%~2
@@ -16,8 +16,11 @@ mkdir "%STAGE%\bin" "%STAGE%\bin\lib"
 for %%f in (%PRODUCT%.exe %PRODUCT%Console.exe c90.exe cpp11.exe shalimar.exe vm6747.exe vm6747sim.exe asm6x.exe masm.exe link.exe lnk6x.exe c2s.exe) do (
   if exist "%BIN%\%%f" copy /y "%BIN%\%%f" "%STAGE%\bin\" >nul
 )
+rem The command prompt with bin on PATH: the setup changes no PATH of its own.
+copy /y "%SRC%\packaging\windows\ride-prompt.cmd" "%STAGE%\bin\" >nul
 if exist "%BIN%\lib\*.lib" copy /y "%BIN%\lib\*.lib" "%STAGE%\bin\lib\" >nul
 if exist "%BIN%\lib\shmrt-tms6747" xcopy /e /i /q "%BIN%\lib\shmrt-tms6747" "%STAGE%\bin\lib\shmrt-tms6747" >nul
+if exist "%BIN%\lib\rts6x-tms6747" xcopy /e /i /q "%BIN%\lib\rts6x-tms6747" "%STAGE%\bin\lib\rts6x-tms6747" >nul
 rem include\ is cpp11's - its C++ headers and the C ones they wrap, in one
 rem directory; lib\ is c90's. Each compiler looks one directory above its
 rem bin\ for its own, and settings.json beside them says so for the editor.

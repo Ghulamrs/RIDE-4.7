@@ -2,7 +2,7 @@
 
 // **The product's name, once.** Every name the editor shows or leaves on a disk is made from
 // these; the programs' own file names come from the build - PRODUCT in the Makefiles, RideProduct
-// in product.props, Product in the .iss - spelled the same. A rename is these lines, those three, and a search of the prose.
+// in product.props, $Product in packaging/windows/make-setup.ps1 - spelled the same. A rename is these lines, those three, and a search of the prose.
 
 namespace editor {
 namespace product {

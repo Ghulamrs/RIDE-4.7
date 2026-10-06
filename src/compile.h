@@ -102,6 +102,8 @@ struct LinkerChoice {
     std::string say;
 };
 
+// RIDE's own lnk6x, for a link against RTS6x: settings.json's, else the one beside the editor.
+LinkerChoice ourLinker();
 LinkerChoice tiLinker(const std::string& chosen, const std::string& named,
                       const std::string& tiDir);
 

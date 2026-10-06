@@ -27,7 +27,8 @@ LNK6x:LNK6X
 LINK:LINK
 MASM:MASM
 Converter-C2S:Converter-C2S
-VM6747-sim:VM6747-sim"
+VM6747-sim:VM6747-sim
+RTS6x:RTS6x"
 
 mkdir -p "$W"
 say "RIDE $VER release in $W"

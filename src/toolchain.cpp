@@ -330,6 +330,17 @@ std::string shalimarRuntimeDir() {
     return path::isDirectory(dir) ? dir : std::string();
 }
 
+// RTS6x for a TI program: the directory beside the editor whose rts6x.lib lnk6x links against
+// when TI's own compiler directory is not named (5.1). Empty where it is not there.
+std::string rts6xRuntimeDir() {
+    const char* fromEnv = std::getenv("RTS6X");
+    std::string dir;
+    if (fromEnv && *fromEnv) dir = fromEnv;
+    else if (!path::programDirectory().empty())
+        dir = path::join(path::join(path::programDirectory(), "lib"), "rts6x-tms6747");
+    return !dir.empty() && path::exists(path::join(dir, "rts6x.lib")) ? dir : std::string();
+}
+
 /*  **The project's run arguments go last, after everything the emulated
  *  target needs first.** For a native program that is simply the program and
  *  its arguments; for a .s or a .vm it is the emulator, the program, the

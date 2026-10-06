@@ -51,6 +51,7 @@ LINK_DIR="$ROOT\\LINK"
 LNK6X_DIR="$ROOT\\LNK6x"
 C2S_DIR="$ROOT\\Converter-C2S"
 SIM_DIR="$ROOT\\VM6747-sim"
+RTS_DIR="$ROOT\\RTS6x"
 WHAT="${1:-check}"
 # A directory of its own: to-windows.sh and to-linux.sh name their archives
 # alike, and run at once they overwrote each other's (a truncated tar).
@@ -99,6 +100,9 @@ tar --no-mac-metadata \
 # vm6747sim: the C6747 simulator (5.0), beside this checkout as ../VM6747-sim; RIDE.sln builds it.
 ( cd ../VM6747-sim && tar --no-mac-metadata --exclude '* 2.*' --exclude '*.exe' --exclude 'build' --exclude 'oracle/ship' \
     -czf "$TMP/vm6747sim-src.tgz" src tests msvc vm6747sim.vcxproj Makefile README.md ) || exit 2
+# rts6x: the C6747 runtime (5.1), beside this checkout as ../RTS6x; RIDE.sln builds it with build.cmd.
+( cd ../RTS6x && tar --no-mac-metadata --exclude '* 2.*' --exclude 'build' \
+    -czf "$TMP/rts6x-src.tgz" src tests tools docs Makefile build.cmd printf6x.members rts6x.vcxproj README.md ) || exit 2
 # c2s: the converter, beside this checkout as ../Converter-C2S; RIDE.sln builds it, so a fresh root needs it.
 ( cd ../Converter-C2S && tar --no-mac-metadata --exclude '* 2.*' --exclude '*.exe' --exclude 'obj' \
     -czf "$TMP/c2s-src.tgz" src tests c2s.vcxproj Makefile README.md ) || exit 2
@@ -110,7 +114,7 @@ tar --no-mac-metadata \
 say "copying to $BOX:$DIR and $VM_ROOT"
 # One directory per call: in cmd, `if not exist X mkdir X & if ...` makes the
 # second `if` part of the first one's body, so it runs only when X was missing.
-for d in "$DIR" "$CC1I_DIR" "$CXX1_DIR" "$SHCI_DIR" "$EMU_DIR" "$ASM_DIR" "$MASM_DIR" "$LINK_DIR" "$LNK6X_DIR" "$C2S_DIR" "$SIM_DIR"; do
+for d in "$DIR" "$CC1I_DIR" "$CXX1_DIR" "$SHCI_DIR" "$EMU_DIR" "$ASM_DIR" "$MASM_DIR" "$LINK_DIR" "$LNK6X_DIR" "$C2S_DIR" "$SIM_DIR" "$RTS_DIR"; do
   ssh -n "$BOX" "if not exist \"$d\" mkdir \"$d\"" || exit 2
 done
 scp -q "$TMP/ride-src.tgz" "$BOX:$DIR\\ride-src.tgz" || exit 2
@@ -123,6 +127,7 @@ scp -q "$TMP/link-src.tgz" "$BOX:$LINK_DIR\\link-src.tgz" || exit 2
 scp -q "$TMP/lnk6x-src.tgz" "$BOX:$LNK6X_DIR\\lnk6x-src.tgz" || exit 2
 scp -q "$TMP/c2s-src.tgz" "$BOX:$C2S_DIR\\c2s-src.tgz" || exit 2
 scp -q "$TMP/vm6747sim-src.tgz" "$BOX:$SIM_DIR\\vm6747sim-src.tgz" || exit 2
+scp -q "$TMP/rts6x-src.tgz" "$BOX:$RTS_DIR\\rts6x-src.tgz" || exit 2
 scp -q "$TMP/shalimar-src.tgz" "$BOX:$SHCI_DIR\\shalimar-src.tgz" || exit 2
 
 # ---- the script that does the work there -----------------------------------
@@ -142,7 +147,7 @@ BIN="$DIR\\bin"
   # hand-run experiments that are not ours.
   for pair in "$DIR ride" "$CC1I_DIR c90" "$CXX1_DIR cxx1" \
               "$EMU_DIR vm6747" "$ASM_DIR asm6x" "$MASM_DIR masm" "$LINK_DIR link" \
-              "$LNK6X_DIR lnk6x" "$SHCI_DIR shalimar" "$C2S_DIR c2s" "$SIM_DIR vm6747sim"; do
+              "$LNK6X_DIR lnk6x" "$SHCI_DIR shalimar" "$C2S_DIR c2s" "$SIM_DIR vm6747sim" "$RTS_DIR rts6x"; do
     set -- $pair
     printf 'cd /d "%s" || exit /b 2\r\n' "$1"
     printf 'if exist tests rmdir /s /q tests\r\n'

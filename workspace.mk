@@ -33,6 +33,8 @@ LINK_DIR ?= ../LINK
 LNK6X_DIR ?= ../LNK6x
 # 5.0: the C6747 simulator, which runs a linked .out as TI's does, beside the emulator.
 SIM_DIR ?= ../VM6747-sim
+# 5.1: RTS6x, the project's own C6747 runtime, which a TI program links against instead of TI's.
+RTS_DIR ?= ../RTS6x
 
 # ---- one directory, named once and given to all four ------------------------
 #
@@ -63,7 +65,7 @@ SIM_DIR ?= ../VM6747-sim
 BINDIR ?= $(CURDIR)/bin
 OUT := $(abspath $(BINDIR))
 
-.PHONY: all cc1 cxx1 vm6747 vm6747sim asm6x masm link lnk6x shc c2s editor confirm installer bin check clean
+.PHONY: all cc1 cxx1 vm6747 vm6747sim asm6x masm link lnk6x rts6x shc c2s editor confirm installer bin check clean
 
 # `installer`, which comes after `confirm`: a workspace build checks that what the
 # editor drives is beside it, and then packages it (2026-10-05).
@@ -112,9 +114,16 @@ lnk6x:
 vm6747sim:
 	$(MAKE) -C $(SIM_DIR) BINDIR=$(OUT) OBJDIR=$(OUT)/obj/vm6747sim TARGET=$(OUT)/vm6747sim.exe
 
+# RTS6x is cpp11's and asm6x's output, so it waits for both, as shc waits for cpp11; its two
+# libraries go to lib/rts6x-tms6747, where the editor looks for them (src/toolchain.cpp).
+rts6x: cxx1 asm6x
+	$(MAKE) -C $(RTS_DIR) CPP11=$(OUT)/cpp11.exe ASM6X=$(OUT)/asm6x.exe OBJDIR=$(OUT)/obj/rts6x BINDIR=$(OUT)/obj/rts6x-bin
+	mkdir -p $(OUT)/lib/rts6x-tms6747
+	cp $(OUT)/obj/rts6x-bin/rts6x.lib $(OUT)/obj/rts6x-bin/printf6x.lib $(OUT)/lib/rts6x-tms6747/
+
 # The dependency, said the same way it is said in the other three: the editor
 # is built after the things it drives. Nothing of them ends up inside it.
-editor: cc1 cxx1 vm6747 vm6747sim asm6x masm link lnk6x shc c2s
+editor: cc1 cxx1 vm6747 vm6747sim asm6x masm link lnk6x rts6x shc c2s
 	$(MAKE) BINDIR=$(OUT) OBJDIR=$(OUT)/obj/editor
 
 # Asked of RIDE rather than answered here. The editor is the thing that

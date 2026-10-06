@@ -4,9 +4,9 @@
 #
 #  Steps: compile every compiler + the RIDE editor (make -f workspace.mk),
 #  (re)generate the HTML docs, stage the install tree, and package it as a
-#  .tar.gz.  Inno Setup is Windows-only, so on these platforms the deliverable
-#  is a relocatable tarball (unpack and run bin/RIDE); use build-installer.bat
-#  on Windows for a real setup.exe.
+#  .tar.gz.  The .msi is Windows-only (a Visual Studio setup project), so here
+#  the deliverable is a relocatable tarball (unpack and run bin/RIDE); use
+#  build-installer.bat on Windows for RIDE-<ver>.msi.
 #
 #  Usage:   ./build-installer.sh [5.0]
 #  Env overrides (optional):
@@ -76,6 +76,7 @@ for f in "$ROOT"/bin/*; do
 done
 cp -f "$ROOT"/bin/lib/*.a "$STAGE/bin/lib/" 2>/dev/null || true
 [ -d "$ROOT/bin/lib/shmrt-tms6747" ] && cp -rf "$ROOT/bin/lib/shmrt-tms6747" "$STAGE/bin/lib/"
+[ -d "$ROOT/bin/lib/rts6x-tms6747" ] && cp -rf "$ROOT/bin/lib/rts6x-tms6747" "$STAGE/bin/lib/"
 # include/ is cpp11's - its C++ headers and the C ones they wrap, in one
 # directory; lib/ is c90's. Each compiler looks one directory above its bin/
 # for its own, and settings.json beside them says so for the editor.

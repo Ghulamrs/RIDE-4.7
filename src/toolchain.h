@@ -122,6 +122,8 @@ std::string tiProgramOf(const std::string& program);
 std::string simulateCommand(const std::string& out);
 // The directory of runtime assembly a Shalimar program needs on the emulator.
 std::string shalimarRuntimeDir();
+// RTS6x, the project's own C6747 runtime: lib/rts6x-tms6747 beside the editor, holding rts6x.lib (or $RTS6X).
+std::string rts6xRuntimeDir();
 // Where a project's program goes for the emulated target: <program>.vm, a directory of assembly, the Windows .exe dropped.
 std::string emulatedProgram(const std::string& program);
 

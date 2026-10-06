@@ -2,7 +2,7 @@
 rem The release build, Windows: every program compiled from a fresh git checkout, the installer last.
 rem git is the source of record, so nothing of a working tree reaches a release; one run, one set of build times.
 rem
-rem   release.cmd [version]   -> %RELEASE_DIR%\<stamp>\RIDE-<ver>\dist\RIDE-<ver>-setup.exe and RELEASE.txt beside it
+rem   release.cmd [version]   -> %RELEASE_DIR%\<stamp>\RIDE-<ver>\dist\RIDE-<ver>.msi and RELEASE.txt beside it
 rem
 rem What is final is each repository's default branch on GitHub (main or master), never a
 rem side branch: VM6747's Compiler-Cppi is taken at the head of its own default branch, not at the commit pinned.
@@ -27,6 +27,7 @@ call :clone LINK LINK || exit /b 1
 call :clone MASM MASM || exit /b 1
 call :clone Converter-C2S Converter-C2S || exit /b 1
 call :clone VM6747-sim VM6747-sim || exit /b 1
+call :clone RTS6x RTS6x || exit /b 1
 rem The submodule at the head of its default branch, which .gitmodules names, with the pin recorded beside it.
 for /f "tokens=3" %%h in ('git -C "%W%\VM6747" ls-tree HEAD Compiler-Cppi') do set "PIN=%%h"
 %GIT% -C "%W%\VM6747" submodule -q update --init --remote Compiler-Cppi || exit /b 1
@@ -44,7 +45,7 @@ if errorlevel 1 (
   if errorlevel 1 (type "%W%\SEALS.txt" & echo release.cmd: the sources do not match their seals - reseal, commit, push, run again & exit /b 1)
 )
 
-echo [2/3] Every program, then the installer - RIDE.sln, whose Installer project comes last
+echo [2/3] Every program by RIDE.sln, then the installer - its setup project, built by devenv after staging
 set "R=%W%\RIDE-%VER%"
 set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
 rem Through a file, as build.bat does: for /f cannot run a quoted path that has a space in it.
@@ -54,13 +55,14 @@ set /p VSPATH=<"%TEMP%\ride-release-vspath.txt"
 del "%TEMP%\ride-release-vspath.txt"
 if "%VSPATH%"=="" (echo could not find Visual Studio 2022 & exit /b 1)
 call "%VSPATH%\VC\Auxiliary\Build\vcvars64.bat" >nul
-set "RIDE_NO_INSTALLER="
 pushd "%R%"
 msbuild RIDE.sln /p:Configuration=Release /p:Platform=x64 /p:OutDir=%R%\bin\ /v:minimal /m
 set "RC=%errorlevel%"
 popd
 if not "%RC%"=="0" (echo BUILD FAILED & exit /b 1)
-set "PRODUCT=%R%\dist\RIDE-%VER%-setup.exe"
+call "%R%\packaging\windows\build-installer.bat" %VER% from-solution "%R%\bin"
+if errorlevel 1 (echo INSTALLER FAILED & exit /b 1)
+set "PRODUCT=%R%\dist\RIDE-%VER%.msi"
 if not exist "%PRODUCT%" (echo release.cmd: no %PRODUCT% & exit /b 1)
 
 echo [3/3] Done

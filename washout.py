@@ -16,7 +16,8 @@ which the macOS window's project copies into RIDE.app and cannot build without.
 RIDE's projects/ and programs/ go as their sources (2026-10-02), the CCS
 samples' .project, .cproject and .ccsproject with them, and the installers'
 settings.json. **And the installer project of every target** (2026-10-05): packaging/ whole - Windows'
-Installer.vcxproj with build-installer.bat, stage.cmd and the Inno script, the Xcode workspace's
+setup project (Installer.vdproj and Installer.sln, a Visual Studio Installer Projects 2022 project
+since 2026-10-07, Inno retired) with build-installer.bat, stage.cmd and make-setup.ps1, the Xcode workspace's
 Installer.xcodeproj with build-pkg.sh, Linux's build-run.sh and install-header.sh - with workspace.mk and each
 project's Makefile, which the macOS and Linux installers build through, and docs/ and README.md, which every
 installer ships. Nothing else goes: no test, seal or other script. A source directory keeps only
@@ -37,11 +38,14 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 # help/, projects/ and programs/ because the macOS window's project copies them into
 # RIDE.app as it builds, and fails without them; the Windows projects do not use them.
 # packaging/, workspace.mk, the Makefile, docs/ and README.md: the installer projects of the three targets,
-# what they build through and what they ship (2026-10-05).
+# what they build through and what they ship (2026-10-05). The Windows setup project is named outright
+# (2026-10-07): RIDE.sln lists it, so a washed copy without it opens with a project missing.
 RIDE_PLAN = (os.path.basename(ROOT), ["Editor.xcodeproj", "RIDE.xcworkspace", "help", "projects", "programs",
                                       "packaging", "docs"],
              ["src", "macos", "winforms"],
-             ["RIDE.sln", "RIDEConsole.vcxproj", "product.props", "workspace.mk", "Makefile", "README.md"])
+             ["RIDE.sln", "RIDEConsole.vcxproj", "product.props", "workspace.mk", "Makefile", "README.md",
+              "packaging/windows/Installer.vdproj", "packaging/windows/Installer.sln",
+              "packaging/windows/make-setup.ps1"])
 WORKSPACE = [
     ("../VM6747/Compiler-Ci", ["ide", "lib", "msvc/compat"], ["src"], ["Makefile"]),
     ("../VM6747/Compiler-Cppi", ["ide", "lib", "include", "msvc/compat"], ["src"], ["Makefile"]),
@@ -53,11 +57,13 @@ WORKSPACE = [
     ("../MASM", ["masm.xcodeproj"], ["src"], ["masm.vcxproj", "Makefile"]),
     ("../LINK", ["link.xcodeproj"], ["src"], ["link.vcxproj", "Makefile"]),
     ("../LNK6x", ["lnk6x.xcodeproj"], ["src"], ["lnk6x.vcxproj", "Makefile"]),
+    # The C6000 run-time (5.1): its sources, assembly included, and the ar6x that packs them.
+    ("../RTS6x", [], ["src", "tools/ar6x"], ["rts6x.vcxproj", "Makefile", "build.cmd", "printf6x.members"]),
 ]
 
 # What a source directory keeps: source, and the project files kept beside it (macos/Window.xcodeproj).
-SOURCE_EXT = {".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".inc", ".m", ".mm", ".rc", ".def",
-              ".manifest", ".plist", ".ico", ".icns", ".props", ".sln", ".vcxproj", ".filters",
+SOURCE_EXT = {".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".inc", ".s", ".m", ".mm", ".rc", ".def",
+              ".manifest", ".plist", ".ico", ".icns", ".props", ".sln", ".vcxproj", ".vdproj", ".filters",
               ".pbxproj", ".xcworkspacedata", ".xcscheme", ".xcsettings"}
 
 BINARY_EXT = {".exe", ".com", ".obj", ".o", ".lib", ".a", ".dll", ".dylib", ".so", ".pdb",
@@ -124,6 +130,8 @@ def wash(project, dest, dirs, files, sources=()):
     kept, dropped = 0, []
     wanted = [(r, False) for r in candidates(project, dirs, files)] + \
              [(r, True) for r in candidates(project, sources, [])]
+    seen = set()                         # a named file inside a whole directory is listed twice: once
+    wanted = [w for w in wanted if not (w[0] in seen or seen.add(w[0]))]
     for rel, filtered in wanted:
         rel_posix = rel.replace(os.sep, "/")
         if known is not None and rel_posix not in known:

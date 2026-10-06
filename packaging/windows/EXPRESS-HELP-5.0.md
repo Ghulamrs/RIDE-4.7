@@ -10,7 +10,7 @@ quick reference; the full pages are under `help/`.
 
 | System  | Installer                          | Window (GUI)        | Console editor              |
 |---------|------------------------------------|---------------------|-----------------------------|
-| Windows | `RIDE-5.0-setup.exe`               | `RIDE.exe`          | `RIDEConsole.exe`           |
+| Windows | `RIDE-5.0.msi`                     | `RIDE.exe`          | `RIDEConsole.exe`           |
 | macOS   | `RIDE-5.0-macos.pkg` (macOS 12+, Apple silicon) | **RIDE 5.0** in Applications | `ride-5.0` and `ride` (in `/usr/local/bin`) |
 | Linux   | `RIDE-5.0-linux-x86_64.run` (Ubuntu 22.04+, Debian 12, RHEL 9, Amazon Linux 2023) | - | `ride-5.0` and `ride` |
 

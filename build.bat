@@ -26,7 +26,7 @@ rem _CRT_SECURE_NO_WARNINGS is defined for the same reason cc1's own project
 rem defines it: getenv and strerror are standard C++17, and MSVC's objection to
 rem them is house policy rather than a defect to go and fix.
 setlocal
-rem The product's name, once, as product.props, the Makefile and the .iss spell it.
+rem The product's name, once, as product.props, the Makefile and make-setup.ps1 spell it.
 set "PRODUCT=RIDE"
 set "PRODUCT_LOWER=ride"
 
@@ -140,7 +140,7 @@ rem box with both archives and no directory confirmed clean while a Shalimar
 rem program for the emulator had nothing to run beside.
 if "%BINDIR%"=="" set BINDIR=bin
 set MISSING=0
-for %%f in (c90.exe cpp11.exe vm6747.exe asm6x.exe masm.exe link.exe lnk6x.exe shalimar.exe c2s.exe lib\shmrt-x86_64-windows.lib lib\shmrt-x86_64-windows-debug.lib lib\shmrt-tms6747\Runtime.s) do (
+for %%f in (c90.exe cpp11.exe vm6747.exe asm6x.exe masm.exe link.exe lnk6x.exe shalimar.exe c2s.exe lib\shmrt-x86_64-windows.lib lib\shmrt-x86_64-windows-debug.lib lib\shmrt-tms6747\Runtime.s lib\rts6x-tms6747\rts6x.lib) do (
    if exist "%BINDIR%\%%f" (echo   ok       %%f) else (echo   MISSING  %%f& set MISSING=1)
 )
 if "%MISSING%"=="1" (
@@ -223,6 +223,7 @@ if exist "%BINDIR%\lib\*.lib" (
 rem And the C6000 runtime directory, which the emulator takes beside a
 rem Shalimar program; the editor looks for it in lib/ beside itself.
 if exist "%BINDIR%\lib\shmrt-tms6747" xcopy /e /i /q "%BINDIR%\lib\shmrt-tms6747" "%PRODUCT_DIR%\bin\lib\shmrt-tms6747" >nul
+if exist "%BINDIR%\lib\rts6x-tms6747" xcopy /e /i /q "%BINDIR%\lib\rts6x-tms6747" "%PRODUCT_DIR%\bin\lib\rts6x-tms6747" >nul
 copy /y README.md "%PRODUCT_DIR%\" >nul
 rem The samples: projects\ (each in its folder, the CCS ones in ccs\) and programs\
 rem (single files, with the headers they include). There is no examples\ since 03-10-2026.

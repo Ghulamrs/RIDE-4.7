@@ -32,6 +32,7 @@ PROJECTS = [
     ("link", "../LINK", "link-1.0.dat"),
     ("lnk6x", "../LNK6x", "lnk6x-1.0.dat"),
     ("vm6747sim", "../VM6747-sim", "vm6747sim-1.0.dat"),
+    ("rts6x", "../RTS6x", "rts6x-1.0.dat"),
 ]
 
 

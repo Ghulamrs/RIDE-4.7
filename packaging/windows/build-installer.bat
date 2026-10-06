@@ -4,7 +4,8 @@ rem ===========================================================================
 rem  build-installer.bat - build RIDE end to end and produce its Windows setup.
 rem
 rem  Steps: compile every compiler project + the RIDE editor, (re)generate the
-rem  HTML docs, stage the install tree, and compile the Inno Setup installer.
+rem  HTML docs, stage the install tree, and build the Visual Studio setup project
+rem  (packaging\windows\Installer.vdproj) into %OUT%\RIDE-<ver>.msi.
 rem
 rem  Usage:   build-installer.bat [5.0]
 rem  Env overrides (all optional):
@@ -12,19 +13,19 @@ rem     CPP    the C++ compiler clone that carries include\ and lib\ headers
 rem            (default: <repo>\..\VM6747\Compiler-Cppi, else <repo>\..\Compiler-Cpp)
 rem     CC     the C compiler clone whose lib\ holds c90's headers
 rem            (default: <CPP>\..\Compiler-Ci)
-rem     OUT    output directory for the stage tree and the setup.exe
+rem     OUT    output directory for the stage tree and the .msi
 rem            (default: <repo>\dist)
-rem     ISCC   full path to Inno Setup's ISCC.exe (auto-detected otherwise)
 rem
 rem  Run it from anywhere; paths are resolved from the script's own location.
-rem  Requires: Visual Studio 2022 build tools (build.bat finds them) and Inno
-rem  Setup 6. Python is optional - if absent, the committed HTML docs are used.
+rem  Requires: Visual Studio 2022 with the Microsoft Visual Studio Installer Projects
+rem  2022 extension (devenv builds a .vdproj; MSBuild cannot). Python is optional -
+rem  if absent, the committed HTML docs are used.
 rem ===========================================================================
 
-rem  The product's name, once, as product.props, the Makefile and the .iss spell it.
+rem  The product's name, once, as product.props, the Makefile and make-setup.ps1 spell it.
 set "PRODUCT=RIDE"
 set "VER=%~1"
-rem "from-solution <OutDir>": RIDE.sln's Installer project, after every other project built into OutDir.
+rem "from-solution <OutDir>": every project of RIDE.sln already built into OutDir, by release.cmd's msbuild.
 set "FROMSLN="
 set "BINSRC="
 if /i "%~2"=="from-solution" (set "FROMSLN=1" & set "BINSRC=%~f3")
@@ -51,11 +52,8 @@ if "%BINSRC%"=="" set "BINSRC=%ROOT%\bin"
 if "%FROMSLN%"=="1" (echo [1/6] Built by RIDE.sln into %BINSRC% - not built again & pushd "%ROOT%" & goto :built)
 echo [1/6] Building the compilers and the RIDE editor (build.bat solution) ...
 pushd "%ROOT%"
-rem The solution's own Installer project steps aside: this script packages after its build.
-set "RIDE_NO_INSTALLER=1"
 call "%ROOT%\build.bat" solution
 set "BUILDRC=%errorlevel%"
-set "RIDE_NO_INSTALLER="
 if not "%BUILDRC%"=="0" (echo   BUILD FAILED & popd & exit /b 1)
 :built
 rem  **The window must start before it is shipped.** It is mixed-mode, and a
@@ -91,14 +89,24 @@ rem The release record, last: every program in bin by CRC-32 and size, which Abo
 "%STAGE%\bin\RIDEConsole.exe" --release-record "%STAGE%\bin"
 if errorlevel 1 (echo   RELEASE RECORD FAILED & exit /b 1)
 
-echo [5/6] Compiling the installer (Inno Setup) ...
-if "%ISCC%"=="" set "ISCC=%LOCALAPPDATA%\Programs\Inno Setup 6\ISCC.exe"
-if not exist "%ISCC%" set "ISCC=C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
-if not exist "%ISCC%" (echo   ISCC.exe not found - set ISCC=... & exit /b 1)
-"%ISCC%" /DStage="%STAGE%" /DOutDir="%OUT%" "%HERE%%PRODUCT%-%VER%.iss"
-if errorlevel 1 (echo   INNO FAILED & exit /b 1)
+echo [5/6] Building the installer (Visual Studio setup project) ...
+rem The .vdproj lists every file and has no wildcard, so it is written from the stage now.
+powershell -NoProfile -ExecutionPolicy Bypass -File "%HERE%make-setup.ps1" "%STAGE%" %VER%
+if errorlevel 1 (echo   make-setup.ps1 FAILED & exit /b 1)
+set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
+"%VSWHERE%" -latest -products * -version "[17.0,18.0)" -property productPath > "%TEMP%\ride-devenv.txt"
+set "DEVENV="
+set /p DEVENV=<"%TEMP%\ride-devenv.txt"
+del "%TEMP%\ride-devenv.txt"
+rem productPath is devenv.exe; devenv.com beside it writes the build to this console.
+if not "%DEVENV%"=="" set "DEVENV=%DEVENV:~0,-4%.com"
+if not exist "%DEVENV%" (echo   devenv.com of Visual Studio 2022 not found & exit /b 1)
+if exist "%HERE%Release\%PRODUCT%-%VER%.msi" del "%HERE%Release\%PRODUCT%-%VER%.msi"
+"%DEVENV%" "%HERE%Installer.sln" /build Release
+if not exist "%HERE%Release\%PRODUCT%-%VER%.msi" (echo   SETUP PROJECT FAILED - is the Installer Projects 2022 extension installed? & exit /b 1)
+copy /y "%HERE%Release\%PRODUCT%-%VER%.msi" "%OUT%\" >nul
 
-echo [6/6] Done.  %OUT%\%PRODUCT%-%VER%-setup.exe
+echo [6/6] Done.  %OUT%\%PRODUCT%-%VER%.msi
 exit /b 0
 
 rem ---- HTML docs ------------------------------------------------------------

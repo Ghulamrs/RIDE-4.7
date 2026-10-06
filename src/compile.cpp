@@ -647,30 +647,34 @@ void makeTiProgram(Built& result, const Toolchain& tool, const std::string& prog
     for (size_t i = 0; i < sources.size(); ++i)
         objects.push_back(sources[i].substr(0, sources[i].size() - 2) + ".obj");
 
-    std::string ti = settings::ti();
+    // **RTS6x unless TI's own compiler directory is named under Tools** (5.1): RIDE's lnk6x against
+    // rts6x.lib beside the editor, so nothing of TI's is on the link line; a CCS found, not named, does not count.
+    const std::string named = settings::namedTi(), ours = rts6xRuntimeDir();
+    const bool rts6x = named.empty() && !ours.empty();
+    std::string ti = rts6x ? std::string() : settings::ti();
     const std::string made = "[" + std::to_string(objects.size()) + " TI objects made; a .out needs TI's linker";
-    if (ti.empty()) {
+    if (!rts6x && ti.empty()) {
         if (sink) sink(context, made + ", named under Tools]");
         return;
     }
     // A CCS found rather than named ships rts6740_elf.lib alone, and these objects want the
     // unwind personality only rts6740_elf_eh.lib has - so without one in reach, stop at objects.
-    std::string lib = path::join(ti, "lib"), extra = settings::tilib();
-    const bool eh = path::exists(path::join(lib, "rts6740_elf_eh.lib")) ||
+    std::string lib = rts6x ? ours : path::join(ti, "lib"), extra = rts6x ? std::string() : settings::tilib();
+    const bool eh = rts6x || path::exists(path::join(lib, "rts6740_elf_eh.lib")) ||
                     (!extra.empty() && path::exists(path::join(extra, "rts6740_elf_eh.lib")));
-    if (!eh && settings::namedTi().empty()) {
+    if (!eh && named.empty()) {
         if (sink) sink(context, made + " and rts6740_elf_eh.lib, named under Tools - " + ti + " has only rts6740_elf.lib]");
         return;
     }
     // The project's own C6000 linker where one is named, TI's otherwise; the runtime and the
     // command file are TI's either way. See settings::tilinker and tiLinker, which also says when
     // a linker that was named has gone, so that TI's standing in for it is never silent.
-    LinkerChoice choice = tiLinker(settings::tilinker(), settings::namedTilinker(), ti);
+    LinkerChoice choice = rts6x ? ourLinker() : tiLinker(settings::tilinker(), settings::namedTilinker(), ti);
     if (choice.path.empty()) {
         result.ok = false;
-        std::string hint = choice.say.empty()
-            ? "no lnk6x under " + ti + " - Tools names TI's C6000 compiler directory, the one with bin\\lnk6x"
-            : choice.say;
+        std::string hint = !choice.say.empty() ? choice.say
+            : rts6x ? std::string("no lnk6x beside the editor - RTS6x's link needs RIDE's own C6000 linker")
+            : "no lnk6x under " + ti + " - Tools names TI's C6000 compiler directory, the one with bin\\lnk6x";
         result.output += hint + "\n";
         if (sink) sink(context, hint);
         return;
@@ -689,7 +693,7 @@ void makeTiProgram(Built& result, const Toolchain& tool, const std::string& prog
     }
     // the exception-handling build of TI's runtime where there is one (CCS
     // ships the other; the C++ programs need this one), else the shipped one
-    std::string rts = eh ? "rts6740_elf_eh.lib" : "rts6740_elf.lib";
+    std::string rts = rts6x ? "rts6x.lib" : eh ? "rts6740_elf_eh.lib" : "rts6740_elf.lib";
     std::string out = program;
     if (out.size() > 4 && out.compare(out.size() - 4, 4, ".exe") == 0) out.resize(out.size() - 4);
     out += ".out";
@@ -710,12 +714,16 @@ void makeTiProgram(Built& result, const Toolchain& tool, const std::string& prog
     if (given.given && given.romModel == 1) link += " --rom_model";
     if (given.given && given.romModel == 0) link += " --ram_model";
     // TI's linker takes c_int00 from the library only under --rom_model, the model CCS defaults to.
-    if ((!given.given || given.romModel < 0) && lnk.compare(0, ti.size(), ti) == 0)
+    if (!rts6x && (!given.given || given.romModel < 0) && lnk.compare(0, ti.size(), ti) == 0)
         link += " --rom_model";
     for (size_t i = 0; i < objects.size(); ++i) link += " " + q(objects[i]);
     if (given.given && !given.libraries.empty()) {
-        rts = given.libraries[0];
-        for (size_t i = 0; i < given.libraries.size(); ++i) link += " -l " + given.libraries[i];
+        // With RTS6x a project's TI runtime - libc.a, read as rts6740_elf_eh.lib, or either rts6740 - is rts6x.lib.
+        std::vector<std::string> libs = given.libraries;
+        for (size_t i = 0; rts6x && i < libs.size(); ++i)
+            if (libs[i] == "libc.a" || libs[i].compare(0, 7, "rts6740") == 0) libs[i] = "rts6x.lib";
+        rts = libs[0];
+        for (size_t i = 0; i < libs.size(); ++i) link += " -l " + libs[i];
     } else {
         link += " -l " + rts;
     }
@@ -733,6 +741,14 @@ void makeTiProgram(Built& result, const Toolchain& tool, const std::string& prog
     if (sink) sink(context, "[linked " + out + "]");
 }
 
+}
+
+// RTS6x's link is RIDE's own lnk6x: the one settings.json names, else the one beside the editor.
+LinkerChoice ourLinker() {
+    LinkerChoice choice;
+    std::string named = settings::tilinker();
+    choice.path = !named.empty() && path::exists(named) ? named : path::besideProgram("lnk6x.exe");
+    return choice;
 }
 
 // Nothing named: TI's own, .exe or not. Named and there: that one, and the

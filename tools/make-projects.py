@@ -109,6 +109,9 @@ SHC_REPO = os.path.join("VM6747", "Compiler-Si")
 # a linked .out the way TI's simulator does - machine code, TI's boot and rts - where
 # vm6747 runs assembly. Its product is vm6747sim.exe so the two can sit side by side.
 SIM_REPO = "VM6747-sim"
+# RTS6x, the project's own C6747 runtime (5.1): its rts6x.lib is what a TI program links against
+# unless Tools names TI's compiler directory. Built from cpp11's and asm6x's output by its build.cmd.
+RTS_REPO = "RTS6x"
 
 
 def ident(product, *parts):
@@ -1081,6 +1084,8 @@ def vcxproj_text(product, sources, defines, extra="", includes=(), disabled=(), 
 
 
 SOLUTION_FOLDER = "{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}"
+# A Visual Studio Setup Project (Installer Projects 2022): devenv builds it, MSBuild cannot.
+SETUP_PROJECT = "{54435603-DBB4-11D2-8724-00A0C9A8B90C}"
 
 
 def cc1_guid():
@@ -1136,7 +1141,8 @@ def solution_text(entries):
 
     for name, path, project_guid, after in entries:
         out += 'Project("%s") = "%s", "%s", "%s"\n' % (
-            SOLUTION_FOLDER, name, path.replace("/", "\\"), project_guid)
+            SETUP_PROJECT if path.endswith(".vdproj") else SOLUTION_FOLDER,
+            name, path.replace("/", "\\"), project_guid)
         if after:
             out += "\tProjectSection(ProjectDependencies) = postProject\n"
             for other in after:
@@ -1149,8 +1155,13 @@ def solution_text(entries):
             "\t\tDebug|x64 = Debug|x64\n\t\tRelease|x64 = Release|x64\n"
             "\tEndGlobalSection\n"
             "\tGlobalSection(ProjectConfigurationPlatforms) = postSolution\n")
-    for _, _, project_guid, _ in entries:
+    for _, path, project_guid, _ in entries:
         for c in ("Debug", "Release"):
+            if path.endswith(".vdproj"):
+                # Built on its own, after staging, by build-installer.bat - a solution build
+                # would package whatever the last stage held. Building it in VS is asked by name.
+                out += "\t\t%s.%s|x64.ActiveCfg = %s\n" % (project_guid, c, c)
+                continue
             out += "\t\t%s.%s|x64.ActiveCfg = %s|x64\n" % (project_guid, c, c)
             out += "\t\t%s.%s|x64.Build.0 = %s|x64\n" % (project_guid, c, c)
     out += ("\tEndGlobalSection\n"
@@ -1160,37 +1171,30 @@ def solution_text(entries):
     return out
 
 
-def installer_vcxproj_text():
-    """packaging/windows/Installer.vcxproj - the solution's last project (2026-10-05).
-
-    A Makefile project: it compiles nothing, and its build is build-installer.bat
-    told that the solution has just built everything into $(OutDir), so it stages
-    those programs and runs Inno Setup without building again. Release only: a
-    Debug build's programs are not what is shipped, and its build says so.
-    RIDE_NO_INSTALLER=1 skips it - build-installer.bat sets that before it builds
-    the solution itself, so that neither builds the other.
-    """
-    release = ('if "%RIDE_NO_INSTALLER%"=="1" (echo Installer: skipped - build-installer.bat packages after its own build) '
-               'else call "$(ProjectDir)build-installer.bat" 5.0 from-solution "$(OutDir)."')
-    debug = "echo Installer: made from Release builds only - build the Release configuration for dist\\RIDE-5.0-setup.exe"
-    def group(cfg, build):
-        return ('  <PropertyGroup Condition="\'$(Configuration)|$(Platform)\'==\'%s|x64\'">\n'
-                '    <NMakeBuildCommandLine>%s</NMakeBuildCommandLine>\n'
-                '    <NMakeReBuildCommandLine>%s</NMakeReBuildCommandLine>\n'
-                '    <NMakeCleanCommandLine>if exist "$(SolutionDir)dist\\RIDE-5.0-setup.exe" del "$(SolutionDir)dist\\RIDE-5.0-setup.exe"</NMakeCleanCommandLine>\n'
-                '    <NMakeOutput>$(SolutionDir)dist\\RIDE-5.0-setup.exe</NMakeOutput>\n'
-                '  </PropertyGroup>\n') % (cfg, build, build)
+def rts6x_vcxproj_text():
+    """RTS6x on Windows: a Makefile project running its own build.cmd with the cpp11.exe and
+    asm6x.exe the solution has just built, then putting rts6x.lib and printf6x.lib in
+    lib\\rts6x-tms6747 beside the editor, where src/toolchain.cpp looks (5.1)."""
+    command = ('set "CPP11=$(OutDir)cpp11.exe"\n'
+               'set "ASM6X=$(OutDir)asm6x.exe"\n'
+               'call "$(ProjectDir)build.cmd" || exit /b 1\n'
+               'if not exist "$(OutDir)lib\\rts6x-tms6747" mkdir "$(OutDir)lib\\rts6x-tms6747"\n'
+               'copy /y "$(ProjectDir)build\\rts6x.lib" "$(OutDir)lib\\rts6x-tms6747\\rts6x.lib" || exit /b 1\n'
+               'copy /y "$(ProjectDir)build\\printf6x.lib" "$(OutDir)lib\\rts6x-tms6747\\printf6x.lib" || exit /b 1')
+    configs = "".join(
+        '    <ProjectConfiguration Include="%s|x64">\n'
+        '      <Configuration>%s</Configuration>\n'
+        '      <Platform>x64</Platform>\n'
+        '    </ProjectConfiguration>\n' % (c, c) for c in ("Debug", "Release"))
     return ('<?xml version="1.0" encoding="utf-8"?>\n'
-            '<!-- Generated by tools/make-projects.py: the installer, built after every other project. -->\n'
+            '<!-- Generated by RIDE\'s tools/make-projects.py; edit that, not this. -->\n'
             '<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">\n'
-            '  <ItemGroup Label="ProjectConfigurations">\n'
-            '    <ProjectConfiguration Include="Debug|x64"><Configuration>Debug</Configuration><Platform>x64</Platform></ProjectConfiguration>\n'
-            '    <ProjectConfiguration Include="Release|x64"><Configuration>Release</Configuration><Platform>x64</Platform></ProjectConfiguration>\n'
+            '  <ItemGroup Label="ProjectConfigurations">\n' + configs +
             '  </ItemGroup>\n'
             '  <PropertyGroup Label="Globals">\n'
-            '    <VCProjectVersion>17.0</VCProjectVersion>\n'
-            '    <ProjectGuid>@GUID@</ProjectGuid>\n'
-            '    <RootNamespace>Installer</RootNamespace>\n'
+            '    <ProjectGuid>' + guid("rts6x") + '</ProjectGuid>\n'
+            '    <Keyword>MakeFileProj</Keyword>\n'
+            '    <RootNamespace>rts6x</RootNamespace>\n'
             '  </PropertyGroup>\n'
             '  <Import Project="$(VCTargetsPath)\\Microsoft.Cpp.Default.props" />\n'
             '  <PropertyGroup Label="Configuration">\n'
@@ -1198,14 +1202,13 @@ def installer_vcxproj_text():
             '    <PlatformToolset>v143</PlatformToolset>\n'
             '  </PropertyGroup>\n'
             '  <Import Project="$(VCTargetsPath)\\Microsoft.Cpp.props" />\n'
-            + group("Debug", debug) + group("Release", release) +
-            '  <ItemGroup>\n'
-            '    <None Include="build-installer.bat" />\n'
-            '    <None Include="stage.cmd" />\n'
-            '    <None Include="RIDE-5.0.iss" />\n'
-            '  </ItemGroup>\n'
+            '  <PropertyGroup>\n'
+            '    <NMakeBuildCommandLine>' + command + '</NMakeBuildCommandLine>\n'
+            '    <NMakeReBuildCommandLine>' + command + '</NMakeReBuildCommandLine>\n'
+            '    <NMakeCleanCommandLine>if exist "$(ProjectDir)build" rmdir /s /q "$(ProjectDir)build"</NMakeCleanCommandLine>\n'
+            '  </PropertyGroup>\n'
             '  <Import Project="$(VCTargetsPath)\\Microsoft.Cpp.targets" />\n'
-            '</Project>\n').replace("@GUID@", guid("Installer"))   # the commands carry cmd's %VAR%
+            '</Project>\n')
 
 
 def installer_xcodeproj_text():
@@ -1295,6 +1298,8 @@ LINK_DIR ?= ../LINK
 LNK6X_DIR ?= ../LNK6x
 # 5.0: the C6747 simulator, which runs a linked .out as TI's does, beside the emulator.
 SIM_DIR ?= ../VM6747-sim
+# 5.1: RTS6x, the project's own C6747 runtime, which a TI program links against instead of TI's.
+RTS_DIR ?= ../RTS6x
 
 # ---- one directory, named once and given to all four ------------------------
 #
@@ -1325,7 +1330,7 @@ SIM_DIR ?= ../VM6747-sim
 BINDIR ?= $(CURDIR)/bin
 OUT := $(abspath $(BINDIR))
 
-.PHONY: all cc1 cxx1 vm6747 vm6747sim asm6x masm link lnk6x shc c2s editor confirm installer bin check clean
+.PHONY: all cc1 cxx1 vm6747 vm6747sim asm6x masm link lnk6x rts6x shc c2s editor confirm installer bin check clean
 
 # `installer`, which comes after `confirm`: a workspace build checks that what the
 # editor drives is beside it, and then packages it (2026-10-05).
@@ -1374,9 +1379,16 @@ lnk6x:
 vm6747sim:
 	$(MAKE) -C $(SIM_DIR) BINDIR=$(OUT) OBJDIR=$(OUT)/obj/vm6747sim TARGET=$(OUT)/vm6747sim.exe
 
+# RTS6x is cpp11's and asm6x's output, so it waits for both, as shc waits for cpp11; its two
+# libraries go to lib/rts6x-tms6747, where the editor looks for them (src/toolchain.cpp).
+rts6x: cxx1 asm6x
+	$(MAKE) -C $(RTS_DIR) CPP11=$(OUT)/cpp11.exe ASM6X=$(OUT)/asm6x.exe OBJDIR=$(OUT)/obj/rts6x BINDIR=$(OUT)/obj/rts6x-bin
+	mkdir -p $(OUT)/lib/rts6x-tms6747
+	cp $(OUT)/obj/rts6x-bin/rts6x.lib $(OUT)/obj/rts6x-bin/printf6x.lib $(OUT)/lib/rts6x-tms6747/
+
 # The dependency, said the same way it is said in the other three: the editor
 # is built after the things it drives. Nothing of them ends up inside it.
-editor: cc1 cxx1 vm6747 vm6747sim asm6x masm link lnk6x shc c2s
+editor: cc1 cxx1 vm6747 vm6747sim asm6x masm link lnk6x rts6x shc c2s
 	$(MAKE) BINDIR=$(OUT) OBJDIR=$(OUT)/obj/editor
 
 # Asked of RIDE rather than answered here. The editor is the thing that
@@ -1681,6 +1693,8 @@ def main():
                                 includes=("$(ProjectDir)src",)),
                    "vm6747sim.vcxproj"))
 
+    wanted.append((os.path.join(SIBLINGS, RTS_REPO, "rts6x.vcxproj"), rts6x_vcxproj_text(), "rts6x.vcxproj"))
+
     entries = [
         # The VM6747 line, laid out on the Windows box as it is here:
         # VM6747\Compiler-Ci, VM6747\Compiler-Cppi and VM6747\Emulator beside
@@ -1693,6 +1707,8 @@ def main():
         ("link", "../" + LINK_REPO + "/link.vcxproj", guid("link"), []),
         ("lnk6x", "../" + LNK6X_REPO + "/lnk6x.vcxproj", guid("lnk6x"), []),
         ("vm6747sim", "../" + SIM_REPO + "/vm6747sim.vcxproj", guid("vm6747sim"), []),
+        # RTS6x after cpp11 and asm6x, whose output it is (rts6x_vcxproj_text).
+        ("rts6x", "../" + RTS_REPO + "/rts6x.vcxproj", guid("rts6x"), [CXX1_GUID, guid("asm6x")]),
         # shalimar after cpp11: its post-build step compiles the Shalimar runtime
         # for the C6000 with the cpp11.exe beside it (shc_runtime_step).
         ("shalimar", "../" + SHC_REPO.replace(os.sep, "/") + "/ide/shc.vcxproj", SHC_GUID, [CXX1_GUID]),
@@ -1702,7 +1718,7 @@ def main():
         ("c2s", "../Converter-C2S/c2s.vcxproj", guid("c2s"), []),
         # the editor after both, which is the dependency this whole thing is
         # for - said in a .sln the way the workspace says it in a .xcodeproj.
-        ("RIDEConsole", "RIDEConsole.vcxproj", guid("RIDEConsole"), [CC1_GUID, CXX1_GUID, guid("vm6747"), guid("asm6x"), guid("masm"), guid("link"), guid("lnk6x"), guid("vm6747sim"), guid("shalimar"), guid("c2s")]),
+        ("RIDEConsole", "RIDEConsole.vcxproj", guid("RIDEConsole"), [CC1_GUID, CXX1_GUID, guid("vm6747"), guid("asm6x"), guid("masm"), guid("link"), guid("lnk6x"), guid("vm6747sim"), guid("rts6x"), guid("shalimar"), guid("c2s")]),
         # The window, on the same footing as the console half. It is in the
         # solution for two reasons: so that one build makes all four, and
         # because being in a solution is what moves its output into the
@@ -1712,13 +1728,13 @@ def main():
         # version of it set OutDir, IntDir, BasicRuntimeChecks and a platform
         # version, and the binary died at startup with heap corruption before
         # main. Nothing in that file is touched to get this.
-        ("RIDEGui", "winforms/RIDEGui.vcxproj", GUI_GUID, [CC1_GUID, CXX1_GUID, guid("vm6747"), guid("asm6x"), guid("masm"), guid("link"), guid("lnk6x"), guid("vm6747sim"), guid("shalimar"), guid("c2s")]),
+        ("RIDEGui", "winforms/RIDEGui.vcxproj", GUI_GUID, [CC1_GUID, CXX1_GUID, guid("vm6747"), guid("asm6x"), guid("masm"), guid("link"), guid("lnk6x"), guid("vm6747sim"), guid("rts6x"), guid("shalimar"), guid("c2s")]),
     ]
     # The installer, after every project above - said once, with all their GUIDs (2026-10-05).
-    entries.append(("Installer", "packaging/windows/Installer.vcxproj", guid("Installer"),
+    # A Visual Studio Setup Project since 2026-10-07: packaging/windows/make-setup.ps1 writes
+    # its file list from the staged tree, so it is not written here.
+    entries.append(("Installer", "packaging/windows/Installer.vdproj", guid("Installer"),
                      [e[2] for e in entries]))
-    wanted.append((os.path.join(HERE, "packaging", "windows", "Installer.vcxproj"),
-                   installer_vcxproj_text(), "packaging/windows/Installer.vcxproj"))
     wanted.append((os.path.join(HERE, "packaging", "macos", "Installer.xcodeproj", "project.pbxproj"),
                    installer_xcodeproj_text(), "packaging/macos/Installer.xcodeproj"))
     wanted.append((os.path.join(HERE, "RIDE.sln"), solution_text(entries),
