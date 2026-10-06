@@ -20,7 +20,8 @@
 #endif
 
 [Setup]
-AppId={{A2A1C6E8-9837-457A-B0A0-01B3093C6DA0}
+; Its own AppId: 5.0 installs beside 4.7 as 4.7 did beside 4.51 - one shared AppId put 5.0 in 4.7's folder.
+AppId={{A6845C87-9CD1-491F-AAC1-FF3639AE5F0E}
 AppName={#MyName}
 AppVersion={#MyVer}
 AppPublisher=G. R. Akhtar
