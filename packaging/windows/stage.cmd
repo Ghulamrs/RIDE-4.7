@@ -20,6 +20,7 @@ rem The command prompt with bin on PATH: the setup changes no PATH of its own.
 copy /y "%SRC%\packaging\windows\ride-prompt.cmd" "%STAGE%\bin\" >nul
 if exist "%BIN%\lib\*.lib" copy /y "%BIN%\lib\*.lib" "%STAGE%\bin\lib\" >nul
 if exist "%BIN%\lib\shmrt-tms6747" xcopy /e /i /q "%BIN%\lib\shmrt-tms6747" "%STAGE%\bin\lib\shmrt-tms6747" >nul
+if exist "%BIN%\lib\shmrt-tms6747-debug" xcopy /e /i /q "%BIN%\lib\shmrt-tms6747-debug" "%STAGE%\bin\lib\shmrt-tms6747-debug" >nul
 if exist "%BIN%\lib\rts6x-tms6747" xcopy /e /i /q "%BIN%\lib\rts6x-tms6747" "%STAGE%\bin\lib\rts6x-tms6747" >nul
 rem include\ is cpp11's - its C++ headers and the C ones they wrap, in one
 rem directory; lib\ is c90's. Each compiler looks one directory above its

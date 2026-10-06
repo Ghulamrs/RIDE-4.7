@@ -295,8 +295,8 @@ def projects():
             # directory that exists copies into it.
             "install_extra": ('mkdir -p "$dest/lib"\n'
                               'cp -f "$BUILT_PRODUCTS_DIR"/lib/*.a "$dest/lib/"\n'
-                              'rm -rf "$dest/lib/shmrt-tms6747"\n'
-                              'cp -R "$BUILT_PRODUCTS_DIR/lib/shmrt-tms6747" "$dest/lib/"\n'),
+                              'rm -rf "$dest/lib/shmrt-tms6747" "$dest/lib/shmrt-tms6747-debug"\n'
+                              'cp -R "$BUILT_PRODUCTS_DIR/lib/shmrt-tms6747" "$BUILT_PRODUCTS_DIR/lib/shmrt-tms6747-debug" "$dest/lib/"\n'),
         },
         {
             "product": "cpp11.exe",
@@ -814,10 +814,15 @@ def shc_runtime_step():
     # One command per source, written whole every build: six small files,
     # and a stale .s left from a runtime source that was renamed would be
     # assembled beside the program with everything else.
+    # Two directories, as the hosts have two archives: -O2 for Release, -O0 with SHM_DEBUG and
+    # Debug.cpp for Debug, the latter beside RTS6x's rts6xd.lib in a Debug .out.
     c6000 = "".join(
-        '"$(OutDir)cpp11.exe" -S -arch tms6747 -nologo "$(ProjectDir)runtime\\%s.cpp" '
+        '"$(OutDir)cpp11.exe" -S -arch tms6747 -nologo -O2 "$(ProjectDir)runtime\\%s.cpp" '
         '-o "$(OutDir)lib\\shmrt-tms6747\\%s.s"\n'
-        'if errorlevel 1 exit /b 1\n' % (n, n) for n in release)
+        'if errorlevel 1 exit /b 1\n' % (n, n) for n in release) + "".join(
+        '"$(OutDir)cpp11.exe" -S -arch tms6747 -nologo -O0 -DSHM_DEBUG=1 "$(ProjectDir)runtime\\%s.cpp" '
+        '-o "$(OutDir)lib\\shmrt-tms6747-debug\\%s.s"\n'
+        'if errorlevel 1 exit /b 1\n' % (n, n) for n in debug)
 
     return (
         '    <PostBuildEvent>\n'
@@ -837,6 +842,7 @@ def shc_runtime_step():
         'the C6000 runtime is its output; build RIDE.sln, which builds it first\n'
         'if not exist "$(OutDir)cpp11.exe" exit /b 1\n'
         'if not exist "$(OutDir)lib\\shmrt-tms6747" mkdir "$(OutDir)lib\\shmrt-tms6747"\n'
+        'if not exist "$(OutDir)lib\\shmrt-tms6747-debug" mkdir "$(OutDir)lib\\shmrt-tms6747-debug"\n'
         '%s</Command>\n'
         '    </PostBuildEvent>\n'
         % (flags, release_src, release_obj, flags, debug_src, debug_obj, c6000.rstrip("\n")))
@@ -944,10 +950,12 @@ def shc_runtime_phase():
     c6000 = ('cpp11="$BUILT_PRODUCTS_DIR/cpp11.exe"\n'
              'test -x "$cpp11" || { echo "shc.xcodeproj: no cpp11.exe beside the output - '
              'the C6000 runtime is its output" >&2; exit 1; }\n'
-             'rm -rf "$lib/shmrt-tms6747"\n'
-             'mkdir -p "$lib/shmrt-tms6747"\n' +
-             "".join('"$cpp11" -S -arch tms6747 -nologo "$SRCROOT/runtime/%s.cpp" '
-                     '-o "$lib/shmrt-tms6747/%s.s"\n' % (name, name) for name in release))
+             'rm -rf "$lib/shmrt-tms6747" "$lib/shmrt-tms6747-debug"\n'
+             'mkdir -p "$lib/shmrt-tms6747" "$lib/shmrt-tms6747-debug"\n' +
+             "".join('"$cpp11" -S -arch tms6747 -nologo -O2 "$SRCROOT/runtime/%s.cpp" '
+                     '-o "$lib/shmrt-tms6747/%s.s"\n' % (name, name) for name in release) +
+             "".join('"$cpp11" -S -arch tms6747 -nologo -O0 -DSHM_DEBUG=1 "$SRCROOT/runtime/%s.cpp" '
+                     '-o "$lib/shmrt-tms6747-debug/%s.s"\n' % (name, name) for name in debug))
 
     # rm before ar: `ar rcs` replaces members in an archive that is already
     # there, so a source deleted from the Makefile would live on inside it.

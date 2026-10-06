@@ -318,15 +318,16 @@ std::string emulatedProgram(const std::string& program) {
     return name + ".vm";
 }
 
-// The Shalimar runtime for the emulator: a directory of the .s cpp11 wrote
-// from it, beside the editor in lib/, which vm6747 assembles with the program.
-std::string shalimarRuntimeDir() {
-    const char* fromEnv = std::getenv("SHMRT6747");
+// The Shalimar runtime for the C6000: a directory of the .s cpp11 wrote from it, beside the editor in lib/ -
+// shmrt-tms6747 at -O2, and for a Debug build shmrt-tms6747-debug at -O0 with SHM_DEBUG where it is there.
+std::string shalimarRuntimeDir(Configuration config) {
+    const char* fromEnv = std::getenv(config == ConfigDebug ? "SHMRT6747D" : "SHMRT6747");
     if (fromEnv && *fromEnv) return fromEnv;
     // A directory, which besideProgram does not answer for: it names files.
     std::string where = path::programDirectory();
     if (where.empty()) return std::string();
     std::string dir = path::join(path::join(where, "lib"), "shmrt-tms6747");
+    if (config == ConfigDebug && path::isDirectory(dir + "-debug")) return dir + "-debug";
     return path::isDirectory(dir) ? dir : std::string();
 }
 

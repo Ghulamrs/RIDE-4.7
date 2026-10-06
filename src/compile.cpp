@@ -624,7 +624,7 @@ void makeTiProgram(Built& result, const Toolchain& tool, const std::string& prog
     if (result.shalimar) {
         // the runtime's assembly, copied in and assembled here rather than
         // beside the editor, which is the installation's to keep
-        std::string runtime = shalimarRuntimeDir();
+        std::string runtime = shalimarRuntimeDir(config);
         std::string into = path::join(dir, "shmrt");
         path::makeDirectories(into);
         std::vector<std::string> theirs = assemblyIn(runtime);

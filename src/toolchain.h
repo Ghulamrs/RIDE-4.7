@@ -121,7 +121,7 @@ std::string tiProgramOf(const std::string& program);
 // The command that runs it: the simulator, --run, and -c for the cycle count on stderr.
 std::string simulateCommand(const std::string& out);
 // The directory of runtime assembly a Shalimar program needs on the emulator.
-std::string shalimarRuntimeDir();
+std::string shalimarRuntimeDir(Configuration config = ConfigRelease);
 // RTS6x, the project's own C6747 runtime: lib/rts6x-tms6747 beside the editor, holding rts6x.lib (or $RTS6X).
 std::string rts6xRuntimeDir();
 // Where a project's program goes for the emulated target: <program>.vm, a directory of assembly, the Windows .exe dropped.

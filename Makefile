@@ -251,7 +251,7 @@ check: test session
 # lnk6x.exe for the C6000, in place of TI's, each when settings.json names it.
 DEPENDENCIES := c90.exe cpp11.exe vm6747.exe vm6747sim.exe asm6x.exe masm.exe link.exe lnk6x.exe shalimar.exe c2s.exe \
        lib/shmrt-$(SHM_TARGET).a lib/shmrt-$(SHM_TARGET)-debug.a \
-       lib/shmrt-tms6747/Runtime.s lib/rts6x-tms6747/rts6x.lib lib/rts6x-tms6747/rts6xd.lib
+       lib/shmrt-tms6747/Runtime.s lib/shmrt-tms6747-debug/Debug.s lib/rts6x-tms6747/rts6x.lib lib/rts6x-tms6747/rts6xd.lib
 
 confirm: $(EDITOR)
 	@missing=0; \
@@ -333,7 +333,7 @@ product: confirm
 # beside its own binary. Both archives, debug included - see DEPENDENCIES.
 	cp $(BINDIR)/lib/shmrt-$(SHM_TARGET).a \
 	   $(BINDIR)/lib/shmrt-$(SHM_TARGET)-debug.a "$(PRODUCT_DIR)/bin/lib/"
-	cp -R $(BINDIR)/lib/shmrt-tms6747 "$(PRODUCT_DIR)/bin/lib/"
+	cp -R $(BINDIR)/lib/shmrt-tms6747 $(BINDIR)/lib/shmrt-tms6747-debug "$(PRODUCT_DIR)/bin/lib/"
 	cp -R $(BINDIR)/lib/rts6x-tms6747 "$(PRODUCT_DIR)/bin/lib/"
 	cp README.md "$(PRODUCT_DIR)/"
 # The samples: projects/ (each in its folder, the CCS ones in ccs/) and programs/ (single files,
