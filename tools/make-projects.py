@@ -1188,7 +1188,16 @@ def rts6x_vcxproj_text():
                'set "ASM6X=$(OutDir)asm6x.exe"\n'
                'call "$(ProjectDir)build.cmd" || exit /b 1\n'
                'if not exist "$(OutDir)lib\\rts6x-tms6747" mkdir "$(OutDir)lib\\rts6x-tms6747"\n'
-               'for %%l in (rts6x rts6xd printf6x printf6xd) do copy /y "$(ProjectDir)build\\%%l.lib" "$(OutDir)lib\\rts6x-tms6747\\%%l.lib" || exit /b 1')
+               'for %%l in (rts6x rts6xd printf6x printf6xd) do copy /y "$(ProjectDir)build\\%%l.lib" "$(OutDir)lib\\rts6x-tms6747\\%%l.lib" || exit /b 1\n'
+               # Shalimar's C6000 runtime, packed beside it: shalimar.vcxproj wrote its .s, asm6x assembles them, ar6x packs.
+               'for %%v in (shmrt6x:shmrt-tms6747 shmrt6xd:shmrt-tms6747-debug) do for /f "tokens=1,2 delims=:" %%a in ("%%v") do (\n'
+               '  if exist "$(IntDir)%%a" rmdir /s /q "$(IntDir)%%a"\n'
+               '  mkdir "$(IntDir)%%a"\n'
+               '  "$(OutDir)asm6x.exe" "$(OutDir)lib\\%%b\\*.s" -o "$(IntDir)%%a" || exit /b 1\n'
+               '  dir /b /s "$(IntDir)%%a\\*.obj" > "$(IntDir)%%a.list"\n'
+               '  if exist "$(OutDir)lib\\rts6x-tms6747\\%%a.lib" del "$(OutDir)lib\\rts6x-tms6747\\%%a.lib"\n'
+               '  "$(ProjectDir)build\\ar6x.exe" -r "$(OutDir)lib\\rts6x-tms6747\\%%a.lib" @"$(IntDir)%%a.list" || exit /b 1\n'
+               ')')
     configs = "".join(
         '    <ProjectConfiguration Include="%s|x64">\n'
         '      <Configuration>%s</Configuration>\n'
@@ -1338,7 +1347,7 @@ RTS_DIR ?= ../RTS6x
 BINDIR ?= $(CURDIR)/bin
 OUT := $(abspath $(BINDIR))
 
-.PHONY: all cc1 cxx1 vm6747 vm6747sim asm6x masm link lnk6x rts6x shc c2s editor confirm installer bin check clean
+.PHONY: all cc1 cxx1 vm6747 vm6747sim asm6x masm link lnk6x rts6x shmrt6x shc c2s editor confirm installer bin check clean
 
 # `installer`, which comes after `confirm`: a workspace build checks that what the
 # editor drives is beside it, and then packages it (2026-10-05).
@@ -1395,9 +1404,18 @@ rts6x: cxx1 asm6x
 	cp $(OUT)/obj/rts6x-bin/rts6x.lib $(OUT)/obj/rts6x-bin/printf6x.lib \
 	   $(OUT)/obj/rts6x-bin/rts6xd.lib $(OUT)/obj/rts6x-bin/printf6xd.lib $(OUT)/lib/rts6x-tms6747/
 
+# Shalimar's C6000 runtime packed as libraries beside RTS6x - shmrt6x.lib from shmrt-tms6747, shmrt6xd.lib from
+# shmrt-tms6747-debug: asm6x assembles shc's .s, RTS6x's ar6x packs them. The .s stay for the emulator.
+shmrt6x: rts6x shc
+	for v in shmrt6x:shmrt-tms6747 shmrt6xd:shmrt-tms6747-debug; do lib=$${v%%:*}; dir=$${v#*:}; \
+	  rm -rf $(OUT)/obj/$$lib && mkdir -p $(OUT)/obj/$$lib && \
+	  $(OUT)/asm6x.exe "$(OUT)/lib/$$dir/*.s" -o $(OUT)/obj/$$lib/ && \
+	  rm -f $(OUT)/lib/rts6x-tms6747/$$lib.lib && \
+	  $(OUT)/obj/rts6x-bin/ar6x.exe -r $(OUT)/lib/rts6x-tms6747/$$lib.lib $(OUT)/obj/$$lib/*.obj || exit 1; done
+
 # The dependency, said the same way it is said in the other three: the editor
 # is built after the things it drives. Nothing of them ends up inside it.
-editor: cc1 cxx1 vm6747 vm6747sim asm6x masm link lnk6x rts6x shc c2s
+editor: cc1 cxx1 vm6747 vm6747sim asm6x masm link lnk6x rts6x shmrt6x shc c2s
 	$(MAKE) BINDIR=$(OUT) OBJDIR=$(OUT)/obj/editor
 
 # Asked of RIDE rather than answered here. The editor is the thing that
@@ -1717,7 +1735,7 @@ def main():
         ("lnk6x", "../" + LNK6X_REPO + "/lnk6x.vcxproj", guid("lnk6x"), []),
         ("vm6747sim", "../" + SIM_REPO + "/vm6747sim.vcxproj", guid("vm6747sim"), []),
         # RTS6x after cpp11 and asm6x, whose output it is (rts6x_vcxproj_text).
-        ("rts6x", "../" + RTS_REPO + "/rts6x.vcxproj", guid("rts6x"), [CXX1_GUID, guid("asm6x")]),
+        ("rts6x", "../" + RTS_REPO + "/rts6x.vcxproj", guid("rts6x"), [CXX1_GUID, guid("asm6x"), SHC_GUID]),
         # shalimar after cpp11: its post-build step compiles the Shalimar runtime
         # for the C6000 with the cpp11.exe beside it (shc_runtime_step).
         ("shalimar", "../" + SHC_REPO.replace(os.sep, "/") + "/ide/shc.vcxproj", SHC_GUID, [CXX1_GUID]),

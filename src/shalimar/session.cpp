@@ -51,7 +51,7 @@ bool three(const std::string& line, size_t from, int& a, int& b, int& c) {
 
 }
 
-bool Session::start(const std::string& executable) {
+bool Session::start(const std::string& executable, const std::string& command) {
     stop();
     program_ = executable;
     exited_ = false;
@@ -64,6 +64,7 @@ bool Session::start(const std::string& executable) {
 #else
     quoted = "'" + executable + "'";
 #endif
+    if (!command.empty()) quoted = command;
     if (!channel_.start(quoted, "SHM_DEBUG=1")) return false;
 
     for (;;) {

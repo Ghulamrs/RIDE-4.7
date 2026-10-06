@@ -22,7 +22,8 @@ const char* didNotArm();
 class Session {
 public:
 
-    bool start(const std::string& executable);
+    // command, where given, is the line that runs it - vm6747sim for a C6000 program (sessionCommand in toolchain.h).
+    bool start(const std::string& executable, const std::string& command = std::string());
     bool running() const { return channel_.running(); }
 
     bool ownsTheStop() const { return channel_.running() || exited_; }

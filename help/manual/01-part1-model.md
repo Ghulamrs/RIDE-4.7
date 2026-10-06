@@ -234,8 +234,10 @@ compilers, not whatever else is on the machine.
 **`bin\lib\`.** The Shalimar runtime archives live here, beside `shalimar` —
 `shmrt-x86_64-windows.lib` (release) and `-debug.lib` (debug) — because `shalimar`
 looks for `lib\` next to its own binary when it links. The C6000 Shalimar
-runtime is here too, as `shmrt-tms6747\*.s` (a directory of assembly, not an
-archive; Part VI says why).
+runtime is here twice: as libraries beside RTS6x, `rts6x-tms6747\shmrt6x.lib`
+(release) and `shmrt6xd.lib` (debug), which a `.out` links; and as
+`shmrt-tms6747\*.s` and `shmrt-tms6747-debug\*.s`, assembly the `vm6747`
+emulator reads beside a program (Part VI says why).
 
 **`include\` and `lib\`, one level up from `bin\`.** `cpp11`'s C++ headers and C
 headers. `cpp11` looks for them beside its binary and then one directory up, so

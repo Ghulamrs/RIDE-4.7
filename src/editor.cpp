@@ -3259,7 +3259,7 @@ void Editor::debug(bool project) {
 
     if (stopsItself) {
 
-        if (!shm_.start(debugBuilt_.program)) {
+        if (!shm_.start(debugBuilt_.program, sessionCommand(debugBuilt_.program))) {
             console_.push_back(shalimar::didNotArm());
             say("built without --debug, so there is nothing in it to stop - Ctrl-D, then F8");
             if (debugTemporary_) removeProgram(debugBuilt_);

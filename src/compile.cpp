@@ -621,7 +621,12 @@ void makeTiProgram(Built& result, const Toolchain& tool, const std::string& prog
     }
     if (sources.empty()) return;
     std::string say;
-    if (result.shalimar) {
+    // Shalimar's runtime packaged as a library beside RTS6x - shmrt6x.lib, or shmrt6xd.lib for a Debug build -
+    // is linked with -l like it; with TI's runtime named, or none packaged, its assembly is copied in as before.
+    const std::string shmLib = config == ConfigDebug ? "shmrt6xd.lib" : "shmrt6x.lib";
+    const bool shmPacked = result.shalimar && settings::namedTi().empty() && !rts6xRuntimeDir().empty() &&
+                           path::exists(path::join(rts6xRuntimeDir(), shmLib));
+    if (result.shalimar && !shmPacked) {
         // the runtime's assembly, copied in and assembled here rather than
         // beside the editor, which is the installation's to keep
         std::string runtime = shalimarRuntimeDir(config);
@@ -730,12 +735,15 @@ void makeTiProgram(Built& result, const Toolchain& tool, const std::string& prog
             if (libs[i] == "libc.a" || libs[i].compare(0, 7, "rts6740") == 0 || libs[i] == "rts6x.lib" || libs[i] == "rts6xd.lib")
                 libs[i] = ours6x;
         rts = libs[0];
+        if (shmPacked) link += " -l " + shmLib;
         for (size_t i = 0; i < libs.size(); ++i) link += " -l " + libs[i];
     } else {
+        // Shalimar's runtime before the C runtime it calls into, so lnk6x finds what it needs after it.
+        if (shmPacked) link += " -l " + shmLib;
         link += " -l " + rts;
     }
     link += " -o " + q(out);
-    if (sink) sink(context, "$ lnk6x " + std::to_string(objects.size()) + " objects, " + rts +
+    if (sink) sink(context, "$ lnk6x " + std::to_string(objects.size()) + " objects, " + (shmPacked ? shmLib + ", " : std::string()) + rts +
                     (given.given && !given.cmdFiles.empty() ? ", " + path::filename(given.cmdFiles[0]) : std::string()) +
                     " -o " + path::filename(out));
     if (runCaptured(link, result.output, sink, context) != 0) {

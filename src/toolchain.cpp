@@ -306,6 +306,13 @@ std::string simulateCommand(const std::string& out) {
     return quote(simulatorProgram()) + " --run -c " + quote(out);
 }
 
+std::string sessionCommand(const std::string& program) {
+    if (!isEmulatedProgram(program)) return std::string();
+    const std::string out = tiProgramOf(program), sim = simulatorProgram();
+    if (sim.empty() || !path::exists(out)) return std::string();
+    return quote(sim) + " --run " + quote(out);
+}
+
 std::string c6xAssembler() {
     const char* fromEnv = std::getenv("ASM6X");
     if (fromEnv && *fromEnv) return fromEnv;

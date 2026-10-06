@@ -5850,6 +5850,27 @@ void rts6xLinksTheOut() {
               what + ": both exceptions are caught by RTS6x's unwinder:\n" + output);
         check(output.find("sum 3 0.75") != std::string::npos, what + ": and printf6x prints what the program computed:\n" + output);
     }
+    // Shalimar beside it: the packed runtime, shmrt6x.lib or shmrt6xd.lib, linked ahead of RTS6x's (M9).
+    const char* shmLibs[2] = { "shmrt6x.lib", "shmrt6xd.lib" };
+    const char* shc = std::getenv("SHC");
+    if (shc && *shc && editor::path::exists(shc) && editor::path::exists(editor::path::join(rts, "shmrt6x.lib"))) {
+        file::create_directories(dir / "s");
+        writeSource((dir / "s" / "count.shl").string(),
+                    "fun <> = main() {\n  n : 1\n  while n < 4 {\n    ? n\n    n : n + 1\n  }\n  ? \"done\"\n}\n");
+        for (int c = 0; c < 2; ++c) {
+            std::string command = "\"" + ride + "\" \"" + (dir / "s").string() + "\" --arch tms6747 --simulate --config " +
+                                  configs[c] + " --shalimar \"" + std::string(shc) + "\" --tilinker \"" + lnk + "\"";
+            std::string output, what = std::string("shalimar ") + configs[c];
+            int status = editor::runCaptured(command, output);
+            check(status == 0, what + " builds and runs on vm6747sim (status " + std::to_string(status) + "):\n" + output);
+            check(output.find(std::string(shmLibs[c]) + ", " + libs[c]) != std::string::npos,
+                  what + ": lnk6x links " + shmLibs[c] + " ahead of " + libs[c] + ":\n" + output);
+            check(output.find("$ asm6x 1 sources") != std::string::npos, what + ": only the program is assembled:\n" + output);
+            check(output.find("done") != std::string::npos, what + ": and it runs to its end:\n" + output);
+        }
+    } else {
+        std::printf("  (no $SHC or no shmrt6x.lib, so the Shalimar half is not built)\n");
+    }
     sayWhereHomeIs(homeWas);
     file::remove_all(dir);
 }

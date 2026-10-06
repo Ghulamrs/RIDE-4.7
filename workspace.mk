@@ -65,7 +65,7 @@ RTS_DIR ?= ../RTS6x
 BINDIR ?= $(CURDIR)/bin
 OUT := $(abspath $(BINDIR))
 
-.PHONY: all cc1 cxx1 vm6747 vm6747sim asm6x masm link lnk6x rts6x shc c2s editor confirm installer bin check clean
+.PHONY: all cc1 cxx1 vm6747 vm6747sim asm6x masm link lnk6x rts6x shmrt6x shc c2s editor confirm installer bin check clean
 
 # `installer`, which comes after `confirm`: a workspace build checks that what the
 # editor drives is beside it, and then packages it (2026-10-05).
@@ -122,9 +122,18 @@ rts6x: cxx1 asm6x
 	cp $(OUT)/obj/rts6x-bin/rts6x.lib $(OUT)/obj/rts6x-bin/printf6x.lib \
 	   $(OUT)/obj/rts6x-bin/rts6xd.lib $(OUT)/obj/rts6x-bin/printf6xd.lib $(OUT)/lib/rts6x-tms6747/
 
+# Shalimar's C6000 runtime packed as libraries beside RTS6x - shmrt6x.lib from shmrt-tms6747, shmrt6xd.lib from
+# shmrt-tms6747-debug: asm6x assembles shc's .s, RTS6x's ar6x packs them. The .s stay for the emulator.
+shmrt6x: rts6x shc
+	for v in shmrt6x:shmrt-tms6747 shmrt6xd:shmrt-tms6747-debug; do lib=$${v%%:*}; dir=$${v#*:}; \
+	  rm -rf $(OUT)/obj/$$lib && mkdir -p $(OUT)/obj/$$lib && \
+	  $(OUT)/asm6x.exe "$(OUT)/lib/$$dir/*.s" -o $(OUT)/obj/$$lib/ && \
+	  rm -f $(OUT)/lib/rts6x-tms6747/$$lib.lib && \
+	  $(OUT)/obj/rts6x-bin/ar6x.exe -r $(OUT)/lib/rts6x-tms6747/$$lib.lib $(OUT)/obj/$$lib/*.obj || exit 1; done
+
 # The dependency, said the same way it is said in the other three: the editor
 # is built after the things it drives. Nothing of them ends up inside it.
-editor: cc1 cxx1 vm6747 vm6747sim asm6x masm link lnk6x rts6x shc c2s
+editor: cc1 cxx1 vm6747 vm6747sim asm6x masm link lnk6x rts6x shmrt6x shc c2s
 	$(MAKE) BINDIR=$(OUT) OBJDIR=$(OUT)/obj/editor
 
 # Asked of RIDE rather than answered here. The editor is the thing that

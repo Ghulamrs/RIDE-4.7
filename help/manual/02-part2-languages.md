@@ -171,7 +171,9 @@ reports at the point of interception rather than as a later phase.
 
 **Targets.** `shalimar` compiles the three host targets and `tms6747`. On tms6747 a
 Shalimar program runs on the `vm6747` emulator beside the C6000 runtime
-(`shmrt-tms6747`), which the emulator assembles with the program.
+(`shmrt-tms6747`), which the emulator assembles with the program, and its `.out`
+links the same runtime packed as `shmrt6x.lib` (`shmrt6xd.lib` in Debug) ahead
+of RTS6x. A Debug build stops itself on the C6000 too, run on `vm6747sim`.
 
 --------------------------------------------------------------------------------
 ## 10. Header routing: `lib/` is C, `include/` is C++

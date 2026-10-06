@@ -1265,7 +1265,7 @@ int ride_debugger_start(RIDEDebugger* debugger, int kind, const char* arch,
     const editor::ToolchainKind tool = static_cast<editor::ToolchainKind>(kind);
 
     if (editor::dbg_stopsItself(tool))
-        return debugger->shm.start(program ? program : "") ? 1 : 0;
+        return debugger->shm.start(program ? program : "", editor::sessionCommand(program ? program : "")) ? 1 : 0;
 
     return debugger->debugger.start(editor::dbg_for(tool, arch ? arch : ""),
                                     program ? program : "") ? 1 : 0;
