@@ -5814,8 +5814,8 @@ void rts6xLinksTheOut() {
     writeSource((dir / "p" / "project.pro").string(), "{ \"arch\": \"tms6747\" }\n");
     writeSource((dir / "p" / "main.cpp").string(),
                 "extern \"C\" int printf(const char *, ...);\n"
-                "struct Oops { int code; };\n"
-                "static int risky(int n) { if (n > 2) throw Oops{n * 7}; return n; }\n"
+                "struct Oops { int code; Oops(int c) : code(c) {} };\n"
+                "static int risky(int n) { if (n > 2) throw Oops(n * 7); return n; }\n"
                 "int main() {\n"
                 "    int sum = 0;\n"
                 "    for (int i = 0; i < 5; ++i) {\n"
