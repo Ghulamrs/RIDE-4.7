@@ -47,6 +47,7 @@ WORKSPACE = [
     ("../VM6747/Compiler-Cppi", ["ide", "lib", "include", "msvc/compat"], ["src"], ["Makefile"]),
     ("../VM6747/Compiler-Si", ["ide"], ["src", "runtime"], ["Makefile"]),
     ("../VM6747/Emulator", ["vm6747.xcodeproj"], ["src"], ["vm6747.vcxproj", "Makefile"]),
+    ("../VM6747-sim", ["vm6747sim.xcodeproj"], ["src"], ["vm6747sim.vcxproj", "Makefile"]),
     ("../Converter-C2S", ["c2s.xcodeproj"], ["src"], ["c2s.vcxproj", "Makefile"]),
     ("../ASM6x", ["asm6x.xcodeproj"], ["src"], ["asm6x.vcxproj", "Makefile"]),
     ("../MASM", ["masm.xcodeproj"], ["src"], ["masm.vcxproj", "Makefile"]),
