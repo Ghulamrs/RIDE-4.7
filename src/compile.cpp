@@ -654,7 +654,8 @@ void makeTiProgram(Built& result, const Toolchain& tool, const std::string& prog
     std::string ti = rts6x ? std::string() : settings::ti();
     const std::string made = "[" + std::to_string(objects.size()) + " TI objects made; a .out needs TI's linker";
     if (!rts6x && ti.empty()) {
-        if (sink) sink(context, made + ", named under Tools]");
+        if (sink) sink(context, "[" + std::to_string(objects.size()) + " TI objects made; a .out needs RTS6x in "
+                                "lib/rts6x-tms6747 beside the editor, or TI's compiler named under Tools]");
         return;
     }
     // A CCS found rather than named ships rts6740_elf.lib alone, and these objects want the
@@ -1011,8 +1012,8 @@ std::string simulationMissing(const std::string& program) {
         return "no vm6747sim beside " + std::string(product::kName) + " - the C6747 simulator ships with it from 5.0";
     const std::string out = tiProgramOf(program);
     if (!path::exists(out))
-        return "no " + path::filename(out) + ": a tms6747 build links one only with asm6x beside " +
-               product::kName + " and TI's runtime (rts6740_elf_eh.lib) named under Tools";
+        return "no " + path::filename(out) + ": a tms6747 build links one only with asm6x and lnk6x beside " +
+               product::kName + " and a runtime - RTS6x in lib/rts6x-tms6747 beside it, or TI's named under Tools";
     return std::string();
 }
 

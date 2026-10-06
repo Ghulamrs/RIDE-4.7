@@ -5773,6 +5773,80 @@ void ccsProjectsBuiltAndRun() {
     file::remove_all(dir);
 }
 
+// **RTS6x links the .out, with nothing of TI's named** (5.1, M7): a project for tms6747 built through
+// the console with no TI compiler under Tools - cpp11, asm6x and RIDE's lnk6x against rts6x.lib - and
+// the .out run on vm6747sim. The tools are named or found beside RIDE.exe; what is missing skips the case.
+void rts6xLinksTheOut() {
+    std::printf("RTS6x links the .out\n");
+    std::string program = editor::path::programDirectory();
+    const std::string consoles[] = {
+        editor::path::join(program, "RIDE.exe"), editor::path::join(editor::path::parent(program), "RIDE.exe"),
+        editor::path::join(editor::path::join(program, "bin"), "RIDEConsole.exe"),
+        editor::path::join(editor::path::join(editor::path::parent(program), "bin"), "RIDEConsole.exe"),
+        editor::path::join(editor::path::join(editor::path::parent(program), "bin"), "RIDE.exe"),
+    };
+    std::string ride = consoles[0];
+    for (size_t i = 0; i < sizeof consoles / sizeof consoles[0]; ++i)
+        if (editor::path::exists(consoles[i])) { ride = consoles[i]; break; }
+    const std::string beside = editor::path::parent(ride);
+    const char* cxx1 = std::getenv("CXX1");
+    const char* fromEnv = std::getenv("ASM6X");
+    std::string asm6x = fromEnv && *fromEnv ? fromEnv : editor::path::join(beside, "asm6x.exe");
+    fromEnv = std::getenv("LNK6X");
+    std::string lnk = fromEnv && *fromEnv ? fromEnv : editor::path::join(beside, "lnk6x.exe");
+    fromEnv = std::getenv("VM6747SIM");
+    std::string sim = fromEnv && *fromEnv ? fromEnv : editor::path::join(beside, "vm6747sim.exe");
+    fromEnv = std::getenv("RTS6X");
+    std::string rts = fromEnv && *fromEnv ? fromEnv : editor::path::join(editor::path::join(beside, "lib"), "rts6x-tms6747");
+    std::string missing;
+    if (!editor::path::exists(ride)) missing += " RIDE.exe";
+    if (!cxx1 || !*cxx1 || !editor::path::exists(cxx1)) missing += " $CXX1";
+    if (!editor::path::exists(asm6x)) missing += " asm6x";
+    if (!editor::path::exists(lnk)) missing += " lnk6x";
+    if (!editor::path::exists(sim)) missing += " vm6747sim";
+    if (!editor::path::exists(editor::path::join(rts, "rts6x.lib"))) missing += " rts6x.lib";
+    if (!missing.empty()) { std::printf("  (not here, so nothing is built:%s)\n", missing.c_str()); return; }
+
+    file::path dir = file::temp_directory_path() / "ride-rts6x-run";
+    file::remove_all(dir);
+    file::create_directories(dir / "home");
+    file::create_directories(dir / "p");
+    writeSource((dir / "p" / "project.pro").string(), "{ \"arch\": \"tms6747\" }\n");
+    writeSource((dir / "p" / "main.cpp").string(),
+                "extern \"C\" int printf(const char *, ...);\n"
+                "struct Oops { int code; };\n"
+                "static int risky(int n) { if (n > 2) throw Oops{n * 7}; return n; }\n"
+                "int main() {\n"
+                "    int sum = 0;\n"
+                "    for (int i = 0; i < 5; ++i) {\n"
+                "        try { sum += risky(i); } catch (const Oops &o) { printf(\"caught %d\\n\", o.code); }\n"
+                "    }\n"
+                "    printf(\"sum %d %.2f\\n\", sum, sum / 4.0);\n"
+                "    return 0;\n"
+                "}\n");
+    // A home of its own: the user's settings.json may name a TI compiler, which would put TI's runtime back.
+    std::string homeWas = editor::path::homeDir();
+    sayWhereHomeIs((dir / "home").string());
+#ifdef _WIN32
+    _putenv_s("ASM6X", asm6x.c_str()); _putenv_s("VM6747SIM", sim.c_str()); _putenv_s("RTS6X", rts.c_str());
+#else
+    setenv("ASM6X", asm6x.c_str(), 1); setenv("VM6747SIM", sim.c_str(), 1); setenv("RTS6X", rts.c_str(), 1);
+#endif
+    std::string command = "\"" + ride + "\" \"" + (dir / "p").string() + "\" --simulate --config release" +
+                          " --cpp11 \"" + std::string(cxx1) + "\" --tilinker \"" + lnk + "\"";
+    std::string output;
+    int status = editor::runCaptured(command, output);
+    check(status == 0, "builds and runs on vm6747sim (status " + std::to_string(status) + "):\n" + output);
+    check(output.find("rts6x.lib") != std::string::npos, "lnk6x links against rts6x.lib:\n" + output);
+    check(output.find("rts6740") == std::string::npos, "and nothing of TI's runtime is named:\n" + output);
+    check(output.find("[linked ") != std::string::npos, "the .out is linked");
+    check(output.find("caught 21") != std::string::npos && output.find("caught 28") != std::string::npos,
+          "both exceptions are caught by RTS6x's unwinder:\n" + output);
+    check(output.find("sum 3 0.75") != std::string::npos, "and printf6x prints what the program computed:\n" + output);
+    sayWhereHomeIs(homeWas);
+    file::remove_all(dir);
+}
+
 // **A CCS workspace, one project at a time** (RIDE 4.7): a workspace laid out as CCS 7.4 left one on the
 // Windows box on 02-10-2026 - a project copied in, one registered where it was through a .location, a
 // project that is not CCS's, a path variable and a build macro - opened through <workspace>/<project>.pro.
@@ -6103,6 +6177,7 @@ int main(int argc, char** argv) {
     ccsProjectsAsTheyAre();
     ccsWorkspacesOneProjectAtATime();
     ccsProjectsBuiltAndRun();
+    rts6xLinksTheOut();
 
     std::printf("\n%d checks, %d failed\n", checks, failures);
     return failures == 0 ? 0 : 1;

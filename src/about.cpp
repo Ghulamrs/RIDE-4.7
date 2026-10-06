@@ -137,21 +137,30 @@ std::vector<std::string> environment() {
 #endif
     said.push_back("");
     said.push_back("tms6747");
-    const std::string namedTi = settings::namedTi();
-    if (!namedTi.empty()) row(said, "TI compiler", namedTi, "settings.json");
+    const std::string namedTi = settings::namedTi(), rts6x = rts6xRuntimeDir();
+    // RTS6x links every .out while no TI compiler is named; naming one under Tools puts TI's runtime back.
+    if (namedTi.empty() && !rts6x.empty())
+        row(said, "runtime", rts6x, "RTS6x, " + std::string(product::kName) + "'s own - nothing of TI's on the link line");
+    if (!namedTi.empty()) row(said, "TI compiler", namedTi, "settings.json - its runtime links in place of RTS6x");
     else {
         const std::string found = settings::detectedTi();
-        row(said, "TI compiler", found, found.empty() ? "none found - a .out needs CCS's ti-cgt-c6000; Tools names it"
-                                                      : "detected - CCS's newest");
+        row(said, "TI compiler", found, !rts6x.empty() ? (found.empty() ? "none found - not needed, RTS6x links the .out"
+                                                                         : "detected, not used - Tools names it to link with TI's runtime")
+                                        : found.empty() ? "none found - a .out needs CCS's ti-cgt-c6000; Tools names it"
+                                                        : "detected - CCS's newest");
     }
-    const std::string ti = settings::ti();
+    const std::string ti = namedTi.empty() && !rts6x.empty() ? std::string() : settings::ti();
     named(said, "C6000 linker", settings::tilinker(), ti.empty() ? std::string() : path::join(path::join(ti, "bin"), "lnk6x"));
     const std::string tilib = settings::tilib();
-    const bool eh = (!ti.empty() && path::exists(path::join(path::join(ti, "lib"), "rts6740_elf_eh.lib"))) ||
-                    (!tilib.empty() && path::exists(path::join(tilib, "rts6740_elf_eh.lib")));
-    row(said, "runtime", ti.empty() ? std::string() : path::join(ti, "lib"),
-        eh ? "with rts6740_elf_eh.lib, which C++ programs need" : "without rts6740_elf_eh.lib - tilib names a directory holding it");
-    if (!tilib.empty()) row(said, "tilib", tilib, "settings.json");
+    if (ti.empty() && !rts6x.empty()) {
+        if (!tilib.empty()) row(said, "tilib", tilib, "settings.json - read only with a TI compiler named");
+    } else {
+        const bool eh = (!ti.empty() && path::exists(path::join(path::join(ti, "lib"), "rts6740_elf_eh.lib"))) ||
+                        (!tilib.empty() && path::exists(path::join(tilib, "rts6740_elf_eh.lib")));
+        row(said, "runtime", ti.empty() ? std::string() : path::join(ti, "lib"),
+            eh ? "with rts6740_elf_eh.lib, which C++ programs need" : "without rts6740_elf_eh.lib - tilib names a directory holding it");
+        if (!tilib.empty()) row(said, "tilib", tilib, "settings.json");
+    }
     said.push_back("");
     said.push_back("Headers and libraries");
     row(said, "cpp11 headers", settings::includeDir(), "settings.json \"include\"");

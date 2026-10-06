@@ -121,14 +121,20 @@ install; this line means that folder is missing, and the build goes on with
 RIDE's defaults - reinstall to put it back.
 
 **A `.out` for the board.** The emulator runs the assembly; a file CCS can load
-onto a C6747 needs a link against TI's runtime. Name TI's compiler directory
-under **Tools ▸ TI compiler for tms6747...** (`ti-cgt-c6000_x.y.z`, the one with
-`bin/lnk6x`) and a directory holding `rts6740_elf_eh.lib` - CCS ships only the
-build without exceptions; `bin/ti/ti-build` makes the other - or pass
-`--ti dir --tilib dir` on the console. Release builds then end with
-`[linked <program>.out]`. The installed `settings.json` links with RIDE's own
-lnk6x; with TI's, RIDE passes `--rom_model`, CCS's default, where the project
-does not say.
+onto a C6747 is linked against a run-time library. **By default that is RTS6x**,
+RIDE's own C6747 runtime, installed in `bin/lib/rts6x-tms6747` (`rts6x.lib`, and
+`printf6x.lib` for the printf family): RIDE's `asm6x` and `lnk6x` and RTS6x make
+the `.out`, and nothing of TI's is on the link line - the console says
+`$ lnk6x N objects, rts6x.lib` and release builds end with
+`[linked <program>.out]`. A CCS project's `libc.a` or `rts6740*` library is read
+as `rts6x.lib`. To link against TI's runtime instead, name TI's compiler
+directory under **Tools ▸ TI compiler for tms6747...** (`ti-cgt-c6000_x.y.z`, the
+one with `bin/lnk6x`) and a directory holding `rts6740_elf_eh.lib` - CCS ships
+only the build without exceptions; `bin/ti/ti-build` makes the other - or pass
+`--ti dir --tilib dir` on the console; a CCS found on the machine but not named
+does not change the default. With TI's linker, RIDE passes `--rom_model`, CCS's
+default, where the project does not say. **Help ▸ About** says which runtime
+links: a `runtime` row naming RTS6x, or TI's compiler and its library.
 
 **What does not open.** Only C6000 C674x devices: any other is refused with its
 device named. The sources are every file in the folder by extension, the linked
