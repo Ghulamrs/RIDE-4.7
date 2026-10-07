@@ -1,7 +1,7 @@
 ©2026 G. R. Akhtar - RIDE 5.0, the editor
 Release seal, version 5.0, sealed 07-10-2026
 Written by tools/seal; check it with `tools/seal check`.
-CRC32  size  file - 78 files, seal CC016733
+CRC32  size  file - 78 files, seal 75C2000A
 ------------------------------------------------------------------
 1DBB2FBC      2412  macos/CodeView.h
 02B3F91E     14632  macos/CodeView.mm
@@ -74,7 +74,7 @@ EC145B05     38587  src/toolchain.cpp
 D93038C5       572  src/utf8.h
 1DD9DC1C     12808  src/workspace.cpp
 F35C52A2      2086  src/workspace.h
-DC379667    268069  winforms/MainForm.h
+3B65BBA5    268282  winforms/MainForm.h
 6BA8DA64      2289  winforms/Marshal.h
 3D89F3C4      6415  winforms/Program.cpp
 B2EA0EE1      4860  winforms/TextFile.h
