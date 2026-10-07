@@ -33,6 +33,8 @@
 #include "ccs/ccsproject.h"
 #include "compile.h"
 #include "convert.h"
+#include "diff3.h"
+#include "roundtrip.h"
 #include "indent.h"
 #include "symbols.h"
 #include "syntax.h"
@@ -4849,6 +4851,189 @@ void namingAConversion() {
           "the wrong direction names the file itself, which the editor refuses");
 }
 
+
+// The line diff and the three-way merge under Convert's round trip (src/diff3.h): every shape of
+// change one side can make, and the one place two sides' changes meet.
+std::vector<std::string> linesOf(const char* text) { return editor::LineText::split(text); }
+
+std::string merged3(const char* base, const char* mine, const char* theirs, bool* clean = 0) {
+    editor::ThreeWayMerge merger("mine", "base", "theirs");
+    editor::MergeResult made = merger.merge(linesOf(base), linesOf(mine), linesOf(theirs));
+    if (clean) *clean = made.clean;
+    return editor::LineText::join(made.lines);
+}
+
+void diffAndMerge() {
+    std::printf("the line diff and the three-way merge\n");
+    const char* text = "a\r\nb\nc";
+    checkEqual(editor::LineText::join(editor::LineText::split(text)), text,
+               "splitting into lines and joining gives the bytes back");
+    check(editor::LineText::split("").empty(), "an empty text has no lines");
+
+    std::vector<editor::Hunk> h = editor::LineDiff::between(linesOf("a\nb\nc\n"), linesOf("a\nb\nc\n"));
+    check(h.empty(), "two equal texts differ nowhere");
+    h = editor::LineDiff::between(linesOf("a\nc\n"), linesOf("a\nb\nc\n"));
+    check(h.size() == 1 && h[0].baseFrom == 1 && h[0].baseTo == 1 && h[0].otherTo - h[0].otherFrom == 1,
+          "an inserted line is one hunk of nothing in the base");
+    h = editor::LineDiff::between(linesOf("a\nb\nc\n"), linesOf("a\nc\n"));
+    check(h.size() == 1 && h[0].baseTo - h[0].baseFrom == 1 && h[0].otherFrom == h[0].otherTo,
+          "a deleted line is one hunk of nothing in the other");
+    h = editor::LineDiff::between(linesOf("a\nb\nc\n"), linesOf("a\nB\nc\n"));
+    check(h.size() == 1 && h[0].baseFrom == 1 && h[0].baseTo == 2, "a changed line is one hunk");
+    h = editor::LineDiff::between(linesOf("a\nb\n"), linesOf("a\r\nb\r\n"));
+    check(h.empty(), "a line's ending is not a difference");
+
+    bool clean = false;
+    checkEqual(merged3("1\n2\n3\n", "1\n2\n3\n", "1\nTWO\n3\n", &clean), "1\nTWO\n3\n",
+               "a change on their side alone is taken");
+    check(clean, "and is clean");
+    checkEqual(merged3("1\n2\n3\n", "one\n2\n3\n", "1\n2\n3\n", &clean), "one\n2\n3\n",
+               "a change on my side alone is kept");
+    checkEqual(merged3("1\n2\n3\n", "one\n2\n3\n", "1\n2\nTHREE\n", &clean), "one\n2\nTHREE\n",
+               "two changes in different places both come through");
+    checkEqual(merged3("1\n2\n3\n4\n", "1\nTWO\n3\n4\n", "1\n2\nTHREE\n4\n", &clean),
+               "1\nTWO\nTHREE\n4\n", "and so do two on adjacent lines");
+    check(clean, "which do not conflict");
+    checkEqual(merged3("1\n2\n3\n", "1\n2\n3\n", "1\n2\nnew\n3\n", &clean), "1\n2\nnew\n3\n",
+               "an insertion on their side is taken");
+    checkEqual(merged3("1\n2\n3\n", "1\n2\n3\n", "1\n3\n", &clean), "1\n3\n",
+               "and so is a deletion");
+    checkEqual(merged3("1\n2\n3\n", "1\nX\n3\n", "1\nX\n3\n", &clean), "1\nX\n3\n",
+               "the same change on both sides is taken once");
+    std::string conflicted = merged3("1\n2\n3\n", "1\nmine\n3\n", "1\ntheirs\n3\n", &clean);
+    check(!clean, "two different changes to one line conflict");
+    check(conflicted.find("<<<<<<< mine\nmine\n||||||| base\n2\n=======\ntheirs\n>>>>>>> theirs\n") !=
+              std::string::npos, "and the conflict is marked with all three");
+    checkEqual(merged3("1\n2\n", "1\r\n2\r\n", "1\n2\nadd\n", &clean), "1\r\n2\r\nadd\r\n",
+               "an incoming line takes my file's line ending");
+}
+
+// Convert's round trip over real programs, with c2s itself: nothing edited reopens the original,
+// one edit comes back alone, and an edit c2s cannot carry back leaves the original untouched.
+std::string slurp(const std::string& file) {
+    std::string text;
+    editor::RoundTrip::readFile(file, text);
+    return text;
+}
+
+int hunksBetween(const std::string& one, const std::string& other) {
+    return int(editor::LineDiff::between(editor::LineText::split(one), editor::LineText::split(other)).size());
+}
+
+bool editFile(const std::string& file, const std::string& from, const std::string& to) {
+    std::string text = slurp(file);
+    const size_t at = text.find(from);
+    if (at == std::string::npos) return false;
+    text.replace(at, from.size(), to);
+    return editor::RoundTrip::writeFile(file, text);
+}
+
+struct TripCase {
+    const char* program;    // in programs/
+    bool toShalimar;
+    const char* editFrom;   // in the converted file
+    const char* editTo;
+    const char* expectInOriginal;
+};
+
+void convertRoundTrip() {
+    std::printf("Convert's round trip through c2s\n");
+    const char* c2s = std::getenv("C2S");
+    if (!c2s || !*c2s || !editor::path::exists(c2s)) {
+        std::printf("  (skipped: no C2S named)\n");
+        return;
+    }
+    const TripCase cases[] = {
+        {"primes.shl", false, "limit = 60;", "limit = 70;", "limit : 70"},
+        {"primes.shl", false, "    n = 2;\n", "    n = 2;\n    n = 2;\n", ""},
+        {"primes.shl", false, "        d = 2;\n", "", ""},
+        {"fibonacci.c", true, "20", "25", "25"},
+        {"hello.c", true, "", "", ""},
+        {"gcd.shl", false, "", "", ""},
+        {"table.shl", false, "", "", ""},
+        {"projectile.c", true, "", "", ""},
+    };
+    int n = 0;
+    for (const TripCase& each : cases) {
+        const std::string dir = (file::temp_directory_path() / ("ride-roundtrip-" + std::to_string(n++))).string();
+        editor::path::removeTree(dir);
+        editor::path::makeDirectories(dir);
+        const std::string original = editor::path::join(dir, each.program);
+        const std::string given = slurp(std::string("programs/") + each.program);
+        if (given.empty()) { check(false, std::string("programs/") + each.program + " is there"); continue; }
+        editor::RoundTrip::writeFile(original, given);
+
+        editor::RoundTrip trip(c2s);
+        editor::RoundTripResult there = trip.convert(original, each.toShalimar);
+        check(!there.open.empty(), std::string(each.program) + " converts");
+        if (there.open.empty()) continue;
+        const std::string converted = there.open;
+        editor::ConversionRecord record;
+        check(record.load(converted) && record.original == each.program,
+              std::string(each.program) + ": the conversion is recorded beside it");
+
+        // Back, unedited: the original reopened, byte for byte.
+        editor::RoundTripResult back = trip.convert(converted, !each.toShalimar);
+        check(editor::path::same(back.open, original) && slurp(original) == given &&
+                  back.said.find("reopened the original") == 0,
+              std::string(each.program) + ": back unedited reopens the original, unchanged");
+        editor::RoundTripResult again = trip.convert(original, each.toShalimar);
+        check(editor::path::same(again.open, converted) && again.said.find("reopened") == 0,
+              std::string(each.program) + ": forward again, unchanged, reopens the conversion");
+
+        if (*each.editFrom || *each.editTo) {
+            check(editFile(converted, each.editFrom, each.editTo),
+                  std::string(each.program) + ": the edit is made in " + converted);
+            editor::RoundTripResult merged = trip.convert(converted, !each.toShalimar);
+            const std::string now = slurp(original);
+            check(merged.ok && editor::path::same(merged.open, original),
+                  std::string(each.program) + ": the edit is carried back cleanly - " + merged.said);
+            check(hunksBetween(given, now) == 1,
+                  std::string(each.program) + ": the original changes in exactly one place");
+            if (*each.expectInOriginal)
+                check(now.find(each.expectInOriginal) != std::string::npos,
+                      std::string(each.program) + ": and the place holds the edit");
+            check(editor::path::exists(editor::path::join(dir, std::string(".ride-convert/") +
+                                                          each.program + ".before")),
+                  std::string(each.program) + ": the original as it was is kept");
+            editor::RoundTripResult still = trip.convert(converted, !each.toShalimar);
+            check(still.said.find("reopened the original") == 0 && slurp(original) == now,
+                  std::string(each.program) + ": the merged pair reopens rather than merging again");
+        }
+        editor::path::removeTree(dir);
+    }
+
+    // An edit inside a part c2s marks BEYOND: the original is not written, a .merge file is.
+    const std::string dir = (file::temp_directory_path() / "ride-roundtrip-beyond").string();
+    editor::path::removeTree(dir);
+    editor::path::makeDirectories(dir);
+    const std::string original = editor::path::join(dir, "beyond.c");
+    const std::string given =
+        "#include <stdio.h>\n\nint main(void) {\n    int a = 5;\n    int *p = &a;\n"
+        "    a = a << 2;\n    printf(\"%d\\n\", a);\n    return 0;\n}\n";
+    editor::RoundTrip::writeFile(original, given);
+    editor::RoundTrip trip(c2s);
+    const std::string converted = trip.convert(original, true).open;
+    check(!converted.empty(), "a program with BEYOND parts converts");
+    if (!editor::path::exists(converted + ".c2s")) {
+        check(editFile(converted, "a = a << 2;", "a = a << 3;"), "the BEYOND line is edited");
+        editor::RoundTripResult merged = trip.convert(converted, false);
+        check(slurp(original) == given, "an edit c2s cannot carry back leaves the original untouched");
+        check(merged.open.find("beyond.merge.c") != std::string::npos &&
+                  slurp(merged.open).find("<<<<<<<") != std::string::npos,
+              "and the merge, its conflict marked, is opened beside it - " + merged.said);
+    }
+
+    // Converting afresh over a file that is not RIDE's conversion writes beside it instead.
+    editor::RoundTrip::writeFile(converted, "// the user's own file\n");
+    editor::RoundTrip::writeFile(original, given + "/* changed */\n");
+    editor::RoundTripResult beside = trip.convert(original, true);
+    check(slurp(converted) == "// the user's own file\n",
+          "a different file in the way is never written over");
+    check(beside.open.find("beyond.2.shl") != std::string::npos, "the conversion goes to beyond.2.shl");
+    editor::path::removeTree(dir);
+}
+
 void theConversionSeam() {
     std::printf("what the window asks the core to convert\n");
 
@@ -6174,6 +6359,8 @@ int main(int argc, char** argv) {
     theWindowsProjectBuild();
     namingAConversion();
     theConversionSeam();
+    diffAndMerge();
+    convertRoundTrip();
     diagnostics();
     layout();
     typing();

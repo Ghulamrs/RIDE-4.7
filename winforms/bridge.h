@@ -290,6 +290,20 @@ int ride_conversion_ok(RIDEConversion* made);
 const char* ride_conversion_produced(RIDEConversion* made);
 const char* ride_conversion_output(RIDEConversion* made);
 
+/* Convert with its round trip (src/roundtrip.h): back the way a file came reopens or merges into
+   the original, and nothing is written over a different file. Run on a worker, like ride_convert. */
+typedef struct RIDERoundTrip RIDERoundTrip;
+
+RIDERoundTrip* ride_roundtrip(const char* converter, const char* source, int toShalimar);
+void ride_roundtrip_free(RIDERoundTrip* done);
+int ride_roundtrip_ran(RIDERoundTrip* done);
+int ride_roundtrip_ok(RIDERoundTrip* done);
+int ride_roundtrip_stopped(RIDERoundTrip* done);
+const char* ride_roundtrip_open(RIDERoundTrip* done);
+const char* ride_roundtrip_said(RIDERoundTrip* done);
+const char* ride_roundtrip_output(RIDERoundTrip* done);
+const char* ride_roundtrip_report(RIDERoundTrip* done);
+
 typedef struct RIDEBuild RIDEBuild;
 
 RIDEBuild* ride_build(RIDEProject* project, const char* cc1, const char* cl, const char* shc, const char* cxx1, int kind, const char* source,

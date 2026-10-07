@@ -79,6 +79,13 @@ Conversion convert(const std::string& converter, const std::string& sourcePath,
         }
         if (placed) result.produced = outputPath;
         else path::remove(scratch);
+
+        // c2s's sidecar is written beside -o's name, so it follows the output to its own.
+        const std::string sidecar = outputPath + ".c2s";
+        if (placed && path::exists(scratch + ".c2s")) {
+            path::remove(sidecar);
+            path::rename(scratch + ".c2s", sidecar);
+        }
     }
     return result;
 }

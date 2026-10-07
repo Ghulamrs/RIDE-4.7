@@ -28,6 +28,7 @@
 #include "about.h"
 #include "compile.h"
 #include "convert.h"
+#include "roundtrip.h"
 #include "debugger.h"
 #include "shalimar/session.h"
 #include "find.h"
@@ -1812,6 +1813,29 @@ const char* ride_conversion_output(RIDEConversion* made) {
     if (!made) return "";
     return made->made.output.c_str();
 }
+
+struct RIDERoundTrip {
+    editor::RoundTripResult done;
+    bool stopped = false;
+};
+
+RIDERoundTrip* ride_roundtrip(const char* converter, const char* source, int toShalimar) {
+    RIDERoundTrip* out = new RIDERoundTrip();
+    editor::BuildScope scope;
+    editor::RoundTrip trip(converter ? converter : "");
+    out->done = trip.convert(source ? source : "", toShalimar != 0);
+    out->stopped = editor::buildCancelled();
+    return out;
+}
+
+void ride_roundtrip_free(RIDERoundTrip* done) { delete done; }
+int ride_roundtrip_ran(RIDERoundTrip* done) { return done && done->done.ran ? 1 : 0; }
+int ride_roundtrip_ok(RIDERoundTrip* done) { return done && done->done.ok ? 1 : 0; }
+int ride_roundtrip_stopped(RIDERoundTrip* done) { return done && done->stopped ? 1 : 0; }
+const char* ride_roundtrip_open(RIDERoundTrip* done) { return done ? done->done.open.c_str() : ""; }
+const char* ride_roundtrip_said(RIDERoundTrip* done) { return done ? done->done.said.c_str() : ""; }
+const char* ride_roundtrip_output(RIDERoundTrip* done) { return done ? done->done.output.c_str() : ""; }
+const char* ride_roundtrip_report(RIDERoundTrip* done) { return done ? done->done.report.c_str() : ""; }
 
 RIDEBuild* ride_build(RIDEProject* project, const char* cc1, const char* cl, const char* shc, const char* cxx1, int kind, const char* source,
                     int language, const char* arch, int config) {

@@ -17,6 +17,7 @@
 		319EBB26E9A9D41EF297C51C /* src/convert.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2F522DD9C4F2C1158C6C8EA4 /* src/convert.cpp */; };
 		219518665EABAB5920FEDA40 /* src/debugger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1A539DA37C7D0ED8101CDB5F /* src/debugger.cpp */; };
 		47CDCED66421F0502C09B6CF /* src/demangle_win.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 67F74D0DB4FDEA9DDC9E09D4 /* src/demangle_win.cpp */; };
+		4D11B6EE1830B3AA5E9E22CE /* src/diff3.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D3302793AC5846E01006526F /* src/diff3.cpp */; };
 		96FEE82F330CD26476D83BD6 /* src/editor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C6B12E11C353573C1F7E3683 /* src/editor.cpp */; };
 		2744B4F10452E4C7B39EDF5C /* src/find.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05EBAC0C7F3A0A9AD2CCCF4F /* src/find.cpp */; };
 		60BF7F690A61919C4BAEBBF8 /* src/help.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A0C700F827A4627634A53C5 /* src/help.cpp */; };
@@ -28,6 +29,7 @@
 		BA0190A9CEE093E268463B39 /* src/path.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 91B8CD3038616B323202FF10 /* src/path.cpp */; };
 		557E7A7074A432B3AC0A3911 /* src/process.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A457EC271F005C17EB5DF796 /* src/process.cpp */; };
 		A36513F8FAD50E90AC4B8F28 /* src/project.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C55DF343937ADE51AF0B5629 /* src/project.cpp */; };
+		49DE82DFB2577D7D48C4CB62 /* src/roundtrip.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 35D6890352E6B75568EEFB5C /* src/roundtrip.cpp */; };
 		E5A75D275726500CC3193782 /* src/settings.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 86C25137E1F00325F728E56A /* src/settings.cpp */; };
 		1441F2535BCDC950D8C1C89C /* src/shalimar/channel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F5A0D5518B42BCB7562414DA /* src/shalimar/channel.cpp */; };
 		66CE108DCD82940B533C6987 /* src/shalimar/session.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 70EDE89DC613FB03CA1195A3 /* src/shalimar/session.cpp */; };
@@ -52,6 +54,7 @@
 		2F522DD9C4F2C1158C6C8EA4 /* src/convert.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = src/convert.cpp; sourceTree = "<group>"; };
 		1A539DA37C7D0ED8101CDB5F /* src/debugger.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = src/debugger.cpp; sourceTree = "<group>"; };
 		67F74D0DB4FDEA9DDC9E09D4 /* src/demangle_win.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = src/demangle_win.cpp; sourceTree = "<group>"; };
+		D3302793AC5846E01006526F /* src/diff3.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = src/diff3.cpp; sourceTree = "<group>"; };
 		C6B12E11C353573C1F7E3683 /* src/editor.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = src/editor.cpp; sourceTree = "<group>"; };
 		05EBAC0C7F3A0A9AD2CCCF4F /* src/find.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = src/find.cpp; sourceTree = "<group>"; };
 		0A0C700F827A4627634A53C5 /* src/help.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = src/help.cpp; sourceTree = "<group>"; };
@@ -63,6 +66,7 @@
 		91B8CD3038616B323202FF10 /* src/path.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = src/path.cpp; sourceTree = "<group>"; };
 		A457EC271F005C17EB5DF796 /* src/process.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = src/process.cpp; sourceTree = "<group>"; };
 		C55DF343937ADE51AF0B5629 /* src/project.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = src/project.cpp; sourceTree = "<group>"; };
+		35D6890352E6B75568EEFB5C /* src/roundtrip.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = src/roundtrip.cpp; sourceTree = "<group>"; };
 		86C25137E1F00325F728E56A /* src/settings.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = src/settings.cpp; sourceTree = "<group>"; };
 		F5A0D5518B42BCB7562414DA /* src/shalimar/channel.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = src/shalimar/channel.cpp; sourceTree = "<group>"; };
 		70EDE89DC613FB03CA1195A3 /* src/shalimar/session.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = src/shalimar/session.cpp; sourceTree = "<group>"; };
@@ -83,6 +87,7 @@
 		24592E5790C07D5F48B7698B /* src/compile.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = src/compile.h; sourceTree = "<group>"; };
 		F9233243DDFF03FDE29EF1A1 /* src/convert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = src/convert.h; sourceTree = "<group>"; };
 		04298D6AA66AFA4847F44903 /* src/debugger.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = src/debugger.h; sourceTree = "<group>"; };
+		934045CA9098DC892DE3F827 /* src/diff3.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = src/diff3.h; sourceTree = "<group>"; };
 		834B15AB2CFA03789AA535CD /* src/editor.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = src/editor.h; sourceTree = "<group>"; };
 		195BB757CF4D27E5F0C21B45 /* src/find.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = src/find.h; sourceTree = "<group>"; };
 		FB504B6A163F2406FBDEB70A /* src/help.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = src/help.h; sourceTree = "<group>"; };
@@ -94,6 +99,7 @@
 		DC8E0AB934223C7D88D10853 /* src/process.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = src/process.h; sourceTree = "<group>"; };
 		BF35EC2951A57DF27604F05A /* src/product.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = src/product.h; sourceTree = "<group>"; };
 		BD3489CDD55CEB195117D379 /* src/project.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = src/project.h; sourceTree = "<group>"; };
+		B970385E545FEC3CB10E5215 /* src/roundtrip.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = src/roundtrip.h; sourceTree = "<group>"; };
 		90CC1D1C044D6EA0293138D7 /* src/settings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = src/settings.h; sourceTree = "<group>"; };
 		0450ABB585B224973FC49F69 /* src/shalimar/channel.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = src/shalimar/channel.h; sourceTree = "<group>"; };
 		428176452C1DE78B8C2ACF68 /* src/shalimar/session.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = src/shalimar/session.h; sourceTree = "<group>"; };
@@ -302,6 +308,7 @@
 				2F522DD9C4F2C1158C6C8EA4 /* src/convert.cpp */,
 				1A539DA37C7D0ED8101CDB5F /* src/debugger.cpp */,
 				67F74D0DB4FDEA9DDC9E09D4 /* src/demangle_win.cpp */,
+				D3302793AC5846E01006526F /* src/diff3.cpp */,
 				C6B12E11C353573C1F7E3683 /* src/editor.cpp */,
 				05EBAC0C7F3A0A9AD2CCCF4F /* src/find.cpp */,
 				0A0C700F827A4627634A53C5 /* src/help.cpp */,
@@ -313,6 +320,7 @@
 				91B8CD3038616B323202FF10 /* src/path.cpp */,
 				A457EC271F005C17EB5DF796 /* src/process.cpp */,
 				C55DF343937ADE51AF0B5629 /* src/project.cpp */,
+				35D6890352E6B75568EEFB5C /* src/roundtrip.cpp */,
 				86C25137E1F00325F728E56A /* src/settings.cpp */,
 				F5A0D5518B42BCB7562414DA /* src/shalimar/channel.cpp */,
 				70EDE89DC613FB03CA1195A3 /* src/shalimar/session.cpp */,
@@ -333,6 +341,7 @@
 				24592E5790C07D5F48B7698B /* src/compile.h */,
 				F9233243DDFF03FDE29EF1A1 /* src/convert.h */,
 				04298D6AA66AFA4847F44903 /* src/debugger.h */,
+				934045CA9098DC892DE3F827 /* src/diff3.h */,
 				834B15AB2CFA03789AA535CD /* src/editor.h */,
 				195BB757CF4D27E5F0C21B45 /* src/find.h */,
 				FB504B6A163F2406FBDEB70A /* src/help.h */,
@@ -344,6 +353,7 @@
 				DC8E0AB934223C7D88D10853 /* src/process.h */,
 				BF35EC2951A57DF27604F05A /* src/product.h */,
 				BD3489CDD55CEB195117D379 /* src/project.h */,
+				B970385E545FEC3CB10E5215 /* src/roundtrip.h */,
 				90CC1D1C044D6EA0293138D7 /* src/settings.h */,
 				0450ABB585B224973FC49F69 /* src/shalimar/channel.h */,
 				428176452C1DE78B8C2ACF68 /* src/shalimar/session.h */,
@@ -703,6 +713,7 @@
 				319EBB26E9A9D41EF297C51C /* src/convert.cpp in Sources */,
 				219518665EABAB5920FEDA40 /* src/debugger.cpp in Sources */,
 				47CDCED66421F0502C09B6CF /* src/demangle_win.cpp in Sources */,
+				4D11B6EE1830B3AA5E9E22CE /* src/diff3.cpp in Sources */,
 				96FEE82F330CD26476D83BD6 /* src/editor.cpp in Sources */,
 				2744B4F10452E4C7B39EDF5C /* src/find.cpp in Sources */,
 				60BF7F690A61919C4BAEBBF8 /* src/help.cpp in Sources */,
@@ -714,6 +725,7 @@
 				BA0190A9CEE093E268463B39 /* src/path.cpp in Sources */,
 				557E7A7074A432B3AC0A3911 /* src/process.cpp in Sources */,
 				A36513F8FAD50E90AC4B8F28 /* src/project.cpp in Sources */,
+				49DE82DFB2577D7D48C4CB62 /* src/roundtrip.cpp in Sources */,
 				E5A75D275726500CC3193782 /* src/settings.cpp in Sources */,
 				1441F2535BCDC950D8C1C89C /* src/shalimar/channel.cpp in Sources */,
 				66CE108DCD82940B533C6987 /* src/shalimar/session.cpp in Sources */,

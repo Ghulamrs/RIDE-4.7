@@ -62,6 +62,7 @@
     <ClCompile Include="src\convert.cpp" />
     <ClCompile Include="src\debugger.cpp" />
     <ClCompile Include="src\demangle_win.cpp" />
+    <ClCompile Include="src\diff3.cpp" />
     <ClCompile Include="src\editor.cpp" />
     <ClCompile Include="src\find.cpp" />
     <ClCompile Include="src\help.cpp" />
@@ -73,6 +74,7 @@
     <ClCompile Include="src\path.cpp" />
     <ClCompile Include="src\process.cpp" />
     <ClCompile Include="src\project.cpp" />
+    <ClCompile Include="src\roundtrip.cpp" />
     <ClCompile Include="src\settings.cpp" />
     <ClCompile Include="src\shalimar\channel.cpp" />
     <ClCompile Include="src\shalimar\session.cpp" />

@@ -3469,42 +3469,38 @@ static const NSUInteger kOutputMost = 2000000;
         return;
     }
 
-    std::string where = StdString(converter), source = StdString(path), into = StdString(produced);
+    // The round trip decides what is opened - the original again, the original with the edit merged
+    // in, a merge with conflicts marked, or a fresh conversion over nothing different (src/roundtrip.h).
+    std::string where = StdString(converter), source = StdString(path);
     [self clearIssues];
-    [self setOutput:[NSString stringWithFormat:@"$ c2s %@ %@\n", toShalimar ? @"--to-shalimar" : @"--to-c", produced]];
+    [self setOutput:[NSString stringWithFormat:@"$ c2s %@ %@\n", toShalimar ? @"--to-shalimar" : @"--to-c",
+                                               path.lastPathComponent]];
     [self beginWork:[NSString stringWithFormat:@"Converting %@ to %@", path.lastPathComponent,
                                                toShalimar ? @"Shalimar" : @"C"]
               steps:1];
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
-        Outcome outcome;
-        RIDEConversion* made = ride_convert(where.c_str(), source.c_str(), into.c_str(), toShalimar);
-        outcome.ran = ride_conversion_ran(made) != 0;
-        outcome.ok = ride_conversion_ok(made) != 0;
-        outcome.output = ride_conversion_output(made);
-        outcome.produced = ride_conversion_produced(made);
-        outcome.stopped = ride_conversion_stopped(made) != 0;
-        ride_conversion_free(made);
+        RIDERoundTrip* done = ride_roundtrip(where.c_str(), source.c_str(), toShalimar);
+        const bool ran = ride_roundtrip_ran(done) != 0, ok = ride_roundtrip_ok(done) != 0;
+        const bool stopped = ride_roundtrip_stopped(done) != 0;
+        std::string output = ride_roundtrip_output(done), report = ride_roundtrip_report(done);
+        std::string open = ride_roundtrip_open(done), said = ride_roundtrip_said(done);
+        ride_roundtrip_free(done);
         dispatch_async(dispatch_get_main_queue(), ^{
-            [self append:StrLossy(outcome.output) to:self->output_];
-            if (outcome.stopped) {
+            [self append:StrLossy(output) to:self->output_];
+            [self append:StrLossy(report) to:self->output_];
+            if (stopped) {
                 [self endWork:@"the conversion was stopped" ok:NO];
                 return;
             }
-            if (!outcome.ran) {
-                [self endWork:[@"could not run " stringByAppendingString:converter] ok:NO];
+            NSString* told = Str(said.c_str());
+            if (!ran) {
+                [self endWork:told.length ? told : [@"could not run " stringByAppendingString:converter] ok:NO];
                 return;
             }
-            NSString* written = Str(outcome.produced.c_str());
-            if (written.length == 0) {
-                [self endWork:@"nothing was written - c2s could not read or write a file" ok:NO];
-                return;
-            }
-            [self advanceWork:[@"wrote " stringByAppendingString:written]];
-            [self endWork:outcome.ok ? [written.lastPathComponent stringByAppendingString:@" - converted"]
-                                     : [written.lastPathComponent stringByAppendingString:
-                                           @" - written with unconverted parts marked; search for BEYOND"]
-                       ok:outcome.ok];
-            [self openPath:written];
+            NSString* opened = Str(open.c_str());
+            if (opened.length) [self advanceWork:[@"opened " stringByAppendingString:opened]];
+            [self endWork:told ok:ok];
+            if (opened.length) [self openPath:opened];
         });
     });
 }

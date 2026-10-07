@@ -3,6 +3,7 @@
 
 #include "about.h"
 #include "convert.h"
+#include "roundtrip.h"
 #include "help.h"
 #include "utf8.h"
 #include "symbols.h"
@@ -1724,6 +1725,8 @@ std::vector<std::string> Editor::whatIsIn(const std::string& directory) const {
 
     for (size_t i = 0; i < here.size(); ++i) {
         if (here[i].name.empty() || here[i].name[0] == '.') continue;
+        const std::string& name = here[i].name;
+        if (name.size() > 4 && name.compare(name.size() - 4, 4, ".c2s") == 0) continue;
         if (here[i].directory) {
 
             if (here[i].name == "obj" || here[i].name == "build" ||
@@ -2587,32 +2590,30 @@ void Editor::convertFile() {
     say(std::string("converting ") + baseName(buf_.path()) + " ...");
     refresh();
 
-    Conversion result = convert(converter, buf_.path(), produced, toShalimar,
-                                consoleSink, this);
+    // The round trip decides what is opened: the original again, the original with the edit merged
+    // in, a merge with conflicts marked, or a fresh conversion that writes over nothing different.
+    RoundTrip trip(converter, consoleSink, this);
+    const RoundTripResult result = trip.convert(buf_.path(), toShalimar);
 
     if (!result.ran) {
-        say(std::string("could not run ") + converter);
+        say(result.said.empty() ? std::string("could not run ") + converter : result.said);
+        return;
+    }
+    if (result.open.empty()) {
+        say(result.said);
         return;
     }
 
-    // Nothing on disk, so nothing to open. The console holds why - c2s's questions, or a file it
-    // could not read - and its last line is the summary the status line can hold. Until 2026-08-27
-    // this branch was reached only for the unreadable file: a refusal was taken for a conversion and an empty buffer opened, said to be written with parts marked BEYOND.
-    if (result.produced.empty()) {
-        const std::string why = console_.empty() ? std::string("see the console")
-                                                 : console_.back();
-        say(baseName(buf_.path()) + " - not converted: " + why);
-        return;
-    }
-
-    open(result.produced);
-    if (result.ok) {
-        say(baseName(result.produced) + " - converted");
+    // Open already, and written under it by the merge: read again, unless it holds unsaved work.
+    const size_t already = findDocument(result.open);
+    if (already < docs_.size()) {
+        switchTo(already);
+        std::string error;
+        if (!buf_.dirty()) buf_.load(result.open, error);
     } else {
-
-        say(baseName(result.produced) +
-            " - written with unconverted parts marked; search for BEYOND");
+        open(result.open);
     }
+    say(result.said);
 }
 
 void Editor::compile() {

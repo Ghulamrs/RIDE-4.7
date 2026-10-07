@@ -47,7 +47,7 @@ endif
 # tools/make-projects.py checks winforms/RIDEGui.vcxproj against it - that
 # project is kept by hand, and a file added here and forgotten there is a link
 # error on the one machine that builds the window and nowhere else.
-CORE_SRC := src/buffer.cpp src/compile.cpp src/convert.cpp \
+CORE_SRC := src/buffer.cpp src/compile.cpp src/convert.cpp src/roundtrip.cpp src/diff3.cpp \
        src/indent.cpp src/syntax.cpp \
        src/toolchain.cpp src/json.cpp src/project.cpp src/find.cpp \
        src/utf8.cpp src/workspace.cpp src/symbols.cpp src/demangle_win.cpp \
@@ -193,17 +193,17 @@ check-tools:
 test: tests/test check-tools
 	CC1="$(abspath $(CC1))" CXX1="$(abspath $(CXX1))" SHC="$(abspath $(SHC))" C2S="$(abspath $(C2S))" ./tests/test
 
-tests/test: tests/test.cpp src/compile.cpp src/indent.cpp src/syntax.cpp \
+tests/test: tests/test.cpp src/compile.cpp src/indent.cpp src/syntax.cpp src/roundtrip.cpp src/diff3.cpp \
             src/toolchain.cpp src/json.cpp src/project.cpp src/find.cpp \
        src/utf8.cpp src/workspace.cpp src/symbols.cpp src/demangle_win.cpp \
             src/path.cpp src/process.cpp src/debugger.cpp src/settings.cpp src/options.cpp src/about.cpp src/help.cpp \
             src/buffer.cpp src/ccs/ccsproject.cpp src/ccs/ccsoptions.cpp src/ccs/ccsxml.cpp src/ccs/ccsworkspace.cpp \
             src/ccs/ccsproject.h src/ccs/ccsoptions.h src/ccs/ccsxml.h src/ccs/ccsworkspace.h \
-            winforms/bridge.cpp winforms/bridge.h src/compile.h src/convert.h \
+            winforms/bridge.cpp winforms/bridge.h src/compile.h src/convert.h src/roundtrip.h src/diff3.h \
             src/indent.h src/syntax.h \
             src/json.h src/project.h src/path.h src/buffer.h
 	$(CXX) $(CXXFLAGS) -pthread -Isrc -Iwinforms -o $@ tests/test.cpp winforms/bridge.cpp \
-	    src/compile.cpp src/convert.cpp src/indent.cpp \
+	    src/compile.cpp src/convert.cpp src/roundtrip.cpp src/diff3.cpp src/indent.cpp \
 	    src/syntax.cpp src/toolchain.cpp src/json.cpp src/project.cpp src/find.cpp \
        src/utf8.cpp src/workspace.cpp src/symbols.cpp src/demangle_win.cpp \
 	    src/path.cpp src/process.cpp src/debugger.cpp src/settings.cpp src/options.cpp src/about.cpp src/help.cpp \

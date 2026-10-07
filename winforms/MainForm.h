@@ -131,11 +131,12 @@ public:
     RIDEBuild* build;
     RIDEProgram* made;
     RIDEConversion* converted;
+    RIDERoundTrip* trip;   // Convert, with its round trip
     int result;
     bool stopped;       // Build > Stop ended it: what it made is what was there when it died
 
     Job(int what) : what(what), build(nullptr), made(nullptr), converted(nullptr),
-                    result(0), stopped(false) {}
+                    trip(nullptr), result(0), stopped(false) {}
     ~Job() { delete tools; delete source; delete program; delete into; }
 };
 
@@ -4842,8 +4843,7 @@ private:
                 job->result = job->build != nullptr && ride_build_ok(job->build) != 0 ? 1 : 0;
                 break;
             case Job::Convert:
-                job->converted = ride_convert(job->program->c(), job->source->c(), job->into->c(),
-                                              job->toShalimar);
+                job->trip = ride_roundtrip(job->program->c(), job->source->c(), job->toShalimar);
                 break;
             case Job::BuildProgram:
                 job->made = ride_build_program(project_, t->cc1(), t->cl(), t->shc(), t->cxx1(), job->kind,
@@ -5836,48 +5836,32 @@ private:
             return;
         }
 
+        // The round trip decides: reopen the original, merge an edit back into it, or convert
+        // afresh into a file that writes over nothing different - src/roundtrip.h.
         console_->Text = "$ c2s " + (toShalimar ? "--to-shalimar " : "--to-c ") +
-                         produced + "\r\n";
+                         System::IO::Path::GetFileName(path_) + "\r\n";
         panel_->SelectedIndex = 0;
         what_->Text = "converting ...";
 
         Job^ job = gcnew Job(Job::Convert);
         job->program = gcnew Utf8(converter);
         job->source = gcnew Utf8(path_);
-        job->into = gcnew Utf8(produced);
         job->toShalimar = toShalimar;
         bool finished = WhileBusy(job);
-        RIDEConversion* made = job->converted;
+        RIDERoundTrip* done = job->trip;
         delete job;
-        if (made == nullptr) { what_->Text = finished ? "could not run " + converter : "stopped"; return; }
+        if (done == nullptr) { what_->Text = finished ? "could not run " + converter : "stopped"; return; }
 
-        Say(FromUtf8(ride_conversion_output(made)));
-        if (!finished) {
-            ride_conversion_free(made);
-            what_->Text = "stopped";
-            return;
-        }
+        Say(FromUtf8(ride_roundtrip_output(done)));
+        Say(FromUtf8(ride_roundtrip_report(done)));
+        String^ said = FromUtf8(ride_roundtrip_said(done));
+        String^ open = FromUtf8(ride_roundtrip_open(done));
+        bool stopped = !finished || ride_roundtrip_stopped(done) != 0;
+        ride_roundtrip_free(done);
+        if (stopped) { what_->Text = "stopped"; return; }
 
-        if (ride_conversion_ran(made) == 0) {
-            what_->Text = "could not run " + converter;
-            ride_conversion_free(made);
-            return;
-        }
-
-        String^ written = FromUtf8(ride_conversion_produced(made));
-        int ok = ride_conversion_ok(made);
-        ride_conversion_free(made);
-
-        if (written->Length == 0) {
-            what_->Text = "nothing was written - c2s could not read or write a file";
-            return;
-        }
-
-        OpenPath(written);
-        what_->Text = ok != 0
-            ? System::IO::Path::GetFileName(written) + " - converted"
-            : System::IO::Path::GetFileName(written) +
-                  " - written with unconverted parts marked; search for BEYOND";
+        if (open->Length != 0) OpenPath(open);
+        what_->Text = said->Length != 0 ? said : "nothing was written";
     }
 
     // The manual, in the browser: help\manual.html from the installation, or from the tree it was built in.

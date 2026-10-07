@@ -59,7 +59,7 @@ if exist %PRODUCT%Console.exe del %PRODUCT%Console.exe
 
 cl /nologo /std:c++14 /W4 /WX /EHsc /permissive- /O2 /D_CRT_SECURE_NO_WARNINGS ^
    /Fe:%BINDIR%\%PRODUCT%Console.exe /Fo:obj\ ^
-   src\main.cpp src\editor.cpp src\buffer.cpp src\compile.cpp src\convert.cpp ^
+   src\main.cpp src\editor.cpp src\buffer.cpp src\compile.cpp src\convert.cpp src\roundtrip.cpp src\diff3.cpp ^
    src\indent.cpp src\menu.cpp src\tree.cpp src\syntax.cpp src\toolchain.cpp ^
    src\json.cpp src\project.cpp src\find.cpp src\utf8.cpp src\workspace.cpp src\symbols.cpp src\demangle_win.cpp ^
    src\path.cpp src\process.cpp src\debugger.cpp src\settings.cpp src\options.cpp src\about.cpp src\help.cpp ^
@@ -240,7 +240,7 @@ rem The CRT's include directory before src: src\process.h has <process.h>'s name
 rem asks for the CRT's with angle brackets - winforms\RIDEGui.vcxproj says the same.
 cl /nologo /std:c++14 /W4 /WX /EHsc /permissive- /D_CRT_SECURE_NO_WARNINGS ^
    /I "%UniversalCRTSdkDir%Include\%UCRTVersion%\ucrt" /I src /I winforms /Fe:test.exe /Fo:obj\ ^
-   tests\test.cpp src\compile.cpp src\convert.cpp src\indent.cpp src\syntax.cpp src\toolchain.cpp ^
+   tests\test.cpp src\compile.cpp src\convert.cpp src\roundtrip.cpp src\diff3.cpp src\indent.cpp src\syntax.cpp src\toolchain.cpp ^
    src\json.cpp src\project.cpp src\find.cpp src\buffer.cpp src\utf8.cpp src\workspace.cpp src\symbols.cpp ^
    src\demangle_win.cpp src\path.cpp src\process.cpp src\debugger.cpp ^
    src\settings.cpp src\options.cpp src\about.cpp src\help.cpp ^
