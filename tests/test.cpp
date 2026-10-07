@@ -2130,6 +2130,29 @@ void whatADebuggerSays() {
     check(cdbLocals[0].name == "i" && cdbLocals[0].value == "1",
           "with the 0n it puts in front of a decimal taken off again");
 
+    // dv /t /V, as cdb 10.0 printed it on the Windows box: address, where, type, name, value.
+    std::vector<editor::Variable> placed = editor::dbg_readVariables(
+        editor::DebuggerCdb,
+        "0000006b`f46ff950 @rsp+0x0020       int k = 0n8\n"
+        "0000006b`f46ff958 @rsp+0x0028       struct pt * p = 0x0000006b`f46ff978\n");
+    check(placed.size() == 2 && placed[0].name == "k" && placed[0].value == "8" &&
+              placed[0].type == "int" && placed[0].address == "0x0000006bf46ff950",
+          "cdb's dv /t /V gives each variable its type and address");
+    check(placed.size() == 2 && placed[1].name == "p" && placed[1].type == "struct pt *",
+          "a type with spaces in it stays whole");
+    std::vector<editor::Variable> located = editor::dbg_readVariables(
+        editor::DebuggerLldb, "0x000000016fdff0ec: (int) x = 5\n");
+    check(located.size() == 1 && located[0].address == "0x000000016fdff0ec" &&
+              located[0].type == "int" && located[0].value == "5",
+          "lldb's frame variable -L gives the address in front");
+    check(editor::dbg_addressIn("int * 0x0000006b`f46ff930") == "0x0000006bf46ff930" &&
+              editor::dbg_addressIn("No address for operator&").empty(),
+          "an address is read out of an answer, and none out of a refusal");
+    check(editor::dbg_readType(editor::DebuggerCdb, "0:000> ?? total\nint 0n12\n") == "int" &&
+              editor::dbg_readType(editor::DebuggerGdb, "(gdb) type = struct pt *\n") == "struct pt *" &&
+              editor::dbg_readType(editor::DebuggerLldb, "(double) $0 = 4.5\n") == "double",
+          "a watch's type is read from each engine's answer");
+
     // Both print their prompt and then, on the same line, the first line of the
     // answer. Left on, it is read as part of the name - which showed up as the
     // first variable of every gdb listing being missing and nothing else.

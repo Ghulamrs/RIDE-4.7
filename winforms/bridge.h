@@ -521,6 +521,8 @@ int ride_locals_count(RIDEDebugger* debugger);
 const char* ride_local_name(RIDEDebugger* debugger, int index);
 const char* ride_local_type(RIDEDebugger* debugger, int index);
 const char* ride_local_value(RIDEDebugger* debugger, int index);
+// Where it lives, "0x...", or "" in a register or for Shalimar - the grids' Address column.
+const char* ride_local_address(RIDEDebugger* debugger, int index);
 
 const char* ride_local_text(RIDEDebugger* debugger, int index);
 int ride_locals_on_line(RIDEDebugger* debugger, const char* line);
@@ -531,6 +533,11 @@ void ride_watch_add(RIDEDebugger* debugger, const char* expression);
 int ride_watch_count(RIDEDebugger* debugger);
 const char* ride_watch_text(RIDEDebugger* debugger, int index);
 const char* ride_watch_expression(RIDEDebugger* debugger, int index);
+// A watch's fields apart, for the grid: its value (or the refusal), 1 when it is a value, and its address.
+const char* ride_watch_value(RIDEDebugger* debugger, int index);
+int ride_watch_ok(RIDEDebugger* debugger, int index);
+const char* ride_watch_address(RIDEDebugger* debugger, int index);
+const char* ride_watch_type(RIDEDebugger* debugger, int index);
 int ride_watch_on_line(RIDEDebugger* debugger, const char* line);
 void ride_watch_set(RIDEDebugger* debugger, int index, const char* expression);
 
