@@ -206,6 +206,12 @@ RoundTripResult RoundTrip::fresh(const std::string& source, const std::string& s
         path::makeDirectories(home);
         path::remove(path::join(home, leaf(where)));
         path::rename(kept, path::join(home, leaf(where)));
+        // And c2s's exact copy of the original, under its own name, goes with its record.
+        const std::string copy = path::join(path::join(work, ".c2s-original"), leaf(source));
+        if (path::exists(copy)) {
+            path::remove(path::join(home, leaf(source)));
+            path::rename(copy, path::join(home, leaf(source)));
+        }
     }
 
     ConversionRecord record;
