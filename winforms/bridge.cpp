@@ -1512,6 +1512,11 @@ const char* ride_watch_address(RIDEDebugger* debugger, int index) {
     return watched(debugger, index) ? debugger->debugger.watches()[index].address.c_str() : "";
 }
 
+const char* ride_watch_type(RIDEDebugger* debugger, int index) {
+    if (!debugger) return "";
+    return watched(debugger, index) ? debugger->debugger.watches()[index].type.c_str() : "";
+}
+
 int ride_watch_on_line(RIDEDebugger* debugger, const char* line) {
     if (!debugger) return 0;
     size_t which = editor::dbg_watchOnLine(debugger->debugger.watches(), line ? line : "");

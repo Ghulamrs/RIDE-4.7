@@ -131,7 +131,7 @@ public:
         for (int i = 0; i < watching; ++i) {
             String^ name = FromUtf8(ride_watch_expression(debugger, i));
             String^ value = FromUtf8(ride_watch_value(debugger, i));
-            int row = watch_->Rows->Add(name, value, "",
+            int row = watch_->Rows->Add(name, value, FromUtf8(ride_watch_type(debugger, i)),
                                         Address(FromUtf8(ride_watch_address(debugger, i)), value));
             if (ride_watch_ok(debugger, i) == 0)
                 watch_->Rows[row]->Cells[1]->Style->ForeColor = System::Drawing::Color::Gray;

@@ -537,6 +537,7 @@ const char* ride_watch_expression(RIDEDebugger* debugger, int index);
 const char* ride_watch_value(RIDEDebugger* debugger, int index);
 int ride_watch_ok(RIDEDebugger* debugger, int index);
 const char* ride_watch_address(RIDEDebugger* debugger, int index);
+const char* ride_watch_type(RIDEDebugger* debugger, int index);
 int ride_watch_on_line(RIDEDebugger* debugger, const char* line);
 void ride_watch_set(RIDEDebugger* debugger, int index, const char* expression);
 

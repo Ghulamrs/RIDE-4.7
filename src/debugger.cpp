@@ -769,6 +769,13 @@ size_t dbg_watchOnLine(const std::vector<Watch>& watches, const std::string& lin
     return watches.size();
 }
 
+namespace {
+bool cdbRefused(const std::string& line) {
+    return line.find("Couldn't resolve") != std::string::npos ||
+           line.find("<<ride") != std::string::npos || line.find("rror") != std::string::npos;
+}
+}
+
 std::string dbg_readValue(DebuggerKind kind, const std::string& said) {
     std::vector<std::string> all = lines(said);
 
@@ -779,6 +786,8 @@ std::string dbg_readValue(DebuggerKind kind, const std::string& said) {
         if (kind == DebuggerCdb) {
 
             if (line[0] == '?') continue;
+            // An expression cdb cannot resolve is an error line, which ends in the marker's ", 0x2d".
+            if (cdbRefused(line)) return std::string();
 
             size_t space = line.find_last_of(' ');
             if (space == std::string::npos || space + 1 >= line.size()) continue;
@@ -998,6 +1007,40 @@ std::string Debugger::addressOf(const std::string& expression) {
     return ok ? dbg_addressIn(answer) : std::string();
 }
 
+std::string Debugger::typeOf(const std::string& expression) {
+    if (!running() || expression.empty()) return std::string();
+    if (kind_ == DebuggerCdb) return dbg_readType(kind_, ask("?? " + expression));
+    if (kind_ == DebuggerGdb) return dbg_readType(kind_, ask("whatis " + expression));
+    return dbg_readType(kind_, ask("expression " + expression));
+}
+
+std::string dbg_readType(DebuggerKind kind, const std::string& said) {
+    std::vector<std::string> all = lines(said);
+    for (size_t i = 0; i < all.size(); ++i) {
+        const std::string line = trimmed(withoutPrompt(all[i]));
+        if (line.empty() || line == marker()) continue;
+        if (kind == DebuggerCdb) {
+            if (line[0] == '?') continue;
+            if (cdbRefused(line)) return std::string();
+            size_t space = line.find_last_of(' ');
+            if (space == std::string::npos) continue;
+            std::string value = line.substr(space + 1);
+            if (value.find_first_of("0123456789") == std::string::npos) continue;
+            return trimmed(line.substr(0, space));
+        }
+        if (kind == DebuggerGdb) {
+            if (line.compare(0, 7, "type = ") == 0) return trimmed(line.substr(7));
+            continue;
+        }
+        if (line[0] == '(') {
+            size_t close = line.find(')');
+            if (close != std::string::npos && line.find(" = ", close) != std::string::npos)
+                return line.substr(1, close - 1);
+        }
+    }
+    return std::string();
+}
+
 std::string dbg_addressIn(const std::string& said) {
     size_t at = said.find("0x");
     if (at == std::string::npos) return std::string();
@@ -1020,6 +1063,7 @@ void Debugger::addWatch(const std::string& expression) {
         Watch& added = watches_[watches_.size() - 1];
         added.value = evaluate(expression, &added.ok);
         added.address = added.ok ? addressOf(expression) : std::string();
+        added.type = added.ok ? typeOf(expression) : std::string();
     }
 }
 
@@ -1031,7 +1075,9 @@ void Debugger::setWatch(size_t which, const std::string& expression) {
     watches_[which].address.clear();
     watches_[which].ok = false;
     if (running()) watches_[which].value = evaluate(expression, &watches_[which].ok);
+    watches_[which].type.clear();
     if (watches_[which].ok) watches_[which].address = addressOf(expression);
+    if (watches_[which].ok) watches_[which].type = typeOf(expression);
 }
 
 void Debugger::removeWatch(size_t which) {
@@ -1044,11 +1090,13 @@ void Debugger::readWatches() {
         if (!running()) {
             watches_[i].value = "not running";
             watches_[i].address.clear();
+            watches_[i].type.clear();
             watches_[i].ok = false;
             continue;
         }
         watches_[i].value = evaluate(watches_[i].expression, &watches_[i].ok);
         watches_[i].address = watches_[i].ok ? addressOf(watches_[i].expression) : std::string();
+        watches_[i].type = watches_[i].ok ? typeOf(watches_[i].expression) : std::string();
     }
 }
 

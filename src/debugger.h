@@ -74,6 +74,7 @@ struct StackFrame {
 struct Watch {
     std::string expression;
     std::string value;
+    std::string type;
     std::string address;
     bool ok;
 
@@ -113,6 +114,9 @@ public:
 
     // Where an expression lives - "&(e)" asked of the engine - or empty when it is no lvalue.
     std::string addressOf(const std::string& expression);
+
+    // The type an expression has, as the engine names it: cdb's ??, lldb's expression, gdb's whatis.
+    std::string typeOf(const std::string& expression);
 
     void addWatch(const std::string& expression);
     void setWatch(size_t which, const std::string& expression);
@@ -169,6 +173,9 @@ std::string dbg_readValue(DebuggerKind kind, const std::string& said);
 
 // The first "0x..." in an answer, cdb's backtick taken out, or empty: how every engine spells an address.
 std::string dbg_addressIn(const std::string& said);
+
+// The type in an answer to typeOf's question, or empty: cdb "int 0n12", lldb "(int) $0 = 12", gdb "type = int".
+std::string dbg_readType(DebuggerKind kind, const std::string& said);
 
 std::string dbg_lookingAt(const StackFrame& frame);
 

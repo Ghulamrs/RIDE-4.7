@@ -2148,6 +2148,10 @@ void whatADebuggerSays() {
     check(editor::dbg_addressIn("int * 0x0000006b`f46ff930") == "0x0000006bf46ff930" &&
               editor::dbg_addressIn("No address for operator&").empty(),
           "an address is read out of an answer, and none out of a refusal");
+    check(editor::dbg_readType(editor::DebuggerCdb, "0:000> ?? total\nint 0n12\n") == "int" &&
+              editor::dbg_readType(editor::DebuggerGdb, "(gdb) type = struct pt *\n") == "struct pt *" &&
+              editor::dbg_readType(editor::DebuggerLldb, "(double) $0 = 4.5\n") == "double",
+          "a watch's type is read from each engine's answer");
 
     // Both print their prompt and then, on the same line, the first line of the
     // answer. Left on, it is read as part of the name - which showed up as the
