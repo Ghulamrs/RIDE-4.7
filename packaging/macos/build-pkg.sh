@@ -61,7 +61,7 @@ rm -rf "$STAGE"
 mkdir -p "$STAGE/Applications" "$STAGE/usr/local/$RDIR" "$STAGE/usr/local/bin"
 ditto "$APPSRC" "$STAGE/Applications/$APPNAME"
 APP=$STAGE/Applications/$APPNAME/Contents
-TOOLS="c90 cpp11 shalimar c2s vm6747 vm6747sim asm6x masm link lnk6x"
+TOOLS="c90 cpp11 shalimar c2s vm6747 sim6747 asm6x masm link lnk6x"
 
 # The window: the macOS-12 tools beside it, and what they read in Resources -
 # cpp11's headers (C++ and the C ones they wrap, one directory, as installed on

@@ -277,10 +277,10 @@ std::string emulatorProgram() {
 }
 
 std::string simulatorProgram() {
-    const char* fromEnv = std::getenv("VM6747SIM");
+    const char* fromEnv = std::getenv("SIM6747");
     if (fromEnv && *fromEnv) return fromEnv;
-    std::string beside = path::besideProgram("vm6747sim.exe");
-    if (beside.empty()) beside = path::besideProgram("vm6747sim");
+    std::string beside = path::besideProgram("sim6747.exe");
+    if (beside.empty()) beside = path::besideProgram("sim6747");
     return beside;
 }
 

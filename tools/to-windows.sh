@@ -50,7 +50,7 @@ MASM_DIR="$ROOT\\MASM"
 LINK_DIR="$ROOT\\LINK"
 LNK6X_DIR="$ROOT\\LNK6x"
 C2S_DIR="$ROOT\\Converter-C2S"
-SIM_DIR="$ROOT\\VM6747-sim"
+SIM_DIR="$ROOT\\SIM6747"
 RTS_DIR="$ROOT\\RTS6x"
 WHAT="${1:-check}"
 # A directory of its own: to-windows.sh and to-linux.sh name their archives
@@ -97,9 +97,9 @@ tar --no-mac-metadata \
 # tests/ref holds the .out images TI's lnk6x made, which its bed is held to.
 ( cd ../LNK6x && tar --no-mac-metadata --exclude '* 2.*' --exclude 'build' --exclude 'x64' \
     -czf "$TMP/lnk6x-src.tgz" src tests Makefile lnk6x.vcxproj README.md ) || exit 2
-# vm6747sim: the C6747 simulator (5.0), beside this checkout as ../VM6747-sim; RIDE.sln builds it.
-( cd ../VM6747-sim && tar --no-mac-metadata --exclude '* 2.*' --exclude '*.exe' --exclude 'build' --exclude 'oracle/ship' \
-    -czf "$TMP/vm6747sim-src.tgz" src tests msvc vm6747sim.vcxproj Makefile README.md ) || exit 2
+# sim6747: the C6747 simulator (5.0), beside this checkout as ../SIM6747; RIDE.sln builds it.
+( cd ../SIM6747 && tar --no-mac-metadata --exclude '* 2.*' --exclude '*.exe' --exclude 'build' --exclude 'oracle/ship' \
+    -czf "$TMP/sim6747-src.tgz" src tests msvc sim6747.vcxproj Makefile README.md ) || exit 2
 # rts6x: the C6747 runtime (5.1), beside this checkout as ../RTS6x; RIDE.sln builds it with build.cmd.
 ( cd ../RTS6x && tar --no-mac-metadata --exclude '* 2.*' --exclude 'build' \
     -czf "$TMP/rts6x-src.tgz" src tests tools docs Makefile build.cmd printf6x.members rts6x.vcxproj README.md ) || exit 2
@@ -126,7 +126,7 @@ scp -q "$TMP/masm-src.tgz" "$BOX:$MASM_DIR\\masm-src.tgz" || exit 2
 scp -q "$TMP/link-src.tgz" "$BOX:$LINK_DIR\\link-src.tgz" || exit 2
 scp -q "$TMP/lnk6x-src.tgz" "$BOX:$LNK6X_DIR\\lnk6x-src.tgz" || exit 2
 scp -q "$TMP/c2s-src.tgz" "$BOX:$C2S_DIR\\c2s-src.tgz" || exit 2
-scp -q "$TMP/vm6747sim-src.tgz" "$BOX:$SIM_DIR\\vm6747sim-src.tgz" || exit 2
+scp -q "$TMP/sim6747-src.tgz" "$BOX:$SIM_DIR\\sim6747-src.tgz" || exit 2
 scp -q "$TMP/rts6x-src.tgz" "$BOX:$RTS_DIR\\rts6x-src.tgz" || exit 2
 scp -q "$TMP/shalimar-src.tgz" "$BOX:$SHCI_DIR\\shalimar-src.tgz" || exit 2
 
@@ -147,7 +147,7 @@ BIN="$DIR\\bin"
   # hand-run experiments that are not ours.
   for pair in "$DIR ride" "$CC1I_DIR c90" "$CXX1_DIR cxx1" \
               "$EMU_DIR vm6747" "$ASM_DIR asm6x" "$MASM_DIR masm" "$LINK_DIR link" \
-              "$LNK6X_DIR lnk6x" "$SHCI_DIR shalimar" "$C2S_DIR c2s" "$SIM_DIR vm6747sim" "$RTS_DIR rts6x"; do
+              "$LNK6X_DIR lnk6x" "$SHCI_DIR shalimar" "$C2S_DIR c2s" "$SIM_DIR sim6747" "$RTS_DIR rts6x"; do
     set -- $pair
     printf 'cd /d "%s" || exit /b 2\r\n' "$1"
     printf 'if exist tests rmdir /s /q tests\r\n'

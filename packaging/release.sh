@@ -27,7 +27,7 @@ LNK6x:LNK6X
 LINK:LINK
 MASM:MASM
 Converter-C2S:Converter-C2S
-VM6747-sim:VM6747-sim
+SIM6747:SIM6747
 RTS6x:RTS6x"
 
 mkdir -p "$W"

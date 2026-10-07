@@ -83,7 +83,7 @@ MADE=""
 if [ "$LINKS" = 1 ]; then
     mkdir -p "$LINKDIR"
     # link is left out: coreutils already has /usr/bin/link, and PATH order would decide.
-    for t in ride:RIDE c90 cpp11 shalimar c2s vm6747 vm6747sim asm6x masm lnk6x; do
+    for t in ride:RIDE c90 cpp11 shalimar c2s vm6747 sim6747 asm6x masm lnk6x; do
         name=${t%%:*}; file=${t#*:}; [ "$file" = "$t" ] && file=$t
         for dest in "$LINKDIR/$name-$VER" "$LINKDIR/$name"; do
             [ "$PLAIN" = 0 ] && [ "$dest" = "$LINKDIR/$name" ] && continue
@@ -133,7 +133,7 @@ fi
 
 # ---- does it work --------------------------------------------------------------
 say "RIDE $VER is in $PREFIX"
-[ -n "$MADE" ] && say "  commands in $LINKDIR: ride c90 cpp11 shalimar c2s vm6747 vm6747sim asm6x masm lnk6x, each also as <name>-$VER"
+[ -n "$MADE" ] && say "  commands in $LINKDIR: ride c90 cpp11 shalimar c2s vm6747 sim6747 asm6x masm lnk6x, each also as <name>-$VER"
 case ":$PATH:" in *":$LINKDIR:"*) ;; *) [ -n "$MADE" ] && say "  add $LINKDIR to your PATH to use them by name" ;; esac
 
 if command -v cc >/dev/null 2>&1 && command -v c++ >/dev/null 2>&1; then

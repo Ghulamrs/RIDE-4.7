@@ -13,7 +13,7 @@ set "BIN=%~5"
 if "%BIN%"=="" set "BIN=%SRC%\bin"
 if exist "%STAGE%" rmdir /s /q "%STAGE%"
 mkdir "%STAGE%\bin" "%STAGE%\bin\lib"
-for %%f in (%PRODUCT%.exe %PRODUCT%Console.exe c90.exe cpp11.exe shalimar.exe vm6747.exe vm6747sim.exe asm6x.exe masm.exe link.exe lnk6x.exe c2s.exe) do (
+for %%f in (%PRODUCT%.exe %PRODUCT%Console.exe c90.exe cpp11.exe shalimar.exe vm6747.exe sim6747.exe asm6x.exe masm.exe link.exe lnk6x.exe c2s.exe) do (
   if exist "%BIN%\%%f" copy /y "%BIN%\%%f" "%STAGE%\bin\" >nul
 )
 rem The command prompt with bin on PATH: the setup changes no PATH of its own.

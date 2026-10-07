@@ -32,7 +32,7 @@ MASM_DIR ?= ../MASM
 LINK_DIR ?= ../LINK
 LNK6X_DIR ?= ../LNK6x
 # 5.0: the C6747 simulator, which runs a linked .out as TI's does, beside the emulator.
-SIM_DIR ?= ../VM6747-sim
+SIM_DIR ?= ../SIM6747
 # 5.1: RTS6x, the project's own C6747 runtime, which a TI program links against instead of TI's.
 RTS_DIR ?= ../RTS6x
 
@@ -65,7 +65,7 @@ RTS_DIR ?= ../RTS6x
 BINDIR ?= $(CURDIR)/bin
 OUT := $(abspath $(BINDIR))
 
-.PHONY: all cc1 cxx1 vm6747 vm6747sim asm6x masm link lnk6x rts6x shmrt6x shc c2s editor confirm installer bin check clean
+.PHONY: all cc1 cxx1 vm6747 sim6747 asm6x masm link lnk6x rts6x shmrt6x shc c2s editor confirm installer bin check clean
 
 # `installer`, which comes after `confirm`: a workspace build checks that what the
 # editor drives is beside it, and then packages it (2026-10-05).
@@ -111,8 +111,8 @@ link:
 lnk6x:
 	$(MAKE) -C $(LNK6X_DIR) BINDIR=$(OUT) OBJDIR=$(OUT)/obj/lnk6x
 # Its Makefile names its program vm6747.exe, the emulator's name; TARGET gives it its own.
-vm6747sim:
-	$(MAKE) -C $(SIM_DIR) BINDIR=$(OUT) OBJDIR=$(OUT)/obj/vm6747sim TARGET=$(OUT)/vm6747sim.exe
+sim6747:
+	$(MAKE) -C $(SIM_DIR) BINDIR=$(OUT) OBJDIR=$(OUT)/obj/sim6747 TARGET=$(OUT)/sim6747.exe
 
 # RTS6x is cpp11's and asm6x's output, so it waits for both, as shc waits for cpp11; its libraries,
 # Release and Debug, go to lib/rts6x-tms6747, where the editor looks for them (src/toolchain.cpp).
@@ -133,7 +133,7 @@ shmrt6x: rts6x shc
 
 # The dependency, said the same way it is said in the other three: the editor
 # is built after the things it drives. Nothing of them ends up inside it.
-editor: cc1 cxx1 vm6747 vm6747sim asm6x masm link lnk6x rts6x shmrt6x shc c2s
+editor: cc1 cxx1 vm6747 sim6747 asm6x masm link lnk6x rts6x shmrt6x shc c2s
 	$(MAKE) BINDIR=$(OUT) OBJDIR=$(OUT)/obj/editor
 
 # Asked of RIDE rather than answered here. The editor is the thing that
@@ -177,8 +177,8 @@ endif
 # The C6000 linker against lnk6x's recorded images, the same way and with the
 # same two exits: TI's runtime library is the input that is not checked in.
 	cd $(LNK6X_DIR) && LNK=$(OUT)/lnk6x.exe sh tests/run.sh || [ $$? -eq 2 ]
-# The simulator's machine-code path and its oracle kit, against the vm6747sim.exe just built.
-	cd $(SIM_DIR) && VM=$(OUT)/vm6747sim.exe sh tests/c6x-all.sh
+# The simulator's machine-code path and its oracle kit, against the sim6747.exe just built.
+	cd $(SIM_DIR) && SIM6747=$(OUT)/sim6747.exe sh tests/c6x-all.sh
 # LIBDIR too: Compiler-S's examples suite builds a C library from
 # Compiler-C/examples, and this is the only place that knows where Compiler-C
 # actually is on this machine - it is ~/ansicc on the Linux box. Without it

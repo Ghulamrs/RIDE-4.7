@@ -171,7 +171,7 @@ int main(int argc, char** argv) {
                 "                 is, which settings.json's \"ccs\" switch does for every run,\n"
                 "                 and --ccs-root names the CCS install ${CG_TOOL_ROOT} is under\n"
                 "  --simulate,    for tms6747, as --run with the linked .out run on\n"
-                "  --verify       vm6747sim, the C6747 simulator, in place of the\n"
+                "  --verify       sim6747, the C6747 simulator, in place of the\n"
                 "                 emulator - or, for --verify, run on both and the two\n"
                 "                 outputs compared: 0 they agree, 3 they differ\n"
                 "  --width n      columns per indent step (4)\n"

@@ -65,7 +65,7 @@ cdb involved.
 What that buys: statement granularity rather than an approximation, and the
 same behaviour on all four targets — including `x86_64-windows`, where c90's
 own debugging stops, and `tms6747`, where nothing else can stop: a Debug build
-there runs its `.out` on `vm6747sim`, and the program's session talks to the
+there runs its `.out` on `sim6747`, and the program's session talks to the
 editor through the simulator's host channel, as it does through a pipe on a host.
 
 What it cannot do is **read a variable**. The compiler emits no table of a

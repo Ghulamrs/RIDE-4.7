@@ -2781,7 +2781,7 @@ Ran Editor::runChosen(const std::string& program, bool shalimar, const std::vect
         result.built = true;
         const std::string why = simulationMissing(program);
         if (!why.empty()) { console_.push_back(why); result.status = 2; return result; }
-        console_.push_back("$ vm6747sim --run " + baseName(tiProgramOf(program)));
+        console_.push_back("$ sim6747 --run " + baseName(tiProgramOf(program)));
         result.ran = true;
         result.status = runCaptured(simulateCommand(tiProgramOf(program)), result.output, consoleSink, this);
         return result;

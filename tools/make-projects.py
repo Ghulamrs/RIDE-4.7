@@ -105,10 +105,10 @@ LINK_REPO = "LINK"
 # Docked since 4.0; named as the tms6747 linker under Tools, not by default.
 LNK6X_REPO = "LNK6x"
 SHC_REPO = os.path.join("VM6747", "Compiler-Si")
-# The C6747 simulator, its own repository beside this one since 5.0: VM6747-sim runs
+# The C6747 simulator, its own repository beside this one since 5.0: SIM6747 runs
 # a linked .out the way TI's simulator does - machine code, TI's boot and rts - where
-# vm6747 runs assembly. Its product is vm6747sim.exe so the two can sit side by side.
-SIM_REPO = "VM6747-sim"
+# vm6747 runs assembly. Its product is sim6747.exe so the two can sit side by side.
+SIM_REPO = "SIM6747"
 # RTS6x, the project's own C6747 runtime (5.1): its rts6x.lib is what a TI program links against
 # unless Tools names TI's compiler directory. Built from cpp11's and asm6x's output by its build.cmd.
 RTS_REPO = "RTS6x"
@@ -235,7 +235,7 @@ def projects():
                         ("masm.exe", "../" + MASM_REPO + "/masm.xcodeproj"),
                         ("link.exe", "../" + LINK_REPO + "/link.xcodeproj"),
                         ("lnk6x.exe", "../" + LNK6X_REPO + "/lnk6x.xcodeproj"),
-                        ("vm6747sim.exe", "../" + SIM_REPO + "/vm6747sim.xcodeproj"),
+                        ("sim6747.exe", "../" + SIM_REPO + "/sim6747.xcodeproj"),
                         ("shalimar.exe", "../" + SHC_REPO + "/ide/shc.xcodeproj"),
                         ("c2s.exe", "../Converter-C2S/c2s.xcodeproj")],
         },
@@ -362,10 +362,10 @@ def projects():
         },
         {
             # The C6747 simulator: the emulator's shape, plain C++14 under src/,
-            # named vm6747sim.exe so it builds beside the emulator (5.0).
-            "product": "vm6747sim.exe",
+            # named sim6747.exe so it builds beside the emulator (5.0).
+            "product": "sim6747.exe",
             "root": os.path.join(SIBLINGS, SIM_REPO),
-            "out": os.path.join(SIBLINGS, SIM_REPO, "vm6747sim.xcodeproj"),
+            "out": os.path.join(SIBLINGS, SIM_REPO, "sim6747.xcodeproj"),
             "sources": by_glob(os.path.join(SIBLINGS, SIM_REPO), ("src",)),
             "headers": headers_under(os.path.join(SIBLINGS, SIM_REPO), ("src",)),
             "include": "$(SRCROOT)/src",
@@ -1314,7 +1314,7 @@ MASM_DIR ?= ../MASM
 LINK_DIR ?= ../LINK
 LNK6X_DIR ?= ../LNK6x
 # 5.0: the C6747 simulator, which runs a linked .out as TI's does, beside the emulator.
-SIM_DIR ?= ../VM6747-sim
+SIM_DIR ?= ../SIM6747
 # 5.1: RTS6x, the project's own C6747 runtime, which a TI program links against instead of TI's.
 RTS_DIR ?= ../RTS6x
 
@@ -1347,7 +1347,7 @@ RTS_DIR ?= ../RTS6x
 BINDIR ?= $(CURDIR)/bin
 OUT := $(abspath $(BINDIR))
 
-.PHONY: all cc1 cxx1 vm6747 vm6747sim asm6x masm link lnk6x rts6x shmrt6x shc c2s editor confirm installer bin check clean
+.PHONY: all cc1 cxx1 vm6747 sim6747 asm6x masm link lnk6x rts6x shmrt6x shc c2s editor confirm installer bin check clean
 
 # `installer`, which comes after `confirm`: a workspace build checks that what the
 # editor drives is beside it, and then packages it (2026-10-05).
@@ -1393,8 +1393,8 @@ link:
 lnk6x:
 	$(MAKE) -C $(LNK6X_DIR) BINDIR=$(OUT) OBJDIR=$(OUT)/obj/lnk6x
 # Its Makefile names its program vm6747.exe, the emulator's name; TARGET gives it its own.
-vm6747sim:
-	$(MAKE) -C $(SIM_DIR) BINDIR=$(OUT) OBJDIR=$(OUT)/obj/vm6747sim TARGET=$(OUT)/vm6747sim.exe
+sim6747:
+	$(MAKE) -C $(SIM_DIR) BINDIR=$(OUT) OBJDIR=$(OUT)/obj/sim6747 TARGET=$(OUT)/sim6747.exe
 
 # RTS6x is cpp11's and asm6x's output, so it waits for both, as shc waits for cpp11; its libraries,
 # Release and Debug, go to lib/rts6x-tms6747, where the editor looks for them (src/toolchain.cpp).
@@ -1415,7 +1415,7 @@ shmrt6x: rts6x shc
 
 # The dependency, said the same way it is said in the other three: the editor
 # is built after the things it drives. Nothing of them ends up inside it.
-editor: cc1 cxx1 vm6747 vm6747sim asm6x masm link lnk6x rts6x shmrt6x shc c2s
+editor: cc1 cxx1 vm6747 sim6747 asm6x masm link lnk6x rts6x shmrt6x shc c2s
 	$(MAKE) BINDIR=$(OUT) OBJDIR=$(OUT)/obj/editor
 
 # Asked of RIDE rather than answered here. The editor is the thing that
@@ -1459,8 +1459,8 @@ endif
 # The C6000 linker against lnk6x's recorded images, the same way and with the
 # same two exits: TI's runtime library is the input that is not checked in.
 	cd $(LNK6X_DIR) && LNK=$(OUT)/lnk6x.exe sh tests/run.sh || [ $$? -eq 2 ]
-# The simulator's machine-code path and its oracle kit, against the vm6747sim.exe just built.
-	cd $(SIM_DIR) && VM=$(OUT)/vm6747sim.exe sh tests/c6x-all.sh
+# The simulator's machine-code path and its oracle kit, against the sim6747.exe just built.
+	cd $(SIM_DIR) && SIM6747=$(OUT)/sim6747.exe sh tests/c6x-all.sh
 # LIBDIR too: Compiler-S's examples suite builds a C library from
 # Compiler-C/examples, and this is the only place that knows where Compiler-C
 # actually is on this machine - it is ~/ansicc on the Linux box. Without it
@@ -1714,11 +1714,11 @@ def main():
                                 ["_CRT_SECURE_NO_WARNINGS"],
                                 includes=("$(ProjectDir)src",)),
                    "lnk6x.vcxproj"))
-    wanted.append((os.path.join(SIBLINGS, SIM_REPO, "vm6747sim.vcxproj"),
-                   vcxproj_text("vm6747sim", spec_of["vm6747sim.exe"]["sources"],
+    wanted.append((os.path.join(SIBLINGS, SIM_REPO, "sim6747.vcxproj"),
+                   vcxproj_text("sim6747", spec_of["sim6747.exe"]["sources"],
                                 ["_CRT_SECURE_NO_WARNINGS"],
                                 includes=("$(ProjectDir)src",)),
-                   "vm6747sim.vcxproj"))
+                   "sim6747.vcxproj"))
 
     wanted.append((os.path.join(SIBLINGS, RTS_REPO, "rts6x.vcxproj"), rts6x_vcxproj_text(), "rts6x.vcxproj"))
 
@@ -1733,7 +1733,7 @@ def main():
         ("masm", "../" + MASM_REPO + "/masm.vcxproj", guid("masm"), []),
         ("link", "../" + LINK_REPO + "/link.vcxproj", guid("link"), []),
         ("lnk6x", "../" + LNK6X_REPO + "/lnk6x.vcxproj", guid("lnk6x"), []),
-        ("vm6747sim", "../" + SIM_REPO + "/vm6747sim.vcxproj", guid("vm6747sim"), []),
+        ("sim6747", "../" + SIM_REPO + "/sim6747.vcxproj", guid("sim6747"), []),
         # RTS6x after cpp11 and asm6x, whose output it is (rts6x_vcxproj_text).
         ("rts6x", "../" + RTS_REPO + "/rts6x.vcxproj", guid("rts6x"), [CXX1_GUID, guid("asm6x"), SHC_GUID]),
         # shalimar after cpp11: its post-build step compiles the Shalimar runtime
@@ -1745,7 +1745,7 @@ def main():
         ("c2s", "../Converter-C2S/c2s.vcxproj", guid("c2s"), []),
         # the editor after both, which is the dependency this whole thing is
         # for - said in a .sln the way the workspace says it in a .xcodeproj.
-        ("RIDEConsole", "RIDEConsole.vcxproj", guid("RIDEConsole"), [CC1_GUID, CXX1_GUID, guid("vm6747"), guid("asm6x"), guid("masm"), guid("link"), guid("lnk6x"), guid("vm6747sim"), guid("rts6x"), guid("shalimar"), guid("c2s")]),
+        ("RIDEConsole", "RIDEConsole.vcxproj", guid("RIDEConsole"), [CC1_GUID, CXX1_GUID, guid("vm6747"), guid("asm6x"), guid("masm"), guid("link"), guid("lnk6x"), guid("sim6747"), guid("rts6x"), guid("shalimar"), guid("c2s")]),
         # The window, on the same footing as the console half. It is in the
         # solution for two reasons: so that one build makes all four, and
         # because being in a solution is what moves its output into the
@@ -1755,7 +1755,7 @@ def main():
         # version of it set OutDir, IntDir, BasicRuntimeChecks and a platform
         # version, and the binary died at startup with heap corruption before
         # main. Nothing in that file is touched to get this.
-        ("RIDEGui", "winforms/RIDEGui.vcxproj", GUI_GUID, [CC1_GUID, CXX1_GUID, guid("vm6747"), guid("asm6x"), guid("masm"), guid("link"), guid("lnk6x"), guid("vm6747sim"), guid("rts6x"), guid("shalimar"), guid("c2s")]),
+        ("RIDEGui", "winforms/RIDEGui.vcxproj", GUI_GUID, [CC1_GUID, CXX1_GUID, guid("vm6747"), guid("asm6x"), guid("masm"), guid("link"), guid("lnk6x"), guid("sim6747"), guid("rts6x"), guid("shalimar"), guid("c2s")]),
     ]
     # The installer, after every project above - said once, with all their GUIDs (2026-10-05).
     # A Visual Studio Setup Project since 2026-10-07: packaging/windows/make-setup.ps1 writes

@@ -5776,7 +5776,7 @@ void ccsProjectsBuiltAndRun() {
 
 // **RTS6x links the .out, with nothing of TI's named** (5.1, M7): a project for tms6747 built through
 // the console with no TI compiler under Tools - cpp11, asm6x and RIDE's lnk6x against rts6x.lib - and
-// the .out run on vm6747sim. The tools are named or found beside RIDE.exe; what is missing skips the case.
+// the .out run on sim6747. The tools are named or found beside RIDE.exe; what is missing skips the case.
 void rts6xLinksTheOut() {
     std::printf("RTS6x links the .out\n");
     std::string program = editor::path::programDirectory();
@@ -5795,8 +5795,8 @@ void rts6xLinksTheOut() {
     std::string asm6x = fromEnv && *fromEnv ? fromEnv : editor::path::join(beside, "asm6x.exe");
     fromEnv = std::getenv("LNK6X");
     std::string lnk = fromEnv && *fromEnv ? fromEnv : editor::path::join(beside, "lnk6x.exe");
-    fromEnv = std::getenv("VM6747SIM");
-    std::string sim = fromEnv && *fromEnv ? fromEnv : editor::path::join(beside, "vm6747sim.exe");
+    fromEnv = std::getenv("SIM6747");
+    std::string sim = fromEnv && *fromEnv ? fromEnv : editor::path::join(beside, "sim6747.exe");
     fromEnv = std::getenv("RTS6X");
     std::string rts = fromEnv && *fromEnv ? fromEnv : editor::path::join(editor::path::join(beside, "lib"), "rts6x-tms6747");
     std::string missing;
@@ -5804,7 +5804,7 @@ void rts6xLinksTheOut() {
     if (!cxx1 || !*cxx1 || !editor::path::exists(cxx1)) missing += " $CXX1";
     if (!editor::path::exists(asm6x)) missing += " asm6x";
     if (!editor::path::exists(lnk)) missing += " lnk6x";
-    if (!editor::path::exists(sim)) missing += " vm6747sim";
+    if (!editor::path::exists(sim)) missing += " sim6747";
     if (!editor::path::exists(editor::path::join(rts, "rts6x.lib"))) missing += " rts6x.lib";
     if (!editor::path::exists(editor::path::join(rts, "rts6xd.lib"))) missing += " rts6xd.lib";
     if (!missing.empty()) { std::printf("  (not here, so nothing is built:%s)\n", missing.c_str()); return; }
@@ -5830,9 +5830,9 @@ void rts6xLinksTheOut() {
     std::string homeWas = editor::path::homeDir();
     sayWhereHomeIs((dir / "home").string());
 #ifdef _WIN32
-    _putenv_s("ASM6X", asm6x.c_str()); _putenv_s("VM6747SIM", sim.c_str()); _putenv_s("RTS6X", rts.c_str());
+    _putenv_s("ASM6X", asm6x.c_str()); _putenv_s("SIM6747", sim.c_str()); _putenv_s("RTS6X", rts.c_str());
 #else
-    setenv("ASM6X", asm6x.c_str(), 1); setenv("VM6747SIM", sim.c_str(), 1); setenv("RTS6X", rts.c_str(), 1);
+    setenv("ASM6X", asm6x.c_str(), 1); setenv("SIM6747", sim.c_str(), 1); setenv("RTS6X", rts.c_str(), 1);
 #endif
     // Release links rts6x.lib, built at -O2; Debug links rts6xd.lib, built at -O0 with _DEBUG.
     const char* configs[2] = { "release", "debug" };
@@ -5842,7 +5842,7 @@ void rts6xLinksTheOut() {
                               " --cpp11 \"" + std::string(cxx1) + "\" --tilinker \"" + lnk + "\"";
         std::string output, what = configs[c];
         int status = editor::runCaptured(command, output);
-        check(status == 0, what + " builds and runs on vm6747sim (status " + std::to_string(status) + "):\n" + output);
+        check(status == 0, what + " builds and runs on sim6747 (status " + std::to_string(status) + "):\n" + output);
         check(output.find(std::string("objects, ") + libs[c]) != std::string::npos, what + ": lnk6x links against " + libs[c] + ":\n" + output);
         check(output.find("rts6740") == std::string::npos, what + ": and nothing of TI's runtime is named:\n" + output);
         check(output.find("[linked ") != std::string::npos, what + ": the .out is linked");
@@ -5862,7 +5862,7 @@ void rts6xLinksTheOut() {
                                   configs[c] + " --shalimar \"" + std::string(shc) + "\" --tilinker \"" + lnk + "\"";
             std::string output, what = std::string("shalimar ") + configs[c];
             int status = editor::runCaptured(command, output);
-            check(status == 0, what + " builds and runs on vm6747sim (status " + std::to_string(status) + "):\n" + output);
+            check(status == 0, what + " builds and runs on sim6747 (status " + std::to_string(status) + "):\n" + output);
             check(output.find(std::string(shmLibs[c]) + ", " + libs[c]) != std::string::npos,
                   what + ": lnk6x links " + shmLibs[c] + " ahead of " + libs[c] + ":\n" + output);
             check(output.find("$ asm6x 1 sources") != std::string::npos, what + ": only the program is assembled:\n" + output);

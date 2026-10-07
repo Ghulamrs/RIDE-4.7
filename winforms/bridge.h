@@ -394,12 +394,12 @@ char* ride_project_run_line(RIDEProject* project, const char* program);
 char* ride_run_line(RIDEProject* project, const char* program, const char* line);
 
 /* **Build > Run on Simulator and Build > Verify (5.0), for tms6747.** Said just before a ride_*_start, which
-   takes it: RIDE_RUN_SIMULATOR runs the build's linked <program>.out on vm6747sim, the C6747 simulator, in
+   takes it: RIDE_RUN_SIMULATOR runs the build's linked <program>.out on sim6747, the C6747 simulator, in
    place of the emulator; RIDE_RUN_VERIFY runs both, captured, and reports whether their outputs agree -
    status 0 they agree, 1 they differ, 2 one could not run. Why not is said on the output when it cannot. */
 enum { RIDE_RUN_PROGRAM = 0, RIDE_RUN_SIMULATOR = 1, RIDE_RUN_VERIFY = 2 };
 void ride_run_next(int runner);
-/* 1 when vm6747sim is beside the editor (or named by $VM6747SIM). */
+/* 1 when sim6747 is beside the editor (or named by $SIM6747). */
 int ride_simulator_here(void);
 
 /* Bytes to its input as they are - a line wants its "\n"; held until it starts. 0 once it has

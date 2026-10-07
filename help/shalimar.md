@@ -98,7 +98,7 @@ session inside the program**.
 
 So `F9`, `F8`, `F7` and `F6` work on Shalimar with no debugger installed
 anywhere, on all four targets — including `x86_64-windows`, where c90's own
-debugging stops, and `tms6747`, where a Debug build's `.out` runs on `vm6747sim`
+debugging stops, and `tms6747`, where a Debug build's `.out` runs on `sim6747`
 and its session talks to the editor through the simulator. **In the window as well as in the terminal**, which makes
 Shalimar the only language the window can stop on the machine it runs on.
 

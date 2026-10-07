@@ -2821,7 +2821,7 @@ static NSColor* ColourOf(unsigned char kind) {
 - (void)runProjectAction:(id)sender { (void)sender; ride_run_next(RIDE_RUN_PROGRAM); [self buildProject:YES]; }
 
 // **Build > Run on Simulator and Build > Verify (5.0), for tms6747.** The Run the file or the project in
-// front would make, with the bridge told which runs the program: the build's linked .out on vm6747sim, or
+// front would make, with the bridge told which runs the program: the build's linked .out on sim6747, or
 // both that and the emulator, compared. Said to the next start (ride_run_next), which takes it.
 - (void)runOn:(int)runner {
     if (![arch_ isEqualToString:@"tms6747"]) {
@@ -4244,7 +4244,7 @@ static NSString* Key(unichar c) { return [NSString stringWithCharacters:&c lengt
         argsMenu.delegate = self;
         fileArgs_ = @"";
     }
-    // tms6747's linked .out on vm6747sim, the C6747 simulator, and that run compared with the emulator's (5.0).
+    // tms6747's linked .out on sim6747, the C6747 simulator, and that run compared with the emulator's (5.0).
     [self add:@"Run on Simulator" to:build action:@selector(runSimulator:) key:@""];
     [self add:@"Verify" to:build action:@selector(verifyRun:) key:@""];
     [self add:@"Stop" to:build action:@selector(stopWork:) key:@"."];

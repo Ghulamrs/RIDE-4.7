@@ -110,9 +110,9 @@ std::string c6xAssembler();
 // with it.
 std::string launchCommand(const std::string& program, bool shalimar = false,
                           const std::vector<std::string>& args = std::vector<std::string>());
-// **The C6747 simulator, beside the emulator (5.0).** vm6747sim runs the TI program a tms6747 build
+// **The C6747 simulator, beside the emulator (5.0).** sim6747 runs the TI program a tms6747 build
 // links, <program>.out - TI's boot and runtime, instruction by instruction - where vm6747 runs the
-// assembly. $VM6747SIM names one elsewhere; empty when there is none.
+// assembly. $SIM6747 names one elsewhere; empty when there is none.
 std::string simulatorProgram();
 // Whether a built program is the emulated target's: a .s file or a <program>.vm directory.
 bool isEmulatedProgram(const std::string& program);
@@ -121,7 +121,7 @@ std::string tiProgramOf(const std::string& program);
 // The command that runs it: the simulator, --run, and -c for the cycle count on stderr.
 std::string simulateCommand(const std::string& out);
 // The line a Shalimar debug session runs: empty for a host program, which is run as it is; for a
-// C6000 build, vm6747sim running its .out, where the program's session talks over CIO's stdin and stderr.
+// C6000 build, sim6747 running its .out, where the program's session talks over CIO's stdin and stderr.
 std::string sessionCommand(const std::string& program);
 // The directory of runtime assembly a Shalimar program needs on the emulator.
 std::string shalimarRuntimeDir(Configuration config = ConfigRelease);

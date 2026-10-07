@@ -1964,7 +1964,7 @@ void runTheProgram(RIDERunning* running) {
         } else if (running->built && running->runner == RIDE_RUN_SIMULATOR) {
             if (!running->stopWanted && !editor::buildCancelled() && editor::isEmulatedProgram(program)
                 && editor::simulationMissing(program).empty()) {
-                runningSay(running, "[simulator] vm6747sim " + editor::path::filename(editor::tiProgramOf(program)));
+                runningSay(running, "[simulator] sim6747 " + editor::path::filename(editor::tiProgramOf(program)));
                 running->ran = editor::startSimulated(running->process, program);
             }
         } else if (running->built && running->runner == RIDE_RUN_PROGRAM && !running->stopWanted && !editor::buildCancelled()) {

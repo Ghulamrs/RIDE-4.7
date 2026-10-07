@@ -118,7 +118,7 @@ Ran runBuilt(const std::string& program, LineSink sink = 0, void* context = 0,
 void removeProgram(const Built& built);
 
 // **Build > Run on Simulator and Build > Verify (5.0), for tms6747.** A build links <program>.out
-// when asm6x is beside RIDE and TI's runtime is named under Tools; vm6747sim runs that TI program
+// when asm6x is beside RIDE and TI's runtime is named under Tools; sim6747 runs that TI program
 // as TI's simulator does. Why a simulated run cannot happen, or empty when it can.
 std::string simulationMissing(const std::string& program);
 // The .out run on the simulator with a real input, as startProgram runs the emulator.

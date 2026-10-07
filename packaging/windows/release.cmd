@@ -7,6 +7,9 @@ rem
 rem What is final is each repository's default branch on GitHub (main or master), never a
 rem side branch: VM6747's Compiler-Cppi is taken at the head of its own default branch, not at the commit pinned.
 rem RELEASE_DIR (default %USERPROFILE%\ride-release).
+rem RELEASE_BRANCHES, for a rehearsal only: "repo:branch ..." by GitHub name (Compiler-Cpp-Optimize for the
+rem submodule), e.g. "SIM6747:rename-sim6747 RIDE-4.7:rename-sim6747". A rehearsal is not a release: the seals
+rem of a side branch are reported and do not stop it.
 setlocal enabledelayedexpansion
 set "VER=%~1"
 if "%VER%"=="" set "VER=5.0"
@@ -26,11 +29,13 @@ call :clone LNK6x LNK6X || exit /b 1
 call :clone LINK LINK || exit /b 1
 call :clone MASM MASM || exit /b 1
 call :clone Converter-C2S Converter-C2S || exit /b 1
-call :clone VM6747-sim VM6747-sim || exit /b 1
+call :clone SIM6747 SIM6747 || exit /b 1
 call :clone RTS6x RTS6x || exit /b 1
 rem The submodule at the head of its default branch, which .gitmodules names, with the pin recorded beside it.
 for /f "tokens=3" %%h in ('git -C "%W%\VM6747" ls-tree HEAD Compiler-Cppi') do set "PIN=%%h"
 %GIT% -C "%W%\VM6747" submodule -q update --init --remote Compiler-Cppi || exit /b 1
+call :branchof Compiler-Cpp-Optimize
+if not "%BRANCH%"=="" (%GIT% -C "%W%\VM6747\Compiler-Cppi" fetch -q origin "%BRANCH%" && %GIT% -C "%W%\VM6747\Compiler-Cppi" checkout -q FETCH_HEAD) || exit /b 1
 for /f %%h in ('git -C "%W%\VM6747\Compiler-Cppi" rev-parse HEAD') do (echo   VM6747/Compiler-Cppi  %%h  default branch, VM6747 pins !PIN!& echo VM6747/Compiler-Cppi  %%h  default branch of Compiler-Cpp-Optimize; VM6747 pins !PIN!>> "%W%\RELEASE.txt.repos")
 (echo RIDE %VER%, built %DATE% %TIME% on %COMPUTERNAME% ^(Windows^) from fresh checkouts& type "%W%\RELEASE.txt.repos") > "%W%\RELEASE.txt"
 del "%W%\RELEASE.txt.repos"
@@ -42,7 +47,11 @@ if errorlevel 1 (
   echo   WARNING: no Python on this machine, so the seals were NOT checked here - release.sh checks the same commits
 ) else (
   python "%W%\RIDE-%VER%\verify_seals.py" > "%W%\SEALS.txt" 2>&1
-  if errorlevel 1 (type "%W%\SEALS.txt" & echo release.cmd: the sources do not match their seals - reseal, commit, push, run again & exit /b 1)
+  if errorlevel 1 (
+    type "%W%\SEALS.txt"
+    if "%RELEASE_BRANCHES%"=="" (echo release.cmd: the sources do not match their seals - reseal, commit, push, run again & exit /b 1)
+    echo   WARNING: a rehearsal from RELEASE_BRANCHES - the seals do not match, and this is not a release
+  )
 )
 
 echo [2/3] Every program by RIDE.sln, then the installer - its setup project, built by devenv after staging
@@ -72,8 +81,17 @@ for %%f in ("%PRODUCT%") do echo installer %%~f  %%~tf>> "%W%\RELEASE.txt"
 exit /b 0
 
 :clone
-rem dir  repository - cloned at its default branch, the one GitHub calls HEAD
-%GIT% clone -q "https://github.com/Ghulamrs/%2.git" "%W%\%1" || exit /b 1
+rem dir  repository - cloned at its default branch, the one GitHub calls HEAD, or at RELEASE_BRANCHES' branch for it
+call :branchof %2
+set "BOPT="
+if not "%BRANCH%"=="" set "BOPT=--branch %BRANCH%"
+%GIT% clone -q %BOPT% "https://github.com/Ghulamrs/%2.git" "%W%\%1" || exit /b 1
 for /f %%b in ('git -C "%W%\%1" rev-parse --abbrev-ref HEAD') do set "BR=%%b"
 for /f %%h in ('git -C "%W%\%1" rev-parse HEAD') do (echo   %1  %%h  !BR!& echo %1  %%h  !BR!  github.com/Ghulamrs/%2>> "%W%\RELEASE.txt.repos")
+exit /b 0
+
+:branchof
+rem repository - BRANCH set to its branch in RELEASE_BRANCHES, or empty
+set "BRANCH="
+for %%p in (%RELEASE_BRANCHES%) do for /f "tokens=1,2 delims=:" %%a in ("%%p") do if /i "%%a"=="%1" set "BRANCH=%%b"
 exit /b 0

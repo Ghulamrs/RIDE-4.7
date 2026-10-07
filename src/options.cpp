@@ -104,7 +104,7 @@ bool available(const std::string& id, const std::string& arch, std::string& why)
         why = "compact instructions are the C6000's; tms6747 only";
         return false;
     }
-    // tms6747: a Debug build links shmrt6xd.lib itself, and its session runs through vm6747sim (M9);
+    // tms6747: a Debug build links shmrt6xd.lib itself, and its session runs through sim6747 (M9);
     // the shalimar compiler links nothing for the C6000, so --debug has nothing to choose there.
     if (id == "shc.debugrt" && isEmulated(arch)) {
         why = "tms6747 takes the Debug runtime from the configuration - a Debug build links shmrt6xd.lib";

@@ -111,7 +111,7 @@ enum Action {
     ActionOwnLibraries,
     // The tabbed Compiler Options dialog (options.h) - the windows' alone; the terminal shows it disabled.
     ActionCompilerOptions,
-    // Build > Run on Simulator and Build > Verify (5.0): tms6747's linked .out on vm6747sim, and that
+    // Build > Run on Simulator and Build > Verify (5.0): tms6747's linked .out on sim6747, and that
     // run compared with the emulator's.
     ActionRunSimulator,
     ActionVerify

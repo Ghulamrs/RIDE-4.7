@@ -1025,7 +1025,7 @@ void removeProgram(const Built& built) {
 
 std::string simulationMissing(const std::string& program) {
     if (simulatorProgram().empty())
-        return "no vm6747sim beside " + std::string(product::kName) + " - the C6747 simulator ships with it from 5.0";
+        return "no sim6747 beside " + std::string(product::kName) + " - the C6747 simulator ships with it from 5.0";
     const std::string out = tiProgramOf(program);
     if (!path::exists(out))
         return "no " + path::filename(out) + ": a tms6747 build links one only with asm6x and lnk6x beside " +
@@ -1077,7 +1077,7 @@ Ran verifyBuilt(const std::string& program, bool shalimar, const std::vector<std
 
     for (const std::string& line : a) say(line);
     say("[verify] emulator  (vm6747, the assembly):    " + std::to_string(a.size()) + " lines, exit " + std::to_string(emuStatus));
-    say("[verify] simulator (vm6747sim, " + path::filename(tiProgramOf(program)) + "): " +
+    say("[verify] simulator (sim6747, " + path::filename(tiProgramOf(program)) + "): " +
         std::to_string(b.size()) + " lines" + (cycles.empty() ? std::string() : ", " + cycles));
     size_t k = 0;
     while (k < a.size() && k < b.size() && a[k] == b[k]) ++k;

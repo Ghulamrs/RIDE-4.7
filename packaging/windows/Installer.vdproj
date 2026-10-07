@@ -2941,8 +2941,8 @@
             }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_D977A9D4CDE2608A514ADC64C2014DF3"
             {
-            "SourcePath" = "8:..\\..\\dist\\stage50\\bin\\vm6747sim.exe"
-            "TargetName" = "8:vm6747sim.exe"
+            "SourcePath" = "8:..\\..\\dist\\stage50\\bin\\sim6747.exe"
+            "TargetName" = "8:sim6747.exe"
             "Tag" = "8:"
             "Folder" = "8:_B0889C2EFF47B57D52D26F9512EF18B9"
             "Condition" = "8:"
