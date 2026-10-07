@@ -320,6 +320,13 @@ const char* dbg_program(DebuggerKind kind) {
     static std::string* found = 0;
     if (found) return found->c_str();
 
+    // RIDE_CDB names a cdb.exe outside the Windows Kits, for a machine whose SDK left the debuggers out.
+    const char* named = std::getenv("RIDE_CDB");
+    if (named && *named && path::exists(named)) {
+        found = new std::string(named);
+        return found->c_str();
+    }
+
     const char* under[2] = {"ProgramFiles(x86)", "ProgramFiles"};
     for (size_t i = 0; i < 2; ++i) {
         const char* root = std::getenv(under[i]);
@@ -581,6 +588,14 @@ std::vector<Variable> dbg_readVariables(DebuggerKind kind, const std::string& sa
         if (line.empty() || line == marker()) continue;
 
         std::string type;
+        std::string address;
+        // lldb's -L puts "0x...: " in front of a variable that is in memory, and spaces before one that is not.
+        if (kind == DebuggerLldb && line.compare(0, 2, "0x") == 0) {
+            size_t colon = line.find(": ");
+            if (colon == std::string::npos) continue;
+            address = line.substr(0, colon);
+            line = trimmed(line.substr(colon + 2));
+        }
         if (kind == DebuggerLldb) {
             if (line.empty() || line[0] != '(') continue;
             size_t close = line.find(')');
@@ -596,6 +611,21 @@ std::vector<Variable> dbg_readVariables(DebuggerKind kind, const std::string& sa
         variable.name = trimmed(line.substr(0, equals));
         variable.type = type;
         variable.value = trimmed(line.substr(equals + 3));
+        variable.address = address;
+
+        // cdb's dv /t /V: "<address> <where> <type> <name> = value", the type free to hold spaces.
+        if (kind == DebuggerCdb && variable.name.find(' ') != std::string::npos) {
+            std::string left = variable.name;
+            size_t space = left.find_last_of(" \t");
+            variable.name = left.substr(space + 1);
+            std::string rest = trimmed(left.substr(0, space));
+            size_t first = rest.find_first_of(" \t");
+            std::string at = first == std::string::npos ? rest : rest.substr(0, first);
+            rest = first == std::string::npos ? std::string() : trimmed(rest.substr(first));
+            size_t second = rest.find_first_of(" \t");
+            variable.type = second == std::string::npos ? std::string() : trimmed(rest.substr(second));
+            variable.address = at.find('@') == std::string::npos ? dbg_addressIn("0x" + at) : std::string();
+        }
 
         if (kind == DebuggerCdb && variable.value.compare(0, 2, "0n") == 0)
             variable.value = variable.value.substr(2);
@@ -928,12 +958,14 @@ Stop Debugger::stepOut() { return afterMoving(kind_ == DebuggerCdb ? "gu" : "fin
 std::vector<Variable> Debugger::locals() {
     if (!running()) return std::vector<Variable>();
 
-    if (kind_ == DebuggerCdb) return dbg_readVariables(kind_, ask("dv"));
-    if (kind_ != DebuggerGdb) return dbg_readVariables(kind_, ask("frame variable"));
+    if (kind_ == DebuggerCdb) return dbg_readVariables(kind_, ask("dv /t /V"));
+    if (kind_ != DebuggerGdb) return dbg_readVariables(kind_, ask("frame variable -L"));
 
+    // gdb lists no addresses, so each variable is asked where it is, one "print &name" apiece.
     std::vector<Variable> found = dbg_readVariables(kind_, ask("info args"));
     std::vector<Variable> locals = dbg_readVariables(kind_, ask("info locals"));
     for (size_t i = 0; i < locals.size(); ++i) found.push_back(locals[i]);
+    for (size_t i = 0; i < found.size(); ++i) found[i].address = addressOf(found[i].name);
     return found;
 }
 
@@ -960,13 +992,35 @@ std::string Debugger::evaluate(const std::string& expression, bool* ok) {
     return why.empty() ? "no answer" : why;
 }
 
+std::string Debugger::addressOf(const std::string& expression) {
+    bool ok = false;
+    std::string answer = evaluate("&(" + expression + ")", &ok);
+    return ok ? dbg_addressIn(answer) : std::string();
+}
+
+std::string dbg_addressIn(const std::string& said) {
+    size_t at = said.find("0x");
+    if (at == std::string::npos) return std::string();
+    std::string found = "0x";
+    for (size_t i = at + 2; i < said.size(); ++i) {
+        char c = said[i];
+        if (c == '`') continue;
+        if (!std::isxdigit(static_cast<unsigned char>(c))) break;
+        found += c;
+    }
+    return found.size() > 2 ? found : std::string();
+}
+
 void Debugger::addWatch(const std::string& expression) {
     if (expression.empty()) return;
     Watch watch;
     watch.expression = expression;
     watches_.push_back(watch);
-    if (running()) watches_[watches_.size() - 1].value =
-        evaluate(expression, &watches_[watches_.size() - 1].ok);
+    if (running()) {
+        Watch& added = watches_[watches_.size() - 1];
+        added.value = evaluate(expression, &added.ok);
+        added.address = added.ok ? addressOf(expression) : std::string();
+    }
 }
 
 void Debugger::setWatch(size_t which, const std::string& expression) {
@@ -974,8 +1028,10 @@ void Debugger::setWatch(size_t which, const std::string& expression) {
     if (expression.empty()) { removeWatch(which); return; }
     watches_[which].expression = expression;
     watches_[which].value.clear();
+    watches_[which].address.clear();
     watches_[which].ok = false;
     if (running()) watches_[which].value = evaluate(expression, &watches_[which].ok);
+    if (watches_[which].ok) watches_[which].address = addressOf(expression);
 }
 
 void Debugger::removeWatch(size_t which) {
@@ -987,10 +1043,12 @@ void Debugger::readWatches() {
     for (size_t i = 0; i < watches_.size(); ++i) {
         if (!running()) {
             watches_[i].value = "not running";
+            watches_[i].address.clear();
             watches_[i].ok = false;
             continue;
         }
         watches_[i].value = evaluate(watches_[i].expression, &watches_[i].ok);
+        watches_[i].address = watches_[i].ok ? addressOf(watches_[i].expression) : std::string();
     }
 }
 

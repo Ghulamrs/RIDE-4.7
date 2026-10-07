@@ -54,10 +54,12 @@ struct Stop {
     Stop() : stopped(false), exited(false), status(0), line(0) {}
 };
 
+// address is where the variable lives, "0x..." as the engine said it, and empty in a register.
 struct Variable {
     std::string name;
     std::string type;
     std::string value;
+    std::string address;
 };
 
 struct StackFrame {
@@ -68,9 +70,11 @@ struct StackFrame {
     StackFrame() : line(0) {}
 };
 
+// address is filled where the expression is an lvalue and the engine says where it is.
 struct Watch {
     std::string expression;
     std::string value;
+    std::string address;
     bool ok;
 
     Watch() : ok(false) {}
@@ -106,6 +110,9 @@ public:
                      std::string* said = 0);
 
     std::string evaluate(const std::string& expression, bool* ok = 0);
+
+    // Where an expression lives - "&(e)" asked of the engine - or empty when it is no lvalue.
+    std::string addressOf(const std::string& expression);
 
     void addWatch(const std::string& expression);
     void setWatch(size_t which, const std::string& expression);
@@ -159,6 +166,9 @@ std::string dbg_watchLine(const Watch& watch);
 size_t dbg_watchOnLine(const std::vector<Watch>& watches, const std::string& line);
 
 std::string dbg_readValue(DebuggerKind kind, const std::string& said);
+
+// The first "0x..." in an answer, cdb's backtick taken out, or empty: how every engine spells an address.
+std::string dbg_addressIn(const std::string& said);
 
 std::string dbg_lookingAt(const StackFrame& frame);
 
