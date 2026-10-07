@@ -64,13 +64,16 @@ public:
         sides->Orientation = Orientation::Vertical;
         sides->Panel1->Controls->Add(Captioned("Locals", locals_));
         sides->Panel2->Controls->Add(Captioned("Watch", watch_));
-        SplitContainer^ upDown = gcnew SplitContainer();
-        upDown->Dock = DockStyle::Fill;
-        upDown->Orientation = Orientation::Horizontal;
-        upDown->Panel1->Controls->Add(sides);
-        upDown->Panel2->Controls->Add(Captioned("Call Stack", stack_));
-        upDown->SplitterDistance = 120;
-        grids_->Controls->Add(upDown);
+        upDown_ = gcnew SplitContainer();
+        upDown_->Dock = DockStyle::Fill;
+        upDown_->Orientation = Orientation::Horizontal;
+        upDown_->Panel1->Controls->Add(sides);
+        upDown_->Panel2->Controls->Add(Captioned("Call Stack", stack_));
+        upDown_->Panel1MinSize = 40;
+        upDown_->Panel2MinSize = 40;
+        // The variables keep three fifths of the height however the panel is resized; the stack the rest.
+        upDown_->Resize += gcnew EventHandler(this, &DebugView::Share);
+        grids_->Controls->Add(upDown_);
         grids_->Controls->Add(keys_);
         grids_->Controls->Add(stop_);
 
@@ -164,6 +167,7 @@ public:
 private:
     TextBox^ message_;
     Panel^ grids_;
+    SplitContainer^ upDown_;
     Label^ stop_;
     Label^ keys_;
     DataGridView^ locals_;
@@ -174,6 +178,11 @@ private:
     System::Drawing::Color changed_;
 
     // Shalimar says names only: no value, so no address either - "-" is kept for a value with no place.
+    void Share(Object^, EventArgs^) {
+        int room = upDown_->Height - upDown_->SplitterWidth;
+        if (room > 80) upDown_->SplitterDistance = Math::Max(40, Math::Min(room - 40, room * 3 / 5));
+    }
+
     static String^ Address(String^ address, String^ value) {
         if (address->Length > 0) return address;
         return value->Length > 0 ? "-" : "";
@@ -205,7 +214,9 @@ private:
         grid->BorderStyle = System::Windows::Forms::BorderStyle::None;
         grid->Font = gcnew System::Drawing::Font("Consolas", 9.5f);
         grid->AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode::Fill;
-        grid->RowTemplate->Height = 20;
+        grid->RowTemplate->Height = 18;
+        grid->ColumnHeadersHeight = 20;
+        grid->ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode::DisableResizing;
         for each (String^ column in columns) grid->Columns->Add(column, column);
         for each (DataGridViewColumn^ column in grid->Columns)
             column->SortMode = DataGridViewColumnSortMode::NotSortable;

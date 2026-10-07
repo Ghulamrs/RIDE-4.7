@@ -5347,6 +5347,7 @@ private:
         lookingFile_ = nullptr;
         lookingLine_ = 0;
         debugView_->NewStop();
+        PanelRoom(340);
         WriteDebugTab();
 
         for each (Sheet^ sheet in sheets_) sheet->gutter->Invalidate();
@@ -5662,6 +5663,15 @@ private:
             fold_->Text = L"\u25BE";
         }
         PlaceFold(nullptr, nullptr);
+    }
+
+    // A stop wants its grids readable: the lower panel grows to at least this height, never shrinks.
+    void PanelRoom(int height) {
+        if (folded_) fold_->Checked = false;
+        int now = outer_->Height - outer_->SplitterDistance - outer_->SplitterWidth;
+        if (now >= height) return;
+        int distance = outer_->Height - height - outer_->SplitterWidth;
+        if (distance >= outer_->Panel1MinSize) outer_->SplitterDistance = distance;
     }
 
     void ShowPanel(int which) {
