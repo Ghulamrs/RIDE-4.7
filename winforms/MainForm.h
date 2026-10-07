@@ -598,7 +598,7 @@ protected:
     static String^ ProductName() { return gcnew String(ride_product_name()); }
 
     // The window title: the product and its version, then the project it is in, then the file in
-    // front - "RIDE 5.0 - demo - main.c"; "RIDE 5.0 - main.c" with no project, "RIDE 5.0" with
+    // front - "RIDE 5.1 - demo - main.c"; "RIDE 5.1 - main.c" with no project, "RIDE 5.1" with
     // neither. One place, so opening, loading or closing a project and saving-as all say it the same way.
     void RefreshTitle() {
         String^ title = ProductName() + " " + FromUtf8(ride_version());
@@ -800,7 +800,7 @@ private:
 
     static String^ StillWorking() { return "still working - Build > Stop (Ctrl+Break) ends it"; }
 
-    // %USERPROFILE%\RIDE 5.0\settings.json, begun from the installation's defaults: the user's to change.
+    // %USERPROFILE%\RIDE 5.1\settings.json, begun from the installation's defaults: the user's to change.
     void OnSettingsFile(Object^, EventArgs^) {
         ride_write_install_file_if_absent();
         String^ file = FromUtf8(ride_install_file());

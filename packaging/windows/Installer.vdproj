@@ -2427,7 +2427,7 @@
         "DisplayName" = "8:Debug"
         "IsDebugOnly" = "11:TRUE"
         "IsReleaseOnly" = "11:FALSE"
-        "OutputFilename" = "8:Debug\\RIDE-5.0.msi"
+        "OutputFilename" = "8:Debug\\RIDE-5.1.msi"
         "PackageFilesAs" = "3:2"
         "PackageFileSize" = "3:-2147483648"
         "CabType" = "3:1"
@@ -2443,7 +2443,7 @@
         "DisplayName" = "8:Release"
         "IsDebugOnly" = "11:FALSE"
         "IsReleaseOnly" = "11:TRUE"
-        "OutputFilename" = "8:Release\\RIDE-5.0.msi"
+        "OutputFilename" = "8:Release\\RIDE-5.1.msi"
         "PackageFilesAs" = "3:2"
         "PackageFileSize" = "3:-2147483648"
         "CabType" = "3:1"
@@ -11242,7 +11242,7 @@
                 {
                     "{9EF0B969-E518-4E46-987F-47570745A589}:_B5736AF7F18843ABA4F4ED28A65B2813"
                     {
-                    "Name" = "8:RIDE 5.0"
+                    "Name" = "8:RIDE 5.1"
                     "AlwaysCreate" = "11:FALSE"
                     "Condition" = "8:"
                     "Transitive" = "11:FALSE"
@@ -11257,7 +11257,7 @@
         "Product"
         {
         "Name" = "8:Microsoft Visual Studio"
-        "ProductName" = "8:RIDE 5.0"
+        "ProductName" = "8:RIDE 5.1"
         "ProductCode" = "8:{E0B9CC6B-46B0-7954-02F5-9112003952DF}"
         "PackageCode" = "8:{7CE92F05-D9E0-43E7-A7BE-23B595FEE34B}"
         "UpgradeCode" = "8:{3D0B6F2E-5A41-4C8E-9B7D-52E1A6C0F5A1}"
@@ -11266,11 +11266,11 @@
         "RemovePreviousVersions" = "11:TRUE"
         "DetectNewerInstalledVersion" = "11:TRUE"
         "InstallAllUsers" = "11:TRUE"
-        "ProductVersion" = "8:5.0.0"
+        "ProductVersion" = "8:5.1.0"
         "Manufacturer" = "8:G. R. Akhtar"
         "ARPHELPTELEPHONE" = "8:"
         "ARPHELPLINK" = "8:"
-        "Title" = "8:RIDE 5.0"
+        "Title" = "8:RIDE 5.1"
         "Subject" = "8:"
         "ARPCONTACT" = "8:G. R. Akhtar"
         "Keywords" = "8:"
@@ -11289,7 +11289,7 @@
         {
             "{970C0BB2-C7D0-45D7-ABFA-7EC378858BC0}:_6E477D6BFC5219F30230B49C5435E645"
             {
-            "Name" = "8:RIDE 5.0"
+            "Name" = "8:RIDE 5.1"
             "Arguments" = "8:"
             "Description" = "8:"
             "ShowCmd" = "3:1"
@@ -11303,7 +11303,7 @@
             }
             "{970C0BB2-C7D0-45D7-ABFA-7EC378858BC0}:_80BBE37EEF99FF4D977F2C4951E0FE1D"
             {
-            "Name" = "8:RIDE 5.0 (console)"
+            "Name" = "8:RIDE 5.1 (console)"
             "Arguments" = "8:"
             "Description" = "8:"
             "ShowCmd" = "3:1"
@@ -11317,7 +11317,7 @@
             }
             "{970C0BB2-C7D0-45D7-ABFA-7EC378858BC0}:_0D9683AF77E6A156FDAA7E850751A6EC"
             {
-            "Name" = "8:RIDE 5.0 command prompt"
+            "Name" = "8:RIDE 5.1 command prompt"
             "Arguments" = "8:"
             "Description" = "8:"
             "ShowCmd" = "3:1"
@@ -11387,7 +11387,7 @@
             }
             "{970C0BB2-C7D0-45D7-ABFA-7EC378858BC0}:_C5A12AF224FCFF8B1C8D99CE0FDAD1E2"
             {
-            "Name" = "8:RIDE 5.0"
+            "Name" = "8:RIDE 5.1"
             "Arguments" = "8:"
             "Description" = "8:"
             "ShowCmd" = "3:1"

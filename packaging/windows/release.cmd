@@ -12,7 +12,7 @@ rem submodule), e.g. "SIM6747:rename-sim6747 RIDE-4.7:rename-sim6747". A rehears
 rem of a side branch are reported and do not stop it.
 setlocal enabledelayedexpansion
 set "VER=%~1"
-if "%VER%"=="" set "VER=5.0"
+if "%VER%"=="" set "VER=5.1"
 if "%RELEASE_DIR%"=="" set "RELEASE_DIR=%USERPROFILE%\ride-release"
 for /f %%t in ('powershell -NoProfile -Command "Get-Date -Format yyyyMMdd-HHmmss"') do set "STAMP=%%t"
 set "W=%RELEASE_DIR%\%STAMP%"

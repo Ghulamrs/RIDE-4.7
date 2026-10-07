@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RIDE 5.0 Resources</title>
+<title>RIDE 5.1 Resources</title>
 <style>
 :root {
   --ink: #1d2433; --soft: #5a6478; --line: #dfe3ea; --paper: #ffffff; --card: #f6f8fb;
@@ -70,10 +70,10 @@ footer { margin-top: 28px; padding-top: 10px; border-top: 1px solid var(--line);
 
 <h2>The editor</h2>
 <div class="grid g2">
-  <div class="card"><h3>The window <small>RIDE.exe &middot; RIDE 5.0.app</small></h3>
-    <p>Menus, the project tree, editor tabs, and the Console / Debug / Assembly panel (Errors / Progress / Output on macOS). Windows: <code>bin\RIDE.exe</code>, Start menu <b>RIDE 5.0</b>. macOS: <b>RIDE 5.0</b> in Applications. Linux has no window.</p></div>
+  <div class="card"><h3>The window <small>RIDE.exe &middot; RIDE 5.1.app</small></h3>
+    <p>Menus, the project tree, editor tabs, and the Console / Debug / Assembly panel (Errors / Progress / Output on macOS). Windows: <code>bin\RIDE.exe</code>, Start menu <b>RIDE 5.1</b>. macOS: <b>RIDE 5.1</b> in Applications. Linux has no window.</p></div>
   <div class="card"><h3>The console editor <small>RIDEConsole.exe &middot; ride</small></h3>
-    <p>The same editor in a terminal, with the mouse. Windows: <code>bin\RIDEConsole.exe</code>, Start menu <b>RIDE 5.0 (console)</b>. macOS and Linux: <code>ride</code> or <code>ride-5.0</code>. Builds without a screen: <code>ride &lt;project&gt; --build</code> or <code>--run</code>.</p></div>
+    <p>The same editor in a terminal, with the mouse. Windows: <code>bin\RIDEConsole.exe</code>, Start menu <b>RIDE 5.1 (console)</b>. macOS and Linux: <code>ride</code> or <code>ride-5.1</code>. Builds without a screen: <code>ride &lt;project&gt; --build</code> or <code>--run</code>.</p></div>
 </div>
 
 <h2>The programs it drives &mdash; all in <code>bin</code></h2>
@@ -135,16 +135,16 @@ footer { margin-top: 28px; padding-top: 10px; border-top: 1px solid var(--line);
 <h2>Settings and where everything lives</h2>
 <table>
   <tr><th></th><th>Windows</th><th>macOS</th><th>Linux</th></tr>
-  <tr><td>The installation</td><td><code>C:\Program Files\RIDE 5.0</code></td><td><code>/Applications/RIDE 5.0.app</code>, <code>/usr/local/ride-5.0</code></td><td><code>/opt/ride-5.0</code></td></tr>
-  <tr><td>Your settings &mdash; yours to change</td><td><code>%USERPROFILE%\RIDE 5.0\settings.json</code> &mdash; Tools &#9656; Settings file&hellip;</td><td><code>~/.ride/settings.json</code></td><td><code>~/.ride/settings.json</code></td></tr>
-  <tr><td>The defaults it starts from</td><td><code>settings.json</code> in the installation</td><td>built in</td><td><code>/opt/ride-5.0/settings.json</code></td></tr>
+  <tr><td>The installation</td><td><code>C:\Program Files\RIDE 5.1</code></td><td><code>/Applications/RIDE 5.1.app</code>, <code>/usr/local/ride-5.1</code></td><td><code>/opt/ride-5.1</code></td></tr>
+  <tr><td>Your settings &mdash; yours to change</td><td><code>%USERPROFILE%\RIDE 5.1\settings.json</code> &mdash; Tools &#9656; Settings file&hellip;</td><td><code>~/.ride/settings.json</code></td><td><code>~/.ride/settings.json</code></td></tr>
+  <tr><td>The defaults it starts from</td><td><code>settings.json</code> in the installation</td><td>built in</td><td><code>/opt/ride-5.1/settings.json</code></td></tr>
   <tr><td>What you were last doing</td><td colspan="3"><code>~/.ride/state.json</code> &mdash; recent files and projects, Debug or Release</td></tr>
   <tr><td>Your projects and programs</td><td colspan="3"><code>Documents/RIDE/projects</code> and <code>Documents/RIDE/programs</code></td></tr>
   <tr><td>Commands</td><td><code>bin</code> on PATH, if chosen at install</td><td colspan="2"><code>/usr/local/bin</code>: ride, c90, cpp11, shalimar, c2s, vm6747, asm6x, masm, lnk6x &mdash; each also as <code>&lt;name&gt;-4.7</code></td></tr>
 </table>
-<p class="note">A new release takes your settings across: RIDE 4.8 starts from what <code>RIDE 5.0\settings.json</code> holds. CCS projects open through Project &#9656; Open&hellip; with <code>"ccs": { "enabled": true }</code>, as shipped.</p>
+<p class="note">A new release takes your settings across: a later release starts from what <code>RIDE 5.1\settings.json</code> holds. CCS projects open through Project &#9656; Open&hellip; with <code>"ccs": { "enabled": true }</code>, as shipped.</p>
 
-<footer>RIDE 5.0 &middot; &copy;2026 G. R. Akhtar &middot; c90 1.1 &middot; cpp11 1.5 &middot; shalimar 1.2 &middot; c2s 1.2 &middot; vm6747 1.0 &middot; asm6x 1.0 &middot; masm 1.0 &middot; link 1.0 &middot; lnk6x 1.0</footer>
+<footer>RIDE 5.1 &middot; &copy;2026 G. R. Akhtar &middot; c90 1.2 &middot; cpp11 1.6 &middot; shalimar 1.2 &middot; c2s 1.2 &middot; vm6747 1.0 &middot; asm6x 1.0 &middot; masm 1.0 &middot; link 1.0 &middot; lnk6x 1.1 &middot; sim6747 1.1 &middot; rts6x 1.1</footer>
 </div>
 </body>
 </html>

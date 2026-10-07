@@ -12,7 +12,7 @@
 # for the package code, which is new per build as VS makes it; a diff of two shows
 # what the installer gained or lost. What is left out - the dialogs - is the
 # template's default, which VS fills in when it loads the project.
-param([Parameter(Mandatory = $true)][string]$Stage, [string]$Version = "5.0")
+param([Parameter(Mandatory = $true)][string]$Stage, [string]$Version = "5.1")
 $ErrorActionPreference = "Stop"
 
 $Product = "RIDE"

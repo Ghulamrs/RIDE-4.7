@@ -56,7 +56,7 @@ single file's is a scratch thing the editor made in order to run it.
 - **`~/.ride/state.json`** says what *this machine* had: the last project
   you were in, whether you are building debug or release, the font the window
   draws code in, and whatever else earns a place. It is state, not
-  configuration - the configuration is `settings.json`, in `RIDE 5.0` under your
+  configuration - the configuration is `settings.json`, in `RIDE 5.1` under your
   home directory on Windows and in the same `.ride` on macOS and Linux, begun from
   the installation's own the first time RIDE starts. In
   your own directory rather than beside the program, because the program's

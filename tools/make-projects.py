@@ -1234,10 +1234,10 @@ def installer_xcodeproj_text():
     One aggregate target whose single step is build-pkg.sh, which builds every
     tool and the window itself and then the .pkg - so building the Installer
     scheme in RIDE.xcworkspace compiles all the other projects first and ends
-    with dist/RIDE-5.0-macos.pkg.
+    with dist/RIDE-5.1-macos.pkg.
     """
     i = lambda *parts: ident("Installer", *parts)
-    script = 'cd \\"$PROJECT_DIR/../..\\" && sh packaging/macos/build-pkg.sh 5.0\\n'
+    script = 'cd \\"$PROJECT_DIR/../..\\" && sh packaging/macos/build-pkg.sh 5.1\\n'
     return ("// !$*UTF8*$!\n{\n\tarchiveVersion = 1;\n\tclasses = {\n\t};\n\tobjectVersion = 56;\n\tobjects = {\n\n"
             "\t\t%s = {\n\t\t\tisa = PBXAggregateTarget;\n\t\t\tbuildConfigurationList = %s;\n"
             "\t\t\tbuildPhases = (\n\t\t\t\t%s,\n\t\t\t);\n\t\t\tdependencies = (\n\t\t\t);\n"
@@ -1494,7 +1494,7 @@ endif
 # confirmed, the platform's packager makes it from them - dist/RIDE-$(VER)-linux-x86_64.run
 # on Linux, dist/RIDE-$(VER)-macos.pkg on a Mac. NOINSTALLER=1 skips it: the packagers
 # pass it when they build the workspace themselves, so neither builds the other.
-VER ?= 5.0
+VER ?= 5.1
 installer: confirm
 ifneq ($(NOINSTALLER),)
 	@echo "installer: skipped (NOINSTALLER)"

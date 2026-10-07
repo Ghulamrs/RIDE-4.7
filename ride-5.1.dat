@@ -1,7 +1,7 @@
-©2026 G. R. Akhtar - RIDE 5.0, the editor
-Release seal, version 5.0, sealed 08-10-2026
+©2026 G. R. Akhtar - RIDE 5.1, the editor
+Release seal, version 5.1, sealed 08-10-2026
 Written by tools/seal; check it with `tools/seal check`.
-CRC32  size  file - 80 files, seal 35BD9D0E
+CRC32  size  file - 80 files, seal 0A46C214
 ------------------------------------------------------------------
 1DBB2FBC      2412  macos/CodeView.h
 02B3F91E     14632  macos/CodeView.mm
@@ -9,9 +9,9 @@ CRC32  size  file - 80 files, seal 35BD9D0E
 A7F98CCC      5957  macos/LineNumbers.mm
 7E2C43FD      2767  macos/Text.h
 AEF649AE      1693  macos/WindowController.h
-D404792F    201750  macos/WindowController.mm
+BB3CD976    201750  macos/WindowController.mm
 18F9EFDC      4599  macos/main.mm
-D196F8E8     15886  src/about.cpp
+1396D1B4     15886  src/about.cpp
 ABC4FB50      1108  src/about.h
 634B7DB9      8502  src/buffer.cpp
 985593C8      2268  src/buffer.h
@@ -23,11 +23,11 @@ D8374802      9429  src/ccs/ccsworkspace.cpp
 EF83F9F1      2439  src/ccs/ccsworkspace.h
 3A0B2ECF      7309  src/ccs/ccsxml.cpp
 075B8813      1319  src/ccs/ccsxml.h
-D0BDDD0F     50893  src/compile.cpp
+8B9FDF5F     50917  src/compile.cpp
 D82898C8      6733  src/compile.h
 30128498      3193  src/convert.cpp
 E5744BBB       644  src/convert.h
-815C0FB1     39826  src/debugger.cpp
+457DB820     41186  src/debugger.cpp
 03C275FC      5205  src/debugger.h
 DA6DC095       811  src/demangle_win.cpp
 AD058FC0    153205  src/editor.cpp
@@ -49,10 +49,10 @@ D12A8855      1365  src/json.h
 623BE189      1421  src/path.h
 AA505B11     36918  src/process.cpp
 AAB34DCA      1876  src/process.h
-02A46B2B      1369  src/product.h
+2BC66371      1369  src/product.h
 9ABC65A3     42937  src/project.cpp
 854C2958      8376  src/project.h
-0E3F49F9     27452  src/settings.cpp
+7DCF5CC6     27457  src/settings.cpp
 3E0AC86E      6626  src/settings.h
 4B7E8748      9069  src/shalimar/channel.cpp
 22E40405       577  src/shalimar/channel.h
@@ -66,8 +66,8 @@ D5878BEA      1652  src/terminal.cpp
 DFE9AF58      2608  src/terminal.h
 581ADD3D      5822  src/terminal_common.cpp
 57E6C881      5770  src/terminal_win.cpp
-EC145B05     38587  src/toolchain.cpp
-912A654C      8610  src/toolchain.h
+27A8CE07     40337  src/toolchain.cpp
+4C8E2B88      8989  src/toolchain.h
 36906883      3898  src/tree.cpp
 3DB0E288      1196  src/tree.h
 60E1C337      3330  src/utf8.cpp
@@ -76,7 +76,7 @@ D93038C5       572  src/utf8.h
 F35C52A2      2086  src/workspace.h
 6C3EEE85     11320  winforms/DebugView.h
 1FF1F4DF      5110  winforms/ErrorList.h
-AAD1DCDE    270783  winforms/MainForm.h
+50A0F483    270783  winforms/MainForm.h
 6BA8DA64      2289  winforms/Marshal.h
 3D89F3C4      6415  winforms/Program.cpp
 B2EA0EE1      4860  winforms/TextFile.h

@@ -21,18 +21,18 @@ NAME = "MASTER.SEAL"
 
 # (the program, the project directory beside RIDE, its seal file) - workspace.mk's order.
 PROJECTS = [
-    ("RIDE", ".", "ride-5.0.dat"),
-    ("c90", "../VM6747/Compiler-Ci", "c90-1.1.dat"),
-    ("cpp11", "../VM6747/Compiler-Cppi", "cxx1-1.5.dat"),
+    ("RIDE", ".", "ride-5.1.dat"),
+    ("c90", "../VM6747/Compiler-Ci", "c90-1.2.dat"),
+    ("cpp11", "../VM6747/Compiler-Cppi", "cxx1-1.6.dat"),
     ("shalimar", "../VM6747/Compiler-Si", "shalimar-1.2.dat"),
     ("c2s", "../Converter-C2S", "c2s-1.2.dat"),
     ("vm6747", "../VM6747/Emulator", "vm6747-1.0.dat"),
     ("asm6x", "../ASM6x", "asm6x-1.0.dat"),
     ("masm", "../MASM", "masm-1.0.dat"),
     ("link", "../LINK", "link-1.0.dat"),
-    ("lnk6x", "../LNK6x", "lnk6x-1.0.dat"),
+    ("lnk6x", "../LNK6x", "lnk6x-1.1.dat"),
     ("sim6747", "../SIM6747", "sim6747-1.1.dat"),
-    ("rts6x", "../RTS6x", "rts6x-1.0.dat"),
+    ("rts6x", "../RTS6x", "rts6x-1.1.dat"),
 ]
 
 
@@ -66,7 +66,7 @@ def write():
     total = combined(rs)
     today = datetime.date.today().strftime("%d-%m-%Y")
     with open(os.path.join(ROOT, NAME), "w") as fh:
-        fh.write("©2026 G. R. Akhtar - RIDE 5.0 and the programs it drives\n")
+        fh.write("©2026 G. R. Akhtar - RIDE 5.1 and the programs it drives\n")
         fh.write("Master seal: each project's seal, listed and combined into one\n")
         fh.write("Written by tools/master-seal; check it with `tools/master-seal check`.\n")
         fh.write("%d projects, %d files, master seal %08X\n"

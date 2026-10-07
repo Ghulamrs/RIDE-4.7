@@ -51,7 +51,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd \"$PROJECT_DIR/../..\" && sh packaging/macos/build-pkg.sh 5.0\n";
+			shellScript = "cd \"$PROJECT_DIR/../..\" && sh packaging/macos/build-pkg.sh 5.1\n";
 			showEnvVarsInLog = 0;
 		};
 		DBF8B3B49474250C9A1958E8 = {

@@ -3916,7 +3916,7 @@ static const NSUInteger kOutputMost = 2000000;
             initWithString:about
                 attributes:@{NSFontAttributeName : [NSFont systemFontOfSize:[NSFont smallSystemFontSize]],
                              NSForegroundColorAttributeName : [NSColor labelColor]}],
-        @"Copyright" : stamp.length > 0 ? stamp : @"RIDE 5.0 - G. R. Akhtar",
+        @"Copyright" : stamp.length > 0 ? stamp : @"RIDE 5.1 - G. R. Akhtar",
     };
     [NSApp orderFrontStandardAboutPanelWithOptions:options];
 }
