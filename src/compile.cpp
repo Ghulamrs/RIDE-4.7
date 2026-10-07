@@ -608,6 +608,8 @@ std::vector<std::string> assemblyIn(const std::string& dir) {
 void makeTiProgram(Built& result, const Toolchain& tool, const std::string& program, Configuration config,
                    LineSink sink, void* context) {
     if (!result.ok) return;
+    // A step said as it happens where there is a sink (the console), into the output where there is not (the window).
+    auto tell = [&](const std::string& line) { if (sink) sink(context, line); else result.output += line + "\n"; };
     std::string as = c6xAssembler();
     if (as.empty()) return;
     std::string dir = result.program;
@@ -642,7 +644,7 @@ void makeTiProgram(Built& result, const Toolchain& tool, const std::string& prog
     }
     std::string command = q(as);
     for (size_t i = 0; i < sources.size(); ++i) command += " " + q(sources[i]);
-    if (sink) sink(context, "$ asm6x " + std::to_string(sources.size()) + " sources");
+    tell("$ asm6x " + std::to_string(sources.size()) + " sources");
     if (runCaptured(command, result.output, sink, context) != 0) {
         result.ok = false;
         std::string hint = "asm6x refused the assembly - the emulator would run it, but it is not a TI program";
@@ -661,7 +663,7 @@ void makeTiProgram(Built& result, const Toolchain& tool, const std::string& prog
     std::string ti = rts6x ? std::string() : settings::ti();
     const std::string made = "[" + std::to_string(objects.size()) + " TI objects made; a .out needs TI's linker";
     if (!rts6x && ti.empty()) {
-        if (sink) sink(context, "[" + std::to_string(objects.size()) + " TI objects made; a .out needs RTS6x in "
+        tell("[" + std::to_string(objects.size()) + " TI objects made; a .out needs RTS6x in "
                                 "lib/rts6x-tms6747 beside the editor, or TI's compiler named under Tools]");
         return;
     }
@@ -671,7 +673,7 @@ void makeTiProgram(Built& result, const Toolchain& tool, const std::string& prog
     const bool eh = rts6x || path::exists(path::join(lib, "rts6740_elf_eh.lib")) ||
                     (!extra.empty() && path::exists(path::join(extra, "rts6740_elf_eh.lib")));
     if (!eh && named.empty()) {
-        if (sink) sink(context, made + " and rts6740_elf_eh.lib, named under Tools - " + ti + " has only rts6740_elf.lib]");
+        tell(made + " and rts6740_elf_eh.lib, named under Tools - " + ti + " has only rts6740_elf.lib]");
         return;
     }
     // The project's own C6000 linker where one is named, TI's otherwise; the runtime and the
@@ -743,7 +745,7 @@ void makeTiProgram(Built& result, const Toolchain& tool, const std::string& prog
         link += " -l " + rts;
     }
     link += " -o " + q(out);
-    if (sink) sink(context, "$ lnk6x " + std::to_string(objects.size()) + " objects, " + (shmPacked ? shmLib + ", " : std::string()) + rts +
+    tell("$ lnk6x " + std::to_string(objects.size()) + " objects, " + (shmPacked ? shmLib + ", " : std::string()) + rts +
                     (given.given && !given.cmdFiles.empty() ? ", " + path::filename(given.cmdFiles[0]) : std::string()) +
                     " -o " + path::filename(out));
     if (runCaptured(link, result.output, sink, context) != 0) {
@@ -753,7 +755,7 @@ void makeTiProgram(Built& result, const Toolchain& tool, const std::string& prog
         if (sink) sink(context, hint);
         return;
     }
-    if (sink) sink(context, "[linked " + out + "]");
+    tell("[linked " + out + "]");
 }
 
 }
