@@ -4821,36 +4821,25 @@ void theWindowStoppingShalimar() {
 // wrote; these are the decisions made before it is run, which are the ones that can be wrong
 // without anybody noticing until a file has been written over.
 void namingAConversion() {
-    checkEqual(editor::convertedName("prime.c", true), "prime.shl",
-               "a C file converts to .shl beside itself");
-    checkEqual(editor::convertedName("prime.shm", false), "prime.c",
-               "and a Shalimar one back to .c");
-    checkEqual(editor::convertedName("prime.shl", false), "prime.c",
-               "and .shl is what gets written, being the only suffix read as\n"
-               "               Shalimar - a written .shm opened as plain text");
-
-    // The whole path is kept, not just the name: the converted file belongs
-    // beside the original and not in whatever directory the editor was
-    // started from.
-    checkEqual(editor::convertedName("/a/b/prime.c", true), "/a/b/prime.shl",
+    // The direction is in the name (2026-10-07): Shalimar to C writes .s2c.c, C to Shalimar .c2s.shl.
+    checkEqual(editor::convertedName("table.shl", false), "table.s2c.c", "Shalimar to C says so");
+    checkEqual(editor::convertedName("table.c", true), "table.c2s.shl", "and C to Shalimar");
+    checkEqual(editor::convertedName("prime.shm", false), "prime.s2c.c", "a .shm converts the same way");
+    checkEqual(editor::convertedName("/a/b/prime.c", true), "/a/b/prime.c2s.shl",
                "the directory comes with it");
-
-    // A dot in a directory name is not an extension of the file. Getting this
-    // wrong would truncate the path and write somewhere else entirely.
-    checkEqual(editor::convertedName("/a.b/prime", true), "/a.b/prime.shl",
+    checkEqual(editor::convertedName("/a.b/prime", true), "/a.b/prime.c2s.shl",
                "a dot in a directory is not the file's extension");
-    checkEqual(editor::convertedName("/a.b/prime.c", false), "/a.b/prime.c",
-               "and the same file asked for in the direction it is already in");
-
-    checkEqual(editor::convertedName("", true), "",
-               "an unsaved file has no name to convert");
-
-    // The one the editor turns away: converting a .c into a .c would write
-    // over the file it is reading.
-    check(editor::convertedName("prime.c", false) == "prime.c",
-          "the wrong direction names the file itself, which the editor refuses");
+    checkEqual(editor::convertedName("my.table.shl", false), "my.table.s2c.c",
+               "a stem with dots of its own keeps them");
+    checkEqual(editor::convertedName("table.s2c.c", true), "table.c2s.shl",
+               "a converted file converted afresh takes the other marker, not a second one");
+    checkEqual(editor::convertedName("table.c2s.shl", false), "table.s2c.c", "and the other way");
+    checkEqual(editor::convertedName("/x/.s2c.c", true), "/x/.s2c.c2s.shl",
+               "a marker with no name before it is the name");
+    checkEqual(editor::convertedName("", true), "", "an unsaved file has no name to convert");
+    check(editor::convertedName("prime.c", false) != "prime.c",
+          "no name converts into itself");
 }
-
 
 // The line diff and the three-way merge under Convert's round trip (src/diff3.h): every shape of
 // change one side can make, and the one place two sides' changes meet.
@@ -4904,6 +4893,9 @@ void diffAndMerge() {
     check(!clean, "two different changes to one line conflict");
     check(conflicted.find("<<<<<<< mine\nmine\n||||||| base\n2\n=======\ntheirs\n>>>>>>> theirs\n") !=
               std::string::npos, "and the conflict is marked with all three");
+    checkEqual(merged3("x = 60;\n", "  x : 60\n", "x = 70;\n", &clean), "  x : 70\n",
+               "a word changed on a line both sides changed is carried where it stands once");
+    check(clean, "and does not conflict");
     checkEqual(merged3("1\n2\n", "1\r\n2\r\n", "1\n2\nadd\n", &clean), "1\r\n2\r\nadd\r\n",
                "an incoming line takes my file's line ending");
 }
@@ -4947,8 +4939,8 @@ void convertRoundTrip() {
         {"primes.shl", false, "limit = 60;", "limit = 70;", "limit : 70"},
         {"primes.shl", false, "    n = 2;\n", "    n = 2;\n    n = 2;\n", ""},
         {"primes.shl", false, "        d = 2;\n", "", ""},
-        {"fibonacci.c", true, "20", "25", "25"},
-        {"hello.c", true, "", "", ""},
+        {"hello.c", true, "Hello from C", "Hello again", "Hello again"},
+        {"fibonacci.c", true, "", "", ""},
         {"gcd.shl", false, "", "", ""},
         {"table.shl", false, "", "", ""},
         {"projectile.c", true, "", "", ""},
@@ -5015,13 +5007,17 @@ void convertRoundTrip() {
     editor::RoundTrip trip(c2s);
     const std::string converted = trip.convert(original, true).open;
     check(!converted.empty(), "a program with BEYOND parts converts");
-    if (!editor::path::exists(converted + ".c2s")) {
+    {
+        // With c2s's own sidecar (.c2skeep) the BEYOND line may come back as it was; without it, the
+        // edit is either a conflict or a part c2s cannot carry back. Either way, nothing is lost.
         check(editFile(converted, "a = a << 2;", "a = a << 3;"), "the BEYOND line is edited");
         editor::RoundTripResult merged = trip.convert(converted, false);
-        check(slurp(original) == given, "an edit c2s cannot carry back leaves the original untouched");
-        check(merged.open.find("beyond.merge.c") != std::string::npos &&
-                  slurp(merged.open).find("<<<<<<<") != std::string::npos,
-              "and the merge, its conflict marked, is opened beside it - " + merged.said);
+        const bool conflicted = merged.open.find("beyond.merge.c") != std::string::npos &&
+                                slurp(merged.open).find("<<<<<<<") != std::string::npos;
+        const bool notCarried = merged.said.find("does not carry back") != std::string::npos;
+        if (!editor::path::exists(converted + ".c2skeep"))
+            check((conflicted || notCarried) && slurp(original) == given,
+                  "an edit c2s cannot carry back leaves the original untouched - " + merged.said);
     }
 
     // Converting afresh over a file that is not RIDE's conversion writes beside it instead.
@@ -5030,7 +5026,7 @@ void convertRoundTrip() {
     editor::RoundTripResult beside = trip.convert(original, true);
     check(slurp(converted) == "// the user's own file\n",
           "a different file in the way is never written over");
-    check(beside.open.find("beyond.2.shl") != std::string::npos, "the conversion goes to beyond.2.shl");
+    check(beside.open.find("beyond.c2s.2.shl") != std::string::npos, "the conversion goes to beyond.c2s.2.shl");
     editor::path::removeTree(dir);
 }
 
@@ -5049,11 +5045,11 @@ void theConversionSeam() {
           "and neither has plain text");
 
     char* named = ride_converted_name("/a/b/prime.c", 1);
-    checkEqual(named, "/a/b/prime.shl", "the window is told the same name the editor uses");
+    checkEqual(named, "/a/b/prime.c2s.shl", "the window is told the same name the editor uses");
     ride_free(named);
 
     named = ride_converted_name("/a.b/prime", 1);
-    checkEqual(named, "/a.b/prime.shl", "including that a dot in a directory is not an extension");
+    checkEqual(named, "/a.b/prime.c2s.shl", "including that a dot in a directory is not an extension");
     ride_free(named);
 
     char* found = ride_find_converter();

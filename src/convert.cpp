@@ -42,7 +42,16 @@ std::string convertedName(const std::string& sourcePath, bool toShalimar) {
     // .shl, the only suffix this editor reads as Shalimar. It wrote .shm until 2026-08-27 - shc
     // takes either - and the file it made then opened as plain text in the editor that had just
     // made it, with no colouring and the wrong compiler behind Build. One suffix that travels.
-    return stem + (toShalimar ? ".shl" : ".c");
+    // The direction is in the name: table.shl to C is table.s2c.c, table.c to Shalimar table.c2s.shl.
+    // A marker already there is replaced, so a converted file converted afresh names where it went.
+    std::string base = stem;
+    const size_t marker = base.size() >= 4 ? base.size() - 4 : std::string::npos;
+    if (marker != std::string::npos && marker > 0 &&
+        (base.compare(marker, 4, ".s2c") == 0 || base.compare(marker, 4, ".c2s") == 0)) {
+        const size_t slash = base.find_last_of("/\\");
+        if (slash == std::string::npos || slash < marker - 1) base = base.substr(0, marker);
+    }
+    return base + (toShalimar ? ".c2s.shl" : ".s2c.c");
 }
 
 Conversion convert(const std::string& converter, const std::string& sourcePath,
@@ -80,11 +89,11 @@ Conversion convert(const std::string& converter, const std::string& sourcePath,
         if (placed) result.produced = outputPath;
         else path::remove(scratch);
 
-        // c2s's sidecar is written beside -o's name, so it follows the output to its own.
-        const std::string sidecar = outputPath + ".c2s";
-        if (placed && path::exists(scratch + ".c2s")) {
+        // c2s's sidecar (.c2skeep) is written beside -o's name, so it follows the output to its own.
+        const std::string sidecar = outputPath + ".c2skeep";
+        if (placed && path::exists(scratch + ".c2skeep")) {
             path::remove(sidecar);
-            path::rename(scratch + ".c2s", sidecar);
+            path::rename(scratch + ".c2skeep", sidecar);
         }
     }
     return result;

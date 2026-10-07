@@ -200,10 +200,10 @@ RoundTripResult RoundTrip::fresh(const std::string& source, const std::string& s
         return result;
     }
     // c2s's own sidecar, when it writes one, belongs beside the file it describes.
-    const std::string sidecar = path::join(work, leaf(target)) + ".c2s";
+    const std::string sidecar = path::join(work, leaf(target)) + ".c2skeep";
     if (path::exists(sidecar)) {
-        path::remove(where + ".c2s");
-        path::rename(sidecar, where + ".c2s");
+        path::remove(where + ".c2skeep");
+        path::rename(sidecar, where + ".c2skeep");
     }
 
     ConversionRecord record;
@@ -239,8 +239,8 @@ RoundTripResult RoundTrip::mergeBack(const std::string& source, const std::strin
     std::string base, theirs;
     // The untouched copy is read by c2s with the sidecar it was written with, as the edited one is.
     std::string sidecar;
-    path::remove(asConverted + ".c2s");
-    if (readFile(source + ".c2s", sidecar)) writeFile(asConverted + ".c2s", sidecar);
+    path::remove(asConverted + ".c2skeep");
+    if (readFile(source + ".c2skeep", sidecar)) writeFile(asConverted + ".c2skeep", sidecar);
     if (!writeFile(asConverted, record.convertedText) ||
         !runConverter(asConverted, path::join(untouched, record.original), toShalimar, base, result) ||
         !runConverter(source, path::join(edited, record.original), toShalimar, theirs, result)) {
@@ -277,7 +277,7 @@ RoundTripResult RoundTrip::mergeBack(const std::string& source, const std::strin
     result.open = original;
     if (text == originalText) {
         result.said = "reopened the original " + record.original + " - the edit to " +
-                      leaf(source) + " changes nothing in it";
+                      leaf(source) + " is in a part c2s does not carry back (a BEYOND line or a comment)";
     } else {
         writeFile(path::join(folder, record.original + ".before"), originalText);
         if (!writeFile(original, text)) {

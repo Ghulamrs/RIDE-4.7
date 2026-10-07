@@ -173,6 +173,40 @@ std::string withEnding(const std::string& line, const std::string& ending) {
     return ended ? LineText::body(line) + ending : line;
 }
 
+// Within one line, the words their side changed - base to theirs, out to whitespace on either
+// side - carried into mine where those words stand exactly once: the edit moves, the noise stays.
+bool carryWord(const std::string& base, const std::string& mine, const std::string& theirs,
+               std::string& out) {
+    const std::string b = LineText::body(base), t = LineText::body(theirs);
+    if (b == t) { out = mine; return true; }
+    size_t front = 0;
+    while (front < b.size() && front < t.size() && b[front] == t[front]) ++front;
+    size_t back = 0;
+    while (back < b.size() - front && back < t.size() - front &&
+           b[b.size() - 1 - back] == t[t.size() - 1 - back]) ++back;
+    while (front > 0 && b[front - 1] != ' ' && b[front - 1] != '\t') --front;
+    while (back > 0 && b[b.size() - back] != ' ' && b[b.size() - back] != '\t') --back;
+    const std::string old = b.substr(front, b.size() - back - front);
+    const std::string made = t.substr(front, t.size() - back - front);
+    if (old.empty()) return false;
+    const size_t at = mine.find(old);
+    if (at == std::string::npos || mine.find(old, at + 1) != std::string::npos) return false;
+    out = mine.substr(0, at) + made + mine.substr(at + old.size());
+    return true;
+}
+
+bool carryWords(const std::vector<std::string>& base, const std::vector<std::string>& mine,
+                const std::vector<std::string>& theirs, std::vector<std::string>& out) {
+    if (base.size() != mine.size() || base.size() != theirs.size()) return false;
+    out.clear();
+    for (size_t i = 0; i < base.size(); ++i) {
+        std::string line;
+        if (!carryWord(base[i], mine[i], theirs[i], line)) return false;
+        out.push_back(line);
+    }
+    return true;
+}
+
 std::string terminated(const std::string& line, const std::string& ending) {
     return (!line.empty() && line[line.size() - 1] == '\n') ? line : line + ending;
 }
@@ -211,6 +245,7 @@ MergeResult ThreeWayMerge::merge(const std::vector<std::string>& base,
 
         // The lines before it are the same in all three; mine's are kept, terminators and all.
         const int same = low - b;
+        std::vector<std::string> carried;
         for (int i = 0; i < same; ++i) result.lines.push_back(mine[m + i]);
         m += same; t += same; b = low;
 
@@ -227,6 +262,15 @@ MergeResult ThreeWayMerge::merge(const std::vector<std::string>& base,
             for (const std::string& line : theirsRun) {
                 result.lines.push_back(withEnding(line, ending));
                 said += "\n  + " + LineText::body(line);
+            }
+            result.changes.push_back(said);
+        } else if (carryWords(baseRun, mineRun, theirsRun, carried)) {
+            std::string said = "line " + std::to_string(at) + ":";
+            for (size_t i = 0; i < carried.size(); ++i) {
+                if (carried[i] != mineRun[i]) {
+                    said += "\n  - " + LineText::body(mineRun[i]) + "\n  + " + LineText::body(carried[i]);
+                }
+                result.lines.push_back(carried[i]);
             }
             result.changes.push_back(said);
         } else {
