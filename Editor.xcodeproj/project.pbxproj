@@ -112,7 +112,7 @@
 		C6FDAB869EEB7E10AE5FD082 /* masm.exe.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = masm.exe.xcodeproj; path = "../MASM/masm.xcodeproj"; sourceTree = "<group>"; };
 		50D81AC569E0F891754877FB /* link.exe.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = link.exe.xcodeproj; path = "../LINK/link.xcodeproj"; sourceTree = "<group>"; };
 		9D247B3447C62B7635D2921C /* lnk6x.exe.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = lnk6x.exe.xcodeproj; path = "../LNK6x/lnk6x.xcodeproj"; sourceTree = "<group>"; };
-		2ED97604B0299DEB4D95C0D0 /* sim6747.exe.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = sim6747.exe.xcodeproj; path = "../SIM6747/sim6747.xcodeproj"; sourceTree = "<group>"; };
+		5D282113890EF8B08E9AEA66 /* sim6747.exe.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = sim6747.exe.xcodeproj; path = "../SIM6747/sim6747.xcodeproj"; sourceTree = "<group>"; };
 		20F47CFB1AFB49F45A779D94 /* shalimar.exe.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = shalimar.exe.xcodeproj; path = "../VM6747/Compiler-Si/ide/shc.xcodeproj"; sourceTree = "<group>"; };
 		BC9013065FB079B5AABE7840 /* c2s.exe.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = c2s.exe.xcodeproj; path = "../Converter-C2S/c2s.xcodeproj"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -216,18 +216,18 @@
 			remoteGlobalIDString = 0AF269B5D180058A3A373CDD;
 			remoteInfo = lnk6x.exe;
 		};
-		D53D58E42F0E56B8DBB59EC5 /* PBXContainerItemProxy */ = {
+		9C87738C3EAED36AA6533B82 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = 2ED97604B0299DEB4D95C0D0 /* sim6747.exe.xcodeproj */;
+			containerPortal = 5D282113890EF8B08E9AEA66 /* sim6747.exe.xcodeproj */;
 			proxyType = 2;
-			remoteGlobalIDString = A6D16C1F5B156175C01B1B5A;
+			remoteGlobalIDString = B91267F56D6AA1024A984CAF;
 			remoteInfo = sim6747.exe;
 		};
-		268A23C00DC28AF8F8399C3F /* PBXContainerItemProxy */ = {
+		AA536CD4CCA5BE93F854590C /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = 2ED97604B0299DEB4D95C0D0 /* sim6747.exe.xcodeproj */;
+			containerPortal = 5D282113890EF8B08E9AEA66 /* sim6747.exe.xcodeproj */;
 			proxyType = 1;
-			remoteGlobalIDString = 2564CB7A74E42A161DBF03ED;
+			remoteGlobalIDString = 5E960C5054CCAAB1660E0661;
 			remoteInfo = sim6747.exe;
 		};
 		15AE588F317C502585E71E35 /* PBXContainerItemProxy */ = {
@@ -282,7 +282,7 @@
 				C6FDAB869EEB7E10AE5FD082 /* masm.exe.xcodeproj */,
 				50D81AC569E0F891754877FB /* link.exe.xcodeproj */,
 				9D247B3447C62B7635D2921C /* lnk6x.exe.xcodeproj */,
-				2ED97604B0299DEB4D95C0D0 /* sim6747.exe.xcodeproj */,
+				5D282113890EF8B08E9AEA66 /* sim6747.exe.xcodeproj */,
 				20F47CFB1AFB49F45A779D94 /* shalimar.exe.xcodeproj */,
 				BC9013065FB079B5AABE7840 /* c2s.exe.xcodeproj */,
 				C18780E713D0BF364A69C720 /* Products */,
@@ -422,10 +422,10 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		012713F5EA8BDE488F58D17D /* Products */ = {
+		3E896AAEC29C7601FFED23E2 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				C9ACD510B0D23B52E9D4745F /* sim6747.exe */,
+				563D51EDDC1BBBE7238DA08D /* sim6747.exe */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -498,11 +498,11 @@
 			remoteRef = 059FE6429DCF410E55006E30 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
-		C9ACD510B0D23B52E9D4745F /* sim6747.exe */ = {
+		563D51EDDC1BBBE7238DA08D /* sim6747.exe */ = {
 			isa = PBXReferenceProxy;
 			fileType = "compiled.mach-o.executable";
 			path = sim6747.exe;
-			remoteRef = D53D58E42F0E56B8DBB59EC5 /* PBXContainerItemProxy */;
+			remoteRef = 9C87738C3EAED36AA6533B82 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 		47E9456A4D30B2A0D282BFDD /* shalimar.exe */ = {
@@ -540,7 +540,7 @@
 				798AA8065CE552C784396C3D /* PBXTargetDependency */,
 				545C3C90E63EDC28BBBF1096 /* PBXTargetDependency */,
 				178E83B15A97E4AD9DE4F752 /* PBXTargetDependency */,
-				8A9A9B645B372B413754F001 /* PBXTargetDependency */,
+				C9C657923BF5D76A79F70FB8 /* PBXTargetDependency */,
 				94F0B70E90121F03E07652E0 /* PBXTargetDependency */,
 				27CF405BAD4F100DEC0EB38F /* PBXTargetDependency */,
 			);
@@ -587,10 +587,10 @@
 			name = lnk6x.exe;
 			targetProxy = 0E662B3717904866837E32FE /* PBXContainerItemProxy */;
 		};
-		8A9A9B645B372B413754F001 /* PBXTargetDependency */ = {
+		C9C657923BF5D76A79F70FB8 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = sim6747.exe;
-			targetProxy = 268A23C00DC28AF8F8399C3F /* PBXContainerItemProxy */;
+			targetProxy = AA536CD4CCA5BE93F854590C /* PBXContainerItemProxy */;
 		};
 		94F0B70E90121F03E07652E0 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -651,8 +651,8 @@
 					ProjectRef = 9D247B3447C62B7635D2921C /* lnk6x.exe.xcodeproj */;
 				},
 				{
-					ProductGroup = 012713F5EA8BDE488F58D17D /* Products */;
-					ProjectRef = 2ED97604B0299DEB4D95C0D0 /* sim6747.exe.xcodeproj */;
+					ProductGroup = 3E896AAEC29C7601FFED23E2 /* Products */;
+					ProjectRef = 5D282113890EF8B08E9AEA66 /* sim6747.exe.xcodeproj */;
 				},
 				{
 					ProductGroup = A3CADF3D129D12576654102A /* Products */;
