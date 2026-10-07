@@ -32,6 +32,9 @@ std::string configFlags(ToolchainKind kind, Configuration config,
 bool optimises(ToolchainKind kind);
 
 bool emitsDebugInfo(ToolchainKind kind, const std::string& arch);
+// **A c90 or cpp11 Debug build for x86_64-windows (M10)**: -g's CodeView, the GNU spelling clang
+// assembles, link.exe /DEBUG for the PDB, and cdb to read it - whatever masm and LINK settings name.
+bool debugsWithCodeView(ToolchainKind kind, const std::string& arch, Configuration config);
 
 std::vector<std::string> debugNote(ToolchainKind kind, const std::string& arch);
 
@@ -167,7 +170,7 @@ std::string shownProgramCommand(const Toolchain& tool, ToolchainKind kind,
                                 const std::string& source, Language lang,
                                 const std::string& arch, Configuration config);
 
-// " -masm=masm" for cpp11 on x86_64-windows when settings name an assembler.
+// " -masm=masm" for cpp11 on x86_64-windows when settings name an assembler; " -masm=gnu" for a Debug build with CodeView.
 std::string assemblerFlag(ToolchainKind kind, const std::string& arch, Configuration config);
 Recipe targetRecipe(const Toolchain& tool, ToolchainKind kind,
                     const std::vector<std::string>& sources, Language lang,
@@ -185,7 +188,7 @@ Recipe linkRecipe(const Toolchain& tool, const std::vector<std::string>& objects
 
 std::string linkerName(bool withCpp);
 
-bool prepareFor(ToolchainKind kind, Configuration config);
+bool prepareFor(ToolchainKind kind, Configuration config, const std::string& arch = std::string());
 // Whether the vendor's tools for a target are here, found as a build finds them and never by PATH: Visual Studio through vswhere or "vcvars", TI's lnk6x under "ti". The native question is put only when this says yes.
 bool nativeToolsAvailable(const std::string& arch);
 

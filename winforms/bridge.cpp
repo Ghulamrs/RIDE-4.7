@@ -1399,6 +1399,11 @@ const char* ride_local_value(RIDEDebugger* debugger, int index) {
     return holds(debugger, index) ? debugger->locals[index].value.c_str() : "";
 }
 
+const char* ride_local_address(RIDEDebugger* debugger, int index) {
+    if (!debugger) return "";
+    return holds(debugger, index) ? debugger->locals[index].address.c_str() : "";
+}
+
 int ride_stack_count(RIDEDebugger* debugger) {
     if (!debugger) return 0;
     return static_cast<int>(debugger->stack.size());
@@ -1490,6 +1495,26 @@ const char* ride_watch_expression(RIDEDebugger* debugger, int index) {
     return watched(debugger, index)
                ? debugger->debugger.watches()[index].expression.c_str()
                : "";
+}
+
+const char* ride_watch_value(RIDEDebugger* debugger, int index) {
+    if (!debugger) return "";
+    return watched(debugger, index) ? debugger->debugger.watches()[index].value.c_str() : "";
+}
+
+int ride_watch_ok(RIDEDebugger* debugger, int index) {
+    if (!debugger) return 0;
+    return watched(debugger, index) && debugger->debugger.watches()[index].ok ? 1 : 0;
+}
+
+const char* ride_watch_address(RIDEDebugger* debugger, int index) {
+    if (!debugger) return "";
+    return watched(debugger, index) ? debugger->debugger.watches()[index].address.c_str() : "";
+}
+
+const char* ride_watch_type(RIDEDebugger* debugger, int index) {
+    if (!debugger) return "";
+    return watched(debugger, index) ? debugger->debugger.watches()[index].type.c_str() : "";
 }
 
 int ride_watch_on_line(RIDEDebugger* debugger, const char* line) {

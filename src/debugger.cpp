@@ -65,6 +65,9 @@ std::vector<std::string> preamble(DebuggerKind kind) {
 
         said.push_back(".lines -e");
         said.push_back("l+t");
+        // Source mode as well (M10): with l+t alone `t` stopped on a function's first byte, before its
+        // parameters were stored - for cl's programs too - where l+s goes on to the first statement.
+        said.push_back("l+s");
         said.push_back("n 10");
     } else {
 
@@ -193,7 +196,7 @@ bool gdbOwn(const std::string& line) {
 
 bool ourCommand(const std::string& bare) {
     static const char* const said[] = {
-        "g", "p", "t", "gu", "k", "q", "ln", "dv", "l+t", "n 10",
+        "g", "p", "t", "gu", "k", "q", "ln", "dv", "l+t", "l+s", "n 10",
         ".lines -e", ".lastevent", ".echo", ".printf"
     };
     for (size_t i = 0; i < sizeof said / sizeof said[0]; ++i)
@@ -320,6 +323,13 @@ const char* dbg_program(DebuggerKind kind) {
     static std::string* found = 0;
     if (found) return found->c_str();
 
+    // RIDE_CDB names a cdb.exe outside the Windows Kits, for a machine whose SDK left the debuggers out.
+    const char* named = std::getenv("RIDE_CDB");
+    if (named && *named && path::exists(named)) {
+        found = new std::string(named);
+        return found->c_str();
+    }
+
     const char* under[2] = {"ProgramFiles(x86)", "ProgramFiles"};
     for (size_t i = 0; i < 2; ++i) {
         const char* root = std::getenv(under[i]);
@@ -338,7 +348,8 @@ DebuggerKind dbg_for(ToolchainKind kind, const std::string& arch) {
 
     if (!emitsDebugInfo(kind, arch)) return DebuggerNone;
 
-    if (kind == ToolMsvc)
+    // cl's PDB, and since M10 c90's and cpp11's on x86_64-windows: CodeView, which cdb reads.
+    if (kind == ToolMsvc || arch == "x86_64-windows")
         return path::exists(dbg_program(DebuggerCdb)) ? DebuggerCdb : DebuggerNone;
 
     return dbg_here();
@@ -381,8 +392,8 @@ std::string dbg_whyNot(ToolchainKind kind, const std::string& arch) {
     if (isEmulated(arch))
         return arch + " runs on vm6747, the VM6747 emulator, which is not a debugger "
                "yet - F5 runs it, and vm6747 -t traces every instruction";
-    if (kind == ToolMsvc)
-        return "cl writes a .pdb and cdb reads one, but cdb is not installed - "
+    if (kind == ToolMsvc || (emitsDebugInfo(kind, arch) && arch == "x86_64-windows"))
+        return std::string(toolchainName(kind)) + " writes a .pdb and cdb reads one, but cdb is not installed - "
                "add Debugging Tools for Windows";
     if (!emitsDebugInfo(kind, arch))
         return std::string(toolchainName(kind)) + " generates MASM for " + arch +
@@ -581,6 +592,14 @@ std::vector<Variable> dbg_readVariables(DebuggerKind kind, const std::string& sa
         if (line.empty() || line == marker()) continue;
 
         std::string type;
+        std::string address;
+        // lldb's -L puts "0x...: " in front of a variable that is in memory, and spaces before one that is not.
+        if (kind == DebuggerLldb && line.compare(0, 2, "0x") == 0) {
+            size_t colon = line.find(": ");
+            if (colon == std::string::npos) continue;
+            address = line.substr(0, colon);
+            line = trimmed(line.substr(colon + 2));
+        }
         if (kind == DebuggerLldb) {
             if (line.empty() || line[0] != '(') continue;
             size_t close = line.find(')');
@@ -596,6 +615,21 @@ std::vector<Variable> dbg_readVariables(DebuggerKind kind, const std::string& sa
         variable.name = trimmed(line.substr(0, equals));
         variable.type = type;
         variable.value = trimmed(line.substr(equals + 3));
+        variable.address = address;
+
+        // cdb's dv /t /V: "<address> <where> <type> <name> = value", the type free to hold spaces.
+        if (kind == DebuggerCdb && variable.name.find(' ') != std::string::npos) {
+            std::string left = variable.name;
+            size_t space = left.find_last_of(" \t");
+            variable.name = left.substr(space + 1);
+            std::string rest = trimmed(left.substr(0, space));
+            size_t first = rest.find_first_of(" \t");
+            std::string at = first == std::string::npos ? rest : rest.substr(0, first);
+            rest = first == std::string::npos ? std::string() : trimmed(rest.substr(first));
+            size_t second = rest.find_first_of(" \t");
+            variable.type = second == std::string::npos ? std::string() : trimmed(rest.substr(second));
+            variable.address = at.find('@') == std::string::npos ? dbg_addressIn("0x" + at) : std::string();
+        }
 
         if (kind == DebuggerCdb && variable.value.compare(0, 2, "0n") == 0)
             variable.value = variable.value.substr(2);
@@ -739,6 +773,13 @@ size_t dbg_watchOnLine(const std::vector<Watch>& watches, const std::string& lin
     return watches.size();
 }
 
+namespace {
+bool cdbRefused(const std::string& line) {
+    return line.find("Couldn't resolve") != std::string::npos ||
+           line.find("<<ride") != std::string::npos || line.find("rror") != std::string::npos;
+}
+}
+
 std::string dbg_readValue(DebuggerKind kind, const std::string& said) {
     std::vector<std::string> all = lines(said);
 
@@ -749,6 +790,8 @@ std::string dbg_readValue(DebuggerKind kind, const std::string& said) {
         if (kind == DebuggerCdb) {
 
             if (line[0] == '?') continue;
+            // An expression cdb cannot resolve is an error line, which ends in the marker's ", 0x2d".
+            if (cdbRefused(line)) return std::string();
 
             size_t space = line.find_last_of(' ');
             if (space == std::string::npos || space + 1 >= line.size()) continue;
@@ -922,18 +965,40 @@ Stop Debugger::afterStepping(const std::string& command) {
 
 Stop Debugger::resume() { return afterMoving(kind_ == DebuggerCdb ? "g" : "continue"); }
 Stop Debugger::stepOver() { return afterStepping(kind_ == DebuggerCdb ? "p" : "next"); }
-Stop Debugger::stepInto() { return afterStepping(kind_ == DebuggerCdb ? "t" : "step"); }
+// **cdb's `t` stops on a callee's first instruction**, before its prologue has stored the arguments -
+// cl's programs as much as c90's and cpp11's (M10) - so one more step over goes to its first line, where
+// gdb and lldb stop. A first instruction is the one cdb names "module!function:" with no offset.
+static bool atFunctionEntry(const std::string& said) {
+    const std::vector<std::string> all = lines(said);
+    for (size_t i = all.size(); i-- > 0;) {
+        const std::string bare = trimmed(all[i]);
+        if (bare.find('!') == std::string::npos || !endsWith(bare, ':')) continue;
+        return bare.find("+0x") == std::string::npos && bare.find(' ') == std::string::npos;
+    }
+    return false;
+}
+
+Stop Debugger::stepInto() {
+    Stop stop = afterStepping(kind_ == DebuggerCdb ? "t" : "step");
+    if (kind_ != DebuggerCdb || !atFunctionEntry(stop.said)) return stop;
+    Stop first = afterStepping("p");
+    first.said = stop.said + '\n' + first.said;
+    return first;
+}
+
 Stop Debugger::stepOut() { return afterMoving(kind_ == DebuggerCdb ? "gu" : "finish"); }
 
 std::vector<Variable> Debugger::locals() {
     if (!running()) return std::vector<Variable>();
 
-    if (kind_ == DebuggerCdb) return dbg_readVariables(kind_, ask("dv"));
-    if (kind_ != DebuggerGdb) return dbg_readVariables(kind_, ask("frame variable"));
+    if (kind_ == DebuggerCdb) return dbg_readVariables(kind_, ask("dv /t /V"));
+    if (kind_ != DebuggerGdb) return dbg_readVariables(kind_, ask("frame variable -L"));
 
+    // gdb lists no addresses, so each variable is asked where it is, one "print &name" apiece.
     std::vector<Variable> found = dbg_readVariables(kind_, ask("info args"));
     std::vector<Variable> locals = dbg_readVariables(kind_, ask("info locals"));
     for (size_t i = 0; i < locals.size(); ++i) found.push_back(locals[i]);
+    for (size_t i = 0; i < found.size(); ++i) found[i].address = addressOf(found[i].name);
     return found;
 }
 
@@ -960,13 +1025,70 @@ std::string Debugger::evaluate(const std::string& expression, bool* ok) {
     return why.empty() ? "no answer" : why;
 }
 
+std::string Debugger::addressOf(const std::string& expression) {
+    bool ok = false;
+    std::string answer = evaluate("&(" + expression + ")", &ok);
+    return ok ? dbg_addressIn(answer) : std::string();
+}
+
+std::string Debugger::typeOf(const std::string& expression) {
+    if (!running() || expression.empty()) return std::string();
+    if (kind_ == DebuggerCdb) return dbg_readType(kind_, ask("?? " + expression));
+    if (kind_ == DebuggerGdb) return dbg_readType(kind_, ask("whatis " + expression));
+    return dbg_readType(kind_, ask("expression " + expression));
+}
+
+std::string dbg_readType(DebuggerKind kind, const std::string& said) {
+    std::vector<std::string> all = lines(said);
+    for (size_t i = 0; i < all.size(); ++i) {
+        const std::string line = trimmed(withoutPrompt(all[i]));
+        if (line.empty() || line == marker()) continue;
+        if (kind == DebuggerCdb) {
+            if (line[0] == '?') continue;
+            if (cdbRefused(line)) return std::string();
+            size_t space = line.find_last_of(' ');
+            if (space == std::string::npos) continue;
+            std::string value = line.substr(space + 1);
+            if (value.find_first_of("0123456789") == std::string::npos) continue;
+            return trimmed(line.substr(0, space));
+        }
+        if (kind == DebuggerGdb) {
+            if (line.compare(0, 7, "type = ") == 0) return trimmed(line.substr(7));
+            continue;
+        }
+        if (line[0] == '(') {
+            size_t close = line.find(')');
+            if (close != std::string::npos && line.find(" = ", close) != std::string::npos)
+                return line.substr(1, close - 1);
+        }
+    }
+    return std::string();
+}
+
+std::string dbg_addressIn(const std::string& said) {
+    size_t at = said.find("0x");
+    if (at == std::string::npos) return std::string();
+    std::string found = "0x";
+    for (size_t i = at + 2; i < said.size(); ++i) {
+        char c = said[i];
+        if (c == '`') continue;
+        if (!std::isxdigit(static_cast<unsigned char>(c))) break;
+        found += c;
+    }
+    return found.size() > 2 ? found : std::string();
+}
+
 void Debugger::addWatch(const std::string& expression) {
     if (expression.empty()) return;
     Watch watch;
     watch.expression = expression;
     watches_.push_back(watch);
-    if (running()) watches_[watches_.size() - 1].value =
-        evaluate(expression, &watches_[watches_.size() - 1].ok);
+    if (running()) {
+        Watch& added = watches_[watches_.size() - 1];
+        added.value = evaluate(expression, &added.ok);
+        added.address = added.ok ? addressOf(expression) : std::string();
+        added.type = added.ok ? typeOf(expression) : std::string();
+    }
 }
 
 void Debugger::setWatch(size_t which, const std::string& expression) {
@@ -974,8 +1096,12 @@ void Debugger::setWatch(size_t which, const std::string& expression) {
     if (expression.empty()) { removeWatch(which); return; }
     watches_[which].expression = expression;
     watches_[which].value.clear();
+    watches_[which].address.clear();
     watches_[which].ok = false;
     if (running()) watches_[which].value = evaluate(expression, &watches_[which].ok);
+    watches_[which].type.clear();
+    if (watches_[which].ok) watches_[which].address = addressOf(expression);
+    if (watches_[which].ok) watches_[which].type = typeOf(expression);
 }
 
 void Debugger::removeWatch(size_t which) {
@@ -987,10 +1113,14 @@ void Debugger::readWatches() {
     for (size_t i = 0; i < watches_.size(); ++i) {
         if (!running()) {
             watches_[i].value = "not running";
+            watches_[i].address.clear();
+            watches_[i].type.clear();
             watches_[i].ok = false;
             continue;
         }
         watches_[i].value = evaluate(watches_[i].expression, &watches_[i].ok);
+        watches_[i].address = watches_[i].ok ? addressOf(watches_[i].expression) : std::string();
+        watches_[i].type = watches_[i].ok ? typeOf(watches_[i].expression) : std::string();
     }
 }
 

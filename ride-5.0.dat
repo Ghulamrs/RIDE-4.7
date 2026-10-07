@@ -1,7 +1,7 @@
 ©2026 G. R. Akhtar - RIDE 5.0, the editor
-Release seal, version 5.0, sealed 07-10-2026
+Release seal, version 5.0, sealed 08-10-2026
 Written by tools/seal; check it with `tools/seal check`.
-CRC32  size  file - 78 files, seal 75C2000A
+CRC32  size  file - 80 files, seal 35BD9D0E
 ------------------------------------------------------------------
 1DBB2FBC      2412  macos/CodeView.h
 02B3F91E     14632  macos/CodeView.mm
@@ -27,8 +27,8 @@ D0BDDD0F     50893  src/compile.cpp
 D82898C8      6733  src/compile.h
 30128498      3193  src/convert.cpp
 E5744BBB       644  src/convert.h
-0007F760     34825  src/debugger.cpp
-EDA5FB1A      4293  src/debugger.h
+815C0FB1     39826  src/debugger.cpp
+03C275FC      5205  src/debugger.h
 DA6DC095       811  src/demangle_win.cpp
 AD058FC0    153205  src/editor.cpp
 6B09DC22     11704  src/editor.h
@@ -74,12 +74,14 @@ EC145B05     38587  src/toolchain.cpp
 D93038C5       572  src/utf8.h
 1DD9DC1C     12808  src/workspace.cpp
 F35C52A2      2086  src/workspace.h
-3B65BBA5    268282  winforms/MainForm.h
+6C3EEE85     11320  winforms/DebugView.h
+1FF1F4DF      5110  winforms/ErrorList.h
+AAD1DCDE    270783  winforms/MainForm.h
 6BA8DA64      2289  winforms/Marshal.h
 3D89F3C4      6415  winforms/Program.cpp
 B2EA0EE1      4860  winforms/TextFile.h
-47F114FE     89126  winforms/bridge.cpp
-553E2A74     29115  winforms/bridge.h
+07DC4EC1     90064  winforms/bridge.cpp
+3A611FD9     29633  winforms/bridge.h
 BBD2FAFE      2198  winforms/children.h
 ------------------------------------------------------------------
-Sealed on 07-10-2026
+Sealed on 08-10-2026

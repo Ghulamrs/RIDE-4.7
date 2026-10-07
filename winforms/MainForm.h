@@ -4,6 +4,8 @@
 #include "children.h"
 #include "Marshal.h"
 #include "TextFile.h"
+#include "DebugView.h"
+#include "ErrorList.h"
 #include <cstring>
 #include <msclr/auto_handle.h>
 
@@ -773,6 +775,11 @@ private:
     bool heardProgram_;
     bool finding_;
     TextBox^ debug_;
+    DebugView^ debugView_;
+    ErrorList^ errors_;
+    TabPage^ errorsPage_;
+    ToolStripStatusLabel^ step_;
+    ToolStripProgressBar^ progress_;
     RichTextBox^ assembly_;
     StatusStrip^ status_;
     ToolStripStatusLabel^ build_;
@@ -1131,8 +1138,10 @@ private:
         view->DropDownItems->Add(Item("The file", Keys::Control | Keys::D4,
                                       gcnew EventHandler(this, &MainForm::OnFocusText)));
         view->DropDownItems->Add(gcnew ToolStripSeparator());
-        view->DropDownItems->Add(Item("Console", Keys::Control | Keys::D1,
+        view->DropDownItems->Add(Item("Output", Keys::Control | Keys::D1,
                                       gcnew EventHandler(this, &MainForm::OnShowConsole)));
+        view->DropDownItems->Add(Item("Errors", Keys::Control | Keys::D5,
+                                      gcnew EventHandler(this, &MainForm::OnShowErrors)));
         view->DropDownItems->Add(Item("Debug", Keys::Control | Keys::D2,
                                       gcnew EventHandler(this, &MainForm::OnShowDebug)));
         view->DropDownItems->Add(Item("Assembly", Keys::Control | Keys::D3,
@@ -1374,9 +1383,13 @@ private:
         console_->KeyDown += gcnew KeyEventHandler(this, &MainForm::OnConsoleKey);
         console_->DoubleClick += gcnew EventHandler(this, &MainForm::OnConsoleDoubleClick);
         debug_ = ReadOnlyBox();
-
-        debug_->KeyDown += gcnew KeyEventHandler(this, &MainForm::OnDebugKey);
-        debug_->DoubleClick += gcnew EventHandler(this, &MainForm::OnDebugDoubleClick);
+        debugView_ = gcnew DebugView(debug_);
+        debugView_->FrameChosen += gcnew IndexChosen(this, &MainForm::OnFrameChosen);
+        debugView_->VariableChosen += gcnew IndexChosen(this, &MainForm::OnVariableChosen);
+        debugView_->WatchChosen += gcnew IndexChosen(this, &MainForm::OnWatchChosen);
+        debugView_->AddWatchChosen += gcnew EventHandler(this, &MainForm::OnWatch);
+        errors_ = gcnew ErrorList();
+        errors_->IssueChosen += gcnew PlaceChosen(this, &MainForm::OnIssueChosen);
         assembly_ = gcnew RichTextBox();
         assembly_->Dock = DockStyle::Fill;
         assembly_->BorderStyle = System::Windows::Forms::BorderStyle::Fixed3D;
@@ -1384,7 +1397,7 @@ private:
         assembly_->ReadOnly = true;
         assembly_->WordWrap = false;
 
-        TabPage^ one = gcnew TabPage("Console");
+        TabPage^ one = gcnew TabPage("Output");
         one->Controls->Add(console_);
         // The running program's input, under what it prints: Enter sends the line, Ctrl+Z ends it.
         Panel^ inputRow = gcnew Panel();
@@ -1406,11 +1419,15 @@ private:
         inputRow->Controls->Add(inputLabel);
         one->Controls->Add(inputRow);
         console_->BringToFront();
+        // Output, Errors, Debug, Assembly - the order the indices below (0 to 3) name them in.
+        errorsPage_ = gcnew TabPage("Errors");
+        errorsPage_->Controls->Add(errors_);
         TabPage^ two = gcnew TabPage("Debug");
-        two->Controls->Add(debug_);
+        two->Controls->Add(debugView_);
         TabPage^ three = gcnew TabPage("Assembly");
         three->Controls->Add(assembly_);
         panel_->TabPages->Add(one);
+        panel_->TabPages->Add(errorsPage_);
         panel_->TabPages->Add(two);
         panel_->TabPages->Add(three);
         outer->Panel2->Controls->Add(panel_);
@@ -1450,7 +1467,18 @@ private:
         root_->ForeColor = System::Drawing::Color::FromArgb(90, 90, 90);
         where_ = gcnew ToolStripStatusLabel("1:1");
         where_->BorderSides = ToolStripStatusLabelBorderSides::Left;
+        // A build's current step and a bar that moves while the worker has the core.
+        step_ = gcnew ToolStripStatusLabel("");
+        step_->Name = "step";
+        step_->Visible = false;
+        progress_ = gcnew ToolStripProgressBar();
+        progress_->Name = "progress";
+        progress_->Style = ProgressBarStyle::Marquee;
+        progress_->MarqueeAnimationSpeed = 30;
+        progress_->Visible = false;
         status_->Items->Add(what_);
+        status_->Items->Add(step_);
+        status_->Items->Add(progress_);
         status_->Items->Add(build_);
         status_->Items->Add(root_);
         status_->Items->Add(where_);
@@ -2196,10 +2224,10 @@ private:
             ride_resolve(toolKind_, LanguageNow()),
             reinterpret_cast<const char*>(archPin)));
 
-        debug_->Text = String::Join(
+        debugView_->ShowMessage(String::Join(
             "\r\n",
             gcnew array<String^>{note->Replace("\n", "\r\n"), "",
-                                 found->Replace("\n", "\r\n")});
+                                 found->Replace("\n", "\r\n")}));
     }
 
     void RefreshDebugTab() {
@@ -3817,7 +3845,7 @@ private:
         // Assembly tabs kept the closed project's build. Assembly first - the Debug tab is
         // rebuilt from it.
         assembly_->Text = "";
-        debug_->Text = "";
+        debugView_->Clear();
         console_->Text = "";
         what_->Text = was + " closed" + (closed > 0 ? String::Format(", and its {0} file(s) with it", closed) : "");
     }
@@ -4272,6 +4300,17 @@ private:
         else console_->Text = text;
     }
 
+    // The status bar's step: the last line the worker printed, cut to fit beside the bar.
+    void SayStep(String^ text) {
+        array<String^>^ lines = text->Replace("\r", "")->Split('\n');
+        for (int i = lines->Length - 1; i >= 0; --i) {
+            String^ line = lines[i]->Trim();
+            if (line->Length == 0) continue;
+            step_->Text = line->Length > 70 ? line->Substring(0, 67) + "..." : line;
+            return;
+        }
+    }
+
     void OnEnvironment(Object^, EventArgs^) {
         ShowReport(Lines(TakeUtf8(ride_environment())));
         ShowPanel(0);
@@ -4289,6 +4328,7 @@ private:
     // whichever a tool wrote, and appended rather than the whole text written again.
     void Say(String^ text) {
         if (String::IsNullOrEmpty(text)) return;
+        if (busy_) SayStep(text);
         console_->AppendText(Lines(text));
         ShowConsoleEnd();
     }
@@ -4356,6 +4396,7 @@ private:
         if (built == nullptr) { what_->Text = finished ? "nothing was built" : "stopped"; return; }
 
         Say(FromUtf8(ride_build_output(built)));
+        CollectIssues(source);
         if (!finished) {
             ride_build_free(built);
             Say("\n[stopped]\n");
@@ -4638,6 +4679,7 @@ private:
         ride_running_wait(running, -1);
         String^ source = runSource_;
         String^ program = runProgram_;
+        CollectIssues(source);
 
         if (ride_running_stopped(running) != 0) {
             Say("\n[stopped]\n");
@@ -4738,6 +4780,7 @@ private:
         }
 
         Say(FromUtf8(ride_build_output(made)));
+        CollectIssues(nullptr);
         if (!finished) {
             ride_build_free(made);
             Say("\n[stopped]\n");
@@ -4819,6 +4862,9 @@ private:
         if (file != nullptr && !SamePath(path_, file) && System::IO::File::Exists(file)) OpenPath(file);
 
         RememberError(line, column, message, file);
+        CollectIssues(source);
+        errors_->Reported(file, line, column, message);
+        errorsPage_->Text = String::Format("Errors ({0})", errors_->Errors());
         if (SamePath(path_, file)) GoTo(line, column);
         panel_->SelectedIndex = 0;
         what_->Text = String::Format("{0}{1}:{2}: error: {3}",
@@ -4896,6 +4942,9 @@ private:
     // Grey what would reach the core the worker holds, or give it back.
     void SetBusy(bool on) {
         busy_ = on;
+        progress_->Visible = on;
+        step_->Visible = on;
+        step_->Text = on ? what_->Text : "";
         for each (ToolStripMenuItem^ item in gated_) item->Enabled = !on;
         stopItem_->Enabled = on;
         RefreshProjectMenu();
@@ -5239,13 +5288,14 @@ private:
             ShowConsoleEnd();
         }
 
-        panel_->SelectedIndex = 1;
+        panel_->SelectedIndex = 2;
 
         if (ride_stop_exited(debugger_) != 0) {
             int status = ride_stop_status(debugger_);
-            debug_->Text = String::Format(
+            debugView_->ShowMessage(String::Format(
                 "the program ran to the end and returned {0}\r\n\r\n"
-                "F8 starts it again. The breakpoints are still where you put them.", status);
+                "F8 starts it again. The breakpoints are still where you put them.", status));
+            debugView_->Forget();
             EndDebugging();
             what_->Text = String::Format("the program returned {0}", status);
             return;
@@ -5261,18 +5311,19 @@ private:
                 lookingLine_ = 0;
                 ShowStoppedLine(nullptr, -1);
                 for each (Sheet^ sheet in sheets_) sheet->gutter->Invalidate();
-                debug_->Text =
+                debugView_->ShowMessage(
                     "stopped where there is no source to show\r\n\r\n"
                     "Stepping past the end of main arrives in the code that\r\n"
                     "started it, which was not compiled here. F8 carries on to\r\n"
-                    "the end, and Stop debugging leaves it.\r\n\r\n" + heard;
+                    "the end, and Stop debugging leaves it.\r\n\r\n" + heard);
                 what_->Text = "stopped where there is no source - F8 carries on";
                 return;
             }
 
-            debug_->Text = String::IsNullOrEmpty(heard)
+            debugView_->ShowMessage(String::IsNullOrEmpty(heard)
                 ? "the debugger stopped answering"
-                : "the debugger stopped answering\r\n\r\n" + heard;
+                : "the debugger stopped answering\r\n\r\n" + heard);
+            debugView_->Forget();
             EndDebugging();
             what_->Text = "the debugger stopped answering - see the Debug tab";
             return;
@@ -5295,6 +5346,8 @@ private:
         stopFunction_ = function;
         lookingFile_ = nullptr;
         lookingLine_ = 0;
+        debugView_->NewStop();
+        PanelRoom(340);
         WriteDebugTab();
 
         for each (Sheet^ sheet in sheets_) sheet->gutter->Invalidate();
@@ -5317,7 +5370,8 @@ private:
         String^ removed = FromUtf8(ride_project_clean(project_));
         array<String^>^ files = removed->Split(gcnew array<wchar_t>{'\n'}, StringSplitOptions::RemoveEmptyEntries);
         console_->Clear();
-        debug_->Clear();
+        debugView_->Clear();
+        errors_->Rows->Clear();
         assembly_->Clear();
         ForgetError();
         String^ name = ride_project_loaded(project_) != 0 ? FromUtf8(ride_project_name(project_)) : "no project";
@@ -5398,51 +5452,59 @@ private:
 
     void OnConsoleDoubleClick(Object^, EventArgs^) { GoToConsoleLine(); }
 
+    // The stop as grids: the stop line, Locals | Watch, the Call Stack, and the keys that work here.
     void WriteDebugTab() {
-        System::Text::StringBuilder^ said = gcnew System::Text::StringBuilder();
-        said->AppendFormat("{0}\r\n\r\n", StopLine());
+        bool shalimar = ride_debugging_shalimar(debugger_) != 0;
+        String^ keys = "F8 carries on   F7 steps over   F6 steps into   F9 sets a breakpoint";
+        if (!shalimar)
+            keys += "   double-click a value to set it   click a frame to look at it   Ctrl+Up/Down walks the stack";
+        debugView_->Fill(debugger_, StopLine(), keys);
+    }
 
-        String^ looking = FromUtf8(ride_looking_text(debugger_));
-        if (looking->Length > 0) said->AppendFormat("{0}\r\n\r\n", looking);
+    void OnFrameChosen(int which) {
+        if (busy_) { what_->Text = StillWorking(); return; }
+        if (which == ride_looking_at(debugger_)) return;
+        String^ no = FromUtf8(ride_cannot_walk_stack(debugger_));
+        if (no->Length > 0) { what_->Text = no; WriteDebugTab(); return; }
+        LookAt(which);
+    }
 
-        int howMany = ride_locals_count(debugger_);
-        if (howMany == 0) {
+    void OnVariableChosen(int which) {
+        if (busy_) { what_->Text = StillWorking(); return; }
+        if (ride_debugging_shalimar(debugger_) != 0) { what_->Text = FromUtf8(ride_cannot_watch(debugger_)); return; }
+        EditVariable(which);
+    }
 
-            said->AppendFormat("{0}\r\n", FromUtf8(ride_locals_none_because(debugger_)));
-        } else {
-            for (int i = 0; i < howMany; ++i)
-                said->AppendFormat("{0}\r\n", FromUtf8(ride_local_text(debugger_, i)));
-        }
+    void OnWatchChosen(int which) {
+        if (busy_) { what_->Text = StillWorking(); return; }
+        EditWatch(which);
+    }
 
-        int watching = ride_watch_count(debugger_);
-        if (watching > 0) {
-            said->Append("\r\nwatching\r\n");
-            for (int i = 0; i < watching; ++i)
-                said->AppendFormat("{0}\r\n", FromUtf8(ride_watch_text(debugger_, i)));
-        }
-
-        int deep = ride_stack_count(debugger_);
-        if (deep > 1) {
-            said->Append("\r\ncalled from\r\n");
-            for (int i = 1; i < deep; ++i)
-                said->AppendFormat("{0}\r\n", FromUtf8(ride_stack_text(debugger_, i)));
-        }
-
-        said->Append("\r\nF8 carries on   F7 steps over   F6 steps into   F9 sets a breakpoint");
-
-        if (ride_debugging_shalimar(debugger_) == 0) {
-            said->Append("\r\nDouble-click a variable, or press enter on it, to set it");
-            if (watching > 0)
-                said->Append("\r\nThe same on a watch changes it, and an empty answer drops it");
-            if (deep > 1) {
-                said->Append("\r\nCtrl+Up looks at what called this   Ctrl+Down comes back down");
-                said->Append("\r\nThe same on a frame looks at it, and on the top line goes back");
+    // A row of the Errors tab: its file brought to the front and the caret put on the place.
+    void OnIssueChosen(String^ file, int line, int column) {
+        if (String::IsNullOrEmpty(file)) file = errorFile_ != nullptr ? errorFile_ : path_;
+        if (file != nullptr && !System::IO::Path::IsPathRooted(file)) {
+            String^ nearby = errorFile_ != nullptr ? errorFile_ : path_;
+            String^ beside = nearby == nullptr ? nullptr
+                : System::IO::Path::Combine(System::IO::Path::GetDirectoryName(nearby), file);
+            if (beside != nullptr && System::IO::File::Exists(beside)) {
+                file = beside;
+            } else {
+                Utf8 relative(file);
+                file = FromUtf8(ride_project_absolute(project_, relative.c()));
             }
         }
-        debug_->Text = said->ToString();
+        if (file == nullptr || !System::IO::File::Exists(file)) { what_->Text = "no file " + file + " to go to"; return; }
+        if (!SamePath(path_, file)) OpenPath(file);
+        if (text_ == nullptr || !SamePath(path_, file)) return;
+        GoTo(line, column);
+        what_->Text = String::Format("{0}:{1}:{2}", System::IO::Path::GetFileName(file), line, column);
+    }
 
-        debug_->SelectionStart = 0;
-        debug_->SelectionLength = 0;
+    // The Errors tab from the Output tab's text, after every build; its title counts the errors.
+    void CollectIssues(String^ source) {
+        int count = errors_->Collect(console_->Text, source);
+        errorsPage_->Text = count > 0 ? String::Format("Errors ({0})", count) : "Errors";
     }
 
     String^ StopLine() {
@@ -5450,42 +5512,6 @@ private:
         pin_ptr<Byte> function = &Utf8Of(stopFunction_)[0];
         return FromUtf8(ride_stop_line_text(reinterpret_cast<const char*>(file), stopLine_,
                                            reinterpret_cast<const char*>(function)));
-    }
-
-    void OnDebugKey(Object^, KeyEventArgs^ e) {
-        if (e->KeyCode != Keys::Enter) return;
-        e->SuppressKeyPress = true;
-        GoToFrame();
-    }
-
-    void OnDebugDoubleClick(Object^, EventArgs^) { GoToFrame(); }
-
-    void GoToFrame() {
-        if (busy_) { what_->Text = StillWorking(); return; }
-        if (debug_->Lines->Length == 0) return;
-        int row = debug_->GetLineFromCharIndex(debug_->SelectionStart);
-        if (row < 0 || row >= debug_->Lines->Length) return;
-
-        String^ row_text = debug_->Lines[row];
-        pin_ptr<Byte> line = &Utf8Of(row_text)[0];
-        int which = ride_stack_on_line(debugger_, reinterpret_cast<const char*>(line));
-
-        if (which < 0 && ride_stack_count(debugger_) > 0 && row_text == StopLine()) which = 0;
-
-        if (which < 0) {
-
-            int variable = ride_locals_on_line(debugger_,
-                                              reinterpret_cast<const char*>(line));
-            if (variable >= 0) { EditVariable(variable); return; }
-
-            int watch = ride_watch_on_line(debugger_, reinterpret_cast<const char*>(line));
-            if (watch >= 0) { EditWatch(watch); return; }
-
-            what_->Text = "that line is neither a frame nor a variable nor a watch";
-            return;
-        }
-
-        LookAt(which);
     }
 
     void OnWatch(Object^, EventArgs^) {
@@ -5498,7 +5524,7 @@ private:
 
         pin_ptr<Byte> wanted = &Utf8Of(what)[0];
         ride_watch_add(debugger_, reinterpret_cast<const char*>(wanted));
-        panel_->SelectedIndex = 1;
+        panel_->SelectedIndex = 2;
         if (stopLine_ > 0) WriteDebugTab();
         what_->Text = ride_debugger_running(debugger_) != 0
                           ? "watching " + what
@@ -5639,21 +5665,31 @@ private:
         PlaceFold(nullptr, nullptr);
     }
 
+    // A stop wants its grids readable: the lower panel grows to at least this height, never shrinks.
+    void PanelRoom(int height) {
+        if (folded_) fold_->Checked = false;
+        int now = outer_->Height - outer_->SplitterDistance - outer_->SplitterWidth;
+        if (now >= height) return;
+        int distance = outer_->Height - height - outer_->SplitterWidth;
+        if (distance >= outer_->Panel1MinSize) outer_->SplitterDistance = distance;
+    }
+
     void ShowPanel(int which) {
         if (folded_) fold_->Checked = false;
         panel_->SelectedIndex = which;
         if (which == 0) console_->Focus();
-        else if (which == 1) debug_->Focus();
+        else if (which == 1) errors_->Focus();
+        else if (which == 2) debugView_->FocusGrids();
         else assembly_->Focus();
 
         console_->SelectionLength = 0;
-        debug_->SelectionLength = 0;
         assembly_->SelectionLength = 0;
     }
 
     void OnShowConsole(Object^, EventArgs^) { ShowPanel(0); }
-    void OnShowDebug(Object^, EventArgs^) { ShowPanel(1); }
-    void OnShowAssembly(Object^, EventArgs^) { ShowPanel(2); }
+    void OnShowErrors(Object^, EventArgs^) { ShowPanel(1); }
+    void OnShowDebug(Object^, EventArgs^) { ShowPanel(2); }
+    void OnShowAssembly(Object^, EventArgs^) { ShowPanel(3); }
 
     void SayBuild() {
         if (build_ == nullptr) return;

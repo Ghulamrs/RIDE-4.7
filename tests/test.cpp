@@ -515,8 +515,8 @@ void routing() {
     check(cc1Release.find("NDEBUG") != std::string::npos, "and its release defines NDEBUG");
     check(linuxDebug.find("-g") != std::string::npos, "debug asks x86_64-linux for -g");
     check(darwinDebug.find("-g") != std::string::npos, "and arm64-darwin for -g as well");
-    check(winDebug.find("-g") == std::string::npos,
-          "but not x86_64-windows, whose MASM carries no line table");
+    check(winDebug.find("-g") != std::string::npos,
+          "and x86_64-windows too, whose Debug build is CodeView through clang (M10)");
     check(winDebug.find("_DEBUG") != std::string::npos,
           "which still gets the define, since that is what assert reads");
 
@@ -536,7 +536,7 @@ void routing() {
     check(editor::emitsDebugInfo(editor::ToolCc1, kLinux) &&
               editor::emitsDebugInfo(editor::ToolCc1, kDarwin),
           "cc1 writes DWARF for two of its three targets");
-    check(!editor::emitsDebugInfo(editor::ToolCc1, kWindows), "and not for the third");
+    check(editor::emitsDebugInfo(editor::ToolCc1, kWindows), "and CodeView for the third (M10)");
     // cl is the other half of this machine's story, and not in the same
     // position: the C file goes to cc1 and carries no line table, while the
     // C++ file goes to cl, which writes CodeView into a .pdb and always could.
@@ -552,7 +552,7 @@ void routing() {
     // The words the panel says are the core's, and they follow the target
     // rather than being written out once and left.
     std::vector<std::string> carries = editor::debugNote(editor::ToolCc1, kDarwin);
-    std::vector<std::string> carriesNot = editor::debugNote(editor::ToolCc1, kWindows);
+    std::vector<std::string> carriesNot = editor::debugNote(editor::ToolCc1, "tms6747");
     check(!carries.empty() && !carriesNot.empty(), "the panel is told something either way");
     check(carries != carriesNot, "and not the same thing about both targets");
     check(joined(carries).find("DWARF") != std::string::npos &&
@@ -1267,7 +1267,7 @@ void projects() {
         checkEqual(editor::settings::assembler(),
                    editor::path::absolute((app / "bin" / "masm.exe").string()),
                    "and is found beside the editor, made absolute against it");
-        // With the assembler named, every recipe that assembles x86_64-windows
+        // With the assembler named, every Release recipe that assembles x86_64-windows
         // C++ has to tell cpp11 to write MASM's spelling - F5's Run file was
         // the one that did not, and masm.exe got clang's command line.
         {
@@ -1276,20 +1276,28 @@ void projects() {
             std::vector<std::string> srcs(1, "a.cpp"), objs;
             std::vector<std::string> lines;
             lines.push_back(editor::programRecipe(tool, editor::ToolCxx1, "a.cpp", editor::LangCpp,
-                                                  "x86_64-windows", editor::ConfigDebug).command);
+                                                  "x86_64-windows", editor::ConfigRelease).command);
             lines.push_back(editor::shownProgramCommand(tool, editor::ToolCxx1, "a.cpp", editor::LangCpp,
-                                                        "x86_64-windows", editor::ConfigDebug));
+                                                        "x86_64-windows", editor::ConfigRelease));
             lines.push_back(editor::targetRecipe(tool, editor::ToolCxx1, srcs, editor::LangCpp,
-                                                 "x86_64-windows", editor::ConfigDebug, "a.exe").command);
+                                                 "x86_64-windows", editor::ConfigRelease, "a.exe").command);
             lines.push_back(editor::objectRecipe(tool, editor::ToolCxx1, srcs, editor::LangCpp,
-                                                 "x86_64-windows", editor::ConfigDebug, ".", objs).command);
+                                                 "x86_64-windows", editor::ConfigRelease, ".", objs).command);
             bool all = true;
             for (size_t i = 0; i < lines.size(); ++i)
                 if (lines[i].find(" -masm=masm") == std::string::npos) all = false;
             check(all, "Run file, its shown line, F4 and a part's objects all pass -masm=masm to cpp11");
             std::string c = editor::programRecipe(tool, editor::ToolCc1, "a.c", editor::LangC,
-                                                  "x86_64-windows", editor::ConfigDebug).command;
+                                                  "x86_64-windows", editor::ConfigRelease).command;
             check(c.find("-masm") == std::string::npos, "c90, which reads C90_AS alone, gets no flag");
+            // M10: a Debug build carries CodeView, which only clang assembles, whatever masm is named.
+            std::string debug = editor::programRecipe(tool, editor::ToolCxx1, "a.cpp", editor::LangCpp,
+                                                      "x86_64-windows", editor::ConfigDebug).command;
+            check(debug.find(" -masm=gnu") != std::string::npos && debug.find("-masm=masm") == std::string::npos,
+                  "a Debug cpp11 build for x86_64-windows is the GNU spelling, for CodeView");
+            std::string debugC = editor::programRecipe(tool, editor::ToolCc1, "a.c", editor::LangC,
+                                                       "x86_64-windows", editor::ConfigDebug).command;
+            check(debugC.find(" -masm=gnu") != std::string::npos, "and so is a Debug c90 one");
         }
         check(editor::settings::rememberAssembler("bin/no-such.exe") && editor::settings::assembler().empty(),
               "a relative one that is not there counts for nothing either");
@@ -1297,8 +1305,8 @@ void projects() {
             editor::Toolchain tool;
             tool.cxx1 = "cpp11.exe";
             check(editor::programRecipe(tool, editor::ToolCxx1, "a.cpp", editor::LangCpp,
-                                        "x86_64-windows", editor::ConfigDebug).command.find("-masm") == std::string::npos,
-                  "and with no assembler named, Run file leaves cpp11's spelling alone");
+                                        "x86_64-windows", editor::ConfigRelease).command.find("-masm") == std::string::npos,
+                  "and with no assembler named, a Release Run file leaves cpp11's spelling alone");
         }
         check(editor::settings::rememberAssembler(std::string()) && editor::settings::assembler().empty(),
               "and `-` puts ml64 back");
@@ -2129,6 +2137,29 @@ void whatADebuggerSays() {
     check(cdbLocals.size() == 2, "cdb's variables are read");
     check(cdbLocals[0].name == "i" && cdbLocals[0].value == "1",
           "with the 0n it puts in front of a decimal taken off again");
+
+    // dv /t /V, as cdb 10.0 printed it on the Windows box: address, where, type, name, value.
+    std::vector<editor::Variable> placed = editor::dbg_readVariables(
+        editor::DebuggerCdb,
+        "0000006b`f46ff950 @rsp+0x0020       int k = 0n8\n"
+        "0000006b`f46ff958 @rsp+0x0028       struct pt * p = 0x0000006b`f46ff978\n");
+    check(placed.size() == 2 && placed[0].name == "k" && placed[0].value == "8" &&
+              placed[0].type == "int" && placed[0].address == "0x0000006bf46ff950",
+          "cdb's dv /t /V gives each variable its type and address");
+    check(placed.size() == 2 && placed[1].name == "p" && placed[1].type == "struct pt *",
+          "a type with spaces in it stays whole");
+    std::vector<editor::Variable> located = editor::dbg_readVariables(
+        editor::DebuggerLldb, "0x000000016fdff0ec: (int) x = 5\n");
+    check(located.size() == 1 && located[0].address == "0x000000016fdff0ec" &&
+              located[0].type == "int" && located[0].value == "5",
+          "lldb's frame variable -L gives the address in front");
+    check(editor::dbg_addressIn("int * 0x0000006b`f46ff930") == "0x0000006bf46ff930" &&
+              editor::dbg_addressIn("No address for operator&").empty(),
+          "an address is read out of an answer, and none out of a refusal");
+    check(editor::dbg_readType(editor::DebuggerCdb, "0:000> ?? total\nint 0n12\n") == "int" &&
+              editor::dbg_readType(editor::DebuggerGdb, "(gdb) type = struct pt *\n") == "struct pt *" &&
+              editor::dbg_readType(editor::DebuggerLldb, "(double) $0 = 4.5\n") == "double",
+          "a watch's type is read from each engine's answer");
 
     // Both print their prompt and then, on the same line, the first line of the
     // answer. Left on, it is read as part of the name - which showed up as the
@@ -3131,11 +3162,13 @@ void theSeamTheWindowUses() {
 
     // The two compilers are not in the same position on the same machine, and
     // the reason given has to say which one it is talking about.
-    check(ride_debugger_for(editor::ToolCc1, "x86_64-windows") == 0,
-          "what cc1 builds for Windows can never be debugged");
-    check(std::string(ride_no_debugger_because(editor::ToolCc1, "x86_64-windows"))
-              .find("MASM") != std::string::npos,
-          "and the reason names the MASM that has no line table");
+    // M10: what cc1 builds for Windows is debugged in cdb, where Debugging Tools for Windows is.
+    const bool cdbHere = editor::dbg_for(editor::ToolCc1, "x86_64-windows") == editor::DebuggerCdb;
+    check(ride_debugger_for(editor::ToolCc1, "x86_64-windows") == (cdbHere ? static_cast<int>(editor::DebuggerCdb) : 0),
+          "what cc1 builds for Windows is debugged in cdb where cdb is");
+    check(cdbHere ? std::string(ride_no_debugger_because(editor::ToolCc1, "x86_64-windows")).empty()
+                  : std::string(ride_no_debugger_because(editor::ToolCc1, "x86_64-windows")).find("cdb") != std::string::npos,
+          "and where it is not, the reason names cdb");
     // cl is a different matter on the same machine, and which way it goes
     // depends on whether Microsoft's own debugger is installed - so the check
     // is that the answer and the reason agree, not that either is fixed.
