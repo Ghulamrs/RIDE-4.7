@@ -1,0 +1,65 @@
+==== A: reference, cl /Zi
+42
+module ref-cl: SymType 3 (3=PDB 5=deferred 0=none), lines 1, globals 1, types 1
+line C:\cxx1\m10\ref.c:4 at 00007FF65919729B
+stopped at 00007FF65919729B
+call stack:
+  #0 add                      C:\cxx1\m10\ref.c:4
+  #1 main                     C:\cxx1\m10\ref.c:8
+  #2 __scrt_common_main_seh   D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl:288
+  #3 ?                        ?:0
+locals and parameters:
+  local  a    = 20     int32        @ 000000F4DD98FB00  (flags 0xd0 reg 335)
+  local  b    = 1      int32        @ 000000F4DD98FB08  (flags 0xd0 reg 335)
+  local  s    = 21     int32        @ 000000F4DD98FAE0  (flags 0x90 reg 335)
+  no global g
+exit 0
+==== B: hand-written CodeView, clang assembler, Microsoft link /DEBUG
+
+
+                          Symbols                           
+============================================================
+  Mod 0000 | `C:\cxx1\m10\m10probe.obj`: 
+       4 | S_GPROC32 [size = 44] `add`
+           parent = 0, end = 96, addr = 0001:31376, code size = 34
+           type = `<no type>`, debug start = 0, debug end = 0, flags = none
+      48 | S_REGREL32 [size = 16] `a`
+           type = 0x0074 (int), register = RBP, offset = 4294967292
+      64 | S_REGREL32 [size = 16] `b`
+           type = 0x0074 (int), register = RBP, offset = 4294967288
+      80 | S_REGREL32 [size = 16] `s`
+           type = 0x0074 (int), register = RBP, offset = 4294967284
+      96 | S_END [size = 4]
+     100 | S_GPROC32 [size = 44] `main`
+           parent = 0, end = 176, addr = 0001:31410, code size = 60
+           type = `<no type>`, debug start = 0, debug end = 0, flags = none
+     144 | S_REGREL32 [size = 16] `x`
+           type = 0x0074 (int), register = RBP, offset = 4294967292
+     160 | S_REGREL32 [size = 16] `y`
+           type = 0x0074 (int), register = RBP, offset = 4294967288
+     176 | S_END [size = 4]
+49
+module m10probe: SymType 3 (3=PDB 5=deferred 0=none), lines 1, globals 1, types 1
+line C:\cxx1\m10\m10probe.c:4 at 00007FF74B6E8AA7
+stopped at 00007FF74B6E8AA7
+call stack:
+  #0 add                      C:\cxx1\m10\m10probe.c:4
+  #1 main                     C:\cxx1\m10\m10probe.c:9
+  #2 __scrt_common_main_seh   D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl:288
+  #3 ?                        ?:0
+locals and parameters:
+  local  a    = 20     int32        @ 0000006BEF4FFECC  (flags 0x90 reg 334)
+  local  b    = 1      int32        @ 0000006BEF4FFEC8  (flags 0x90 reg 334)
+  local  s    = 21     int32        @ 0000006BEF4FFEC4  (flags 0x90 reg 334)
+  global g    = 7      int32        @ 00007FF74B7A0000  (flags 0x2000000 reg 0)
+exit 0
+==== C: DWARF in COFF, clang -gdwarf, link /DEBUG
+ 14 .debug_abbrev 00000139 0000000000000000 DATA, DEBUG
+ 15 .debug_info   000004ac 0000000000000000 DATA, DEBUG
+ 16 .debug_ranges 000000b0 0000000000000000 DATA, DEBUG
+ 17 .debug_str    000001a6 0000000000000000 DATA, DEBUG
+ 20 .debug_line   0000032f 0000000000000000 DATA, DEBUG
+42
+module ref-dw: SymType 3 (3=PDB 5=deferred 0=none), lines 1, globals 1, types 1
+no address for C:\cxx1\m10\ref.c:4 (error 1168)
+exit 0
