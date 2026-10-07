@@ -5111,8 +5111,10 @@ private:
 
         if (result == 0) { DebugBuildFailed(project, kind); return; }
 
-        String^ program = project ? FromUtf8(ride_project_target_program(project_))
+        // What the build made: a C6000 project's is <program>.vm, which the session runs through sim6747.
+        String^ program = project ? FromUtf8(ride_build_made(targetBuilt_))
                                   : FromUtf8(ride_program_path(built_));
+        if (project && String::IsNullOrEmpty(program)) program = FromUtf8(ride_project_target_program(project_));
 
         what_->Text = ride_debugger_stops_itself(kind) != 0
                           ? "starting the program ..."
