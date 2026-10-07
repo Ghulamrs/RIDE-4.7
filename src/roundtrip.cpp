@@ -199,11 +199,13 @@ RoundTripResult RoundTrip::fresh(const std::string& source, const std::string& s
         result.said = "could not write " + where;
         return result;
     }
-    // c2s's own sidecar, when it writes one, belongs beside the file it describes.
-    const std::string sidecar = path::join(work, leaf(target)) + ".c2skeep";
-    if (path::exists(sidecar)) {
-        path::remove(where + ".c2skeep");
-        path::rename(sidecar, where + ".c2skeep");
+    // c2s's own record (.c2s-original/<name>), when it writes one, belongs beside the file it describes.
+    const std::string kept = path::join(path::join(work, ".c2s-original"), leaf(target));
+    if (path::exists(kept)) {
+        const std::string home = path::join(path::parent(where), ".c2s-original");
+        path::makeDirectories(home);
+        path::remove(path::join(home, leaf(where)));
+        path::rename(kept, path::join(home, leaf(where)));
     }
 
     ConversionRecord record;
@@ -238,9 +240,13 @@ RoundTripResult RoundTrip::mergeBack(const std::string& source, const std::strin
     const std::string asConverted = path::join(untouched, leaf(source));
     std::string base, theirs;
     // The untouched copy is read by c2s with the sidecar it was written with, as the edited one is.
-    std::string sidecar;
-    path::remove(asConverted + ".c2skeep");
-    if (readFile(source + ".c2skeep", sidecar)) writeFile(asConverted + ".c2skeep", sidecar);
+    std::string kept;
+    const std::string keptHere = path::join(path::join(untouched, ".c2s-original"), leaf(source));
+    path::remove(keptHere);
+    if (readFile(path::join(path::join(path::parent(source), ".c2s-original"), leaf(source)), kept)) {
+        path::makeDirectories(path::parent(keptHere));
+        writeFile(keptHere, kept);
+    }
     if (!writeFile(asConverted, record.convertedText) ||
         !runConverter(asConverted, path::join(untouched, record.original), toShalimar, base, result) ||
         !runConverter(source, path::join(edited, record.original), toShalimar, theirs, result)) {

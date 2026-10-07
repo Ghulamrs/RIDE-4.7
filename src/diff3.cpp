@@ -173,7 +173,11 @@ std::string withEnding(const std::string& line, const std::string& ending) {
     return ended ? LineText::body(line) + ending : line;
 }
 
-// Within one line, the words their side changed - base to theirs, out to whitespace on either
+bool wordChar(char c) {
+    return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '.';
+}
+
+// Within one line, the words their side changed - base to theirs, out to the word on either
 // side - carried into mine where those words stand exactly once: the edit moves, the noise stays.
 bool carryWord(const std::string& base, const std::string& mine, const std::string& theirs,
                std::string& out) {
@@ -184,8 +188,8 @@ bool carryWord(const std::string& base, const std::string& mine, const std::stri
     size_t back = 0;
     while (back < b.size() - front && back < t.size() - front &&
            b[b.size() - 1 - back] == t[t.size() - 1 - back]) ++back;
-    while (front > 0 && b[front - 1] != ' ' && b[front - 1] != '\t') --front;
-    while (back > 0 && b[b.size() - back] != ' ' && b[b.size() - back] != '\t') --back;
+    while (front > 0 && wordChar(b[front - 1])) --front;
+    while (back > 0 && wordChar(b[b.size() - back])) --back;
     const std::string old = b.substr(front, b.size() - back - front);
     const std::string made = t.substr(front, t.size() - back - front);
     if (old.empty()) return false;

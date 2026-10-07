@@ -11,8 +11,6 @@ namespace {
 bool skip(const std::string& name) {
     if (name.empty()) return true;
     if (name[0] == '.') return true;
-    // c2s's own sidecar beside a converted file - its record of the original's text, not a source.
-    if (name.size() > 8 && name.compare(name.size() - 8, 8, ".c2skeep") == 0) return true;
     return name == "obj" || name == "build" || name == "x64" || name == "Debug" ||
            name == "Release" || name == "node_modules";
 }

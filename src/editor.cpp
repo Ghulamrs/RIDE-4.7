@@ -1725,8 +1725,6 @@ std::vector<std::string> Editor::whatIsIn(const std::string& directory) const {
 
     for (size_t i = 0; i < here.size(); ++i) {
         if (here[i].name.empty() || here[i].name[0] == '.') continue;
-        const std::string& name = here[i].name;
-        if (name.size() > 8 && name.compare(name.size() - 8, 8, ".c2skeep") == 0) continue;
         if (here[i].directory) {
 
             if (here[i].name == "obj" || here[i].name == "build" ||

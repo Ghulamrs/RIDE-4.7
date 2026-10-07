@@ -5008,14 +5008,14 @@ void convertRoundTrip() {
     const std::string converted = trip.convert(original, true).open;
     check(!converted.empty(), "a program with BEYOND parts converts");
     {
-        // With c2s's own sidecar (.c2skeep) the BEYOND line may come back as it was; without it, the
+        // With c2s's own record (.c2s-original/) the BEYOND line may come back as it was; without it, the
         // edit is either a conflict or a part c2s cannot carry back. Either way, nothing is lost.
         check(editFile(converted, "a = a << 2;", "a = a << 3;"), "the BEYOND line is edited");
         editor::RoundTripResult merged = trip.convert(converted, false);
         const bool conflicted = merged.open.find("beyond.merge.c") != std::string::npos &&
                                 slurp(merged.open).find("<<<<<<<") != std::string::npos;
         const bool notCarried = merged.said.find("does not carry back") != std::string::npos;
-        if (!editor::path::exists(converted + ".c2skeep"))
+        if (!editor::path::exists(editor::path::join(dir, ".c2s-original/beyond.c2s.shl")))
             check((conflicted || notCarried) && slurp(original) == given,
                   "an edit c2s cannot carry back leaves the original untouched - " + merged.said);
     }

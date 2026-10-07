@@ -89,11 +89,12 @@ Conversion convert(const std::string& converter, const std::string& sourcePath,
         if (placed) result.produced = outputPath;
         else path::remove(scratch);
 
-        // c2s's sidecar (.c2skeep) is written beside -o's name, so it follows the output to its own.
-        const std::string sidecar = outputPath + ".c2skeep";
-        if (placed && path::exists(scratch + ".c2skeep")) {
-            path::remove(sidecar);
-            path::rename(scratch + ".c2skeep", sidecar);
+        // c2s keeps its record of the original in .c2s-original/, named as -o was; it follows the output.
+        const std::string kept = path::join(path::join(path::parent(outputPath), ".c2s-original"),
+                                            path::filename(outputPath));
+        if (placed && path::exists(kept + ".new")) {
+            path::remove(kept);
+            path::rename(kept + ".new", kept);
         }
     }
     return result;
