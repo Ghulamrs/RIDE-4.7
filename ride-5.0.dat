@@ -1,7 +1,7 @@
 ©2026 G. R. Akhtar - RIDE 5.0, the editor
 Release seal, version 5.0, sealed 07-10-2026
 Written by tools/seal; check it with `tools/seal check`.
-CRC32  size  file - 78 files, seal FC87CB21
+CRC32  size  file - 78 files, seal CC016733
 ------------------------------------------------------------------
 1DBB2FBC      2412  macos/CodeView.h
 02B3F91E     14632  macos/CodeView.mm
@@ -9,7 +9,7 @@ CRC32  size  file - 78 files, seal FC87CB21
 A7F98CCC      5957  macos/LineNumbers.mm
 7E2C43FD      2767  macos/Text.h
 AEF649AE      1693  macos/WindowController.h
-154B4D9B    201754  macos/WindowController.mm
+D404792F    201750  macos/WindowController.mm
 18F9EFDC      4599  macos/main.mm
 D196F8E8     15886  src/about.cpp
 ABC4FB50      1108  src/about.h
@@ -23,14 +23,14 @@ D8374802      9429  src/ccs/ccsworkspace.cpp
 EF83F9F1      2439  src/ccs/ccsworkspace.h
 3A0B2ECF      7309  src/ccs/ccsxml.cpp
 075B8813      1319  src/ccs/ccsxml.h
-2281B57C     50897  src/compile.cpp
-91CA2047      6735  src/compile.h
+D0BDDD0F     50893  src/compile.cpp
+D82898C8      6733  src/compile.h
 30128498      3193  src/convert.cpp
 E5744BBB       644  src/convert.h
 0007F760     34825  src/debugger.cpp
 EDA5FB1A      4293  src/debugger.h
 DA6DC095       811  src/demangle_win.cpp
-390FEA3E    153207  src/editor.cpp
+AD058FC0    153205  src/editor.cpp
 6B09DC22     11704  src/editor.h
 8AB1EB8F      8102  src/find.cpp
 54991F96      1560  src/find.h
@@ -40,10 +40,10 @@ FEE59884      2728  src/help.cpp
 DC8B18AF      1891  src/indent.h
 C644F94E      9211  src/json.cpp
 D12A8855      1365  src/json.h
-5FD46F0B     15485  src/main.cpp
+7D750884     15483  src/main.cpp
 9133EC82     12879  src/menu.cpp
-147A73FB      4294  src/menu.h
-8B5FEEFA      8853  src/options.cpp
+1510BB2D      4292  src/menu.h
+44F7AB27      8851  src/options.cpp
 26E451F0      3026  src/options.h
 2E842011     13389  src/path.cpp
 623BE189      1421  src/path.h
@@ -57,7 +57,7 @@ AAB34DCA      1876  src/process.h
 4B7E8748      9069  src/shalimar/channel.cpp
 22E40405       577  src/shalimar/channel.h
 D08235A2      6529  src/shalimar/session.cpp
-C9B1A3B1      1446  src/shalimar/session.h
+05683ACE      1444  src/shalimar/session.h
 BE491991      8617  src/symbols.cpp
 1DD7B436       705  src/symbols.h
 13F033A4     17297  src/syntax.cpp
@@ -66,20 +66,20 @@ D5878BEA      1652  src/terminal.cpp
 DFE9AF58      2608  src/terminal.h
 581ADD3D      5822  src/terminal_common.cpp
 57E6C881      5770  src/terminal_win.cpp
-A8F6C29F     38593  src/toolchain.cpp
-2D040634      8616  src/toolchain.h
+EC145B05     38587  src/toolchain.cpp
+912A654C      8610  src/toolchain.h
 36906883      3898  src/tree.cpp
 3DB0E288      1196  src/tree.h
 60E1C337      3330  src/utf8.cpp
 D93038C5       572  src/utf8.h
 1DD9DC1C     12808  src/workspace.cpp
 F35C52A2      2086  src/workspace.h
-077EDECD    268073  winforms/MainForm.h
+DC379667    268069  winforms/MainForm.h
 6BA8DA64      2289  winforms/Marshal.h
 3D89F3C4      6415  winforms/Program.cpp
 B2EA0EE1      4860  winforms/TextFile.h
-0C5F9612     89128  winforms/bridge.cpp
-5A6707D7     29121  winforms/bridge.h
+47F114FE     89126  winforms/bridge.cpp
+553E2A74     29115  winforms/bridge.h
 BBD2FAFE      2198  winforms/children.h
 ------------------------------------------------------------------
 Sealed on 07-10-2026
