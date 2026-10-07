@@ -1565,8 +1565,8 @@ void debugPanelPerTarget(const std::string& ride) {
 
     Screen windows = drive(ride, common,
                            showDebugTab + toTarget + kEnter + ctrl('q'), dir);
-    check(onScreen(windows, "no debug information"),
-          "x86_64-windows is said to carry none");
+    check(onScreen(windows, "CodeView"),
+          "x86_64-windows is said to carry CodeView (M10)");
     check(!onScreen(windows, "DWARF"), "and is not told it has DWARF");
 
     // Switching the target under an open panel refills it, rather than leaving
@@ -1576,7 +1576,7 @@ void debugPanelPerTarget(const std::string& ride) {
                             showDebugTab + toTarget + kDown + kEnter +
                                 toTarget + kEnter + ctrl('q'),
                             dir);
-    check(onScreen(switched, "no debug information") && !onScreen(switched, "DWARF"),
+    check(onScreen(switched, "CodeView") && !onScreen(switched, "DWARF"),
           "and switching target changes what the open panel already said");
 
     // The flag itself, in the status bar, with no compiler run; Ctrl-D toggles, so twice from debug is release and back.
@@ -1594,8 +1594,8 @@ void debugPanelPerTarget(const std::string& ride) {
                                   dir);
     check(wasShown(debugOnWindows, "-D_DEBUG=1"),
           "a debug build of the third defines _DEBUG");
-    check(!wasShown(debugOnWindows, "-g -D_DEBUG=1"),
-          "and asks for no -g, which it would be refused");
+    check(wasShown(debugOnWindows, "-g -D_DEBUG=1"),
+          "and asks for -g, which is CodeView there (M10)");
 
     file::remove_all(dir);
 }
@@ -1718,19 +1718,7 @@ void stoppingAndStepping(const std::string& ride, const std::string& cc1) {
     // and a deleted file's breakpoints not returning with the name - and went with those menu items.
     // Editor::renameFile and deleteFile still carry them; the blocks are in this file's history at the commit that removed them, and should return with the items.
 
-#ifdef _WIN32
-    // cc1 generates MASM for this machine's target, which carries no line table, so the compiler named here has nothing to do; said out loud because MSVC at /W4 /WX treats an untouched parameter as an error.
-    (void)cc1;
-    // The reason is about this compiler and this target rather than about the
-    // machine: the C file here goes to cc1, and what cc1 writes for Windows is
-    // MASM. A C++ file on the same machine goes to cl and is a different story.
-    Screen refused = drive(ride, common, toLoopBody + kF9 + kF8 + ctrl('q'), dir);
-    check(wasShown(refused, "carries no line table"),
-          "and debugging says why it cannot start");
-    check(wasShown(refused, "c90"), "naming the compiler it is talking about");
-    file::remove_all(dir);
-    return;
-#else
+    // Since M10 the same walk runs on Windows too: c90 writes CodeView there and cdb reads it.
     if (cc1.empty()) {
         std::printf("  (no cc1 named, so nothing is built to stop inside)\n");
         file::remove_all(dir);
@@ -1868,7 +1856,6 @@ void stoppingAndStepping(const std::string& ride, const std::string& cc1) {
     check(onScreen(carried, "i = 2"), "with the counter moved on");
 
     file::remove_all(dir);
-#endif
 }
 
 // Opening a directory that has no project file. It gets one rather than the

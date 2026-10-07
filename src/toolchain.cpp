@@ -388,11 +388,10 @@ bool emitsDebugInfo(ToolchainKind kind, const std::string& arch) {
 
     if (kind == ToolCxx) return true;
 
-    // cc1 and cxx1 alike: DWARF on the two GNU targets, CodeView on x86_64-windows (M10, cpp11 first),
+    // cc1 and cxx1 alike: DWARF on the two GNU targets, CodeView on x86_64-windows (M10),
     // and nothing for the C6000 - the emulator runs it, no debugger reads it.
     if (kind != ToolCc1 && kind != ToolCxx1) return false;
-    if (arch == "x86_64-windows") return kind == ToolCxx1;
-    return arch == "x86_64-linux" || arch == "arm64-darwin";
+    return arch == "x86_64-linux" || arch == "arm64-darwin" || arch == "x86_64-windows";
 }
 
 bool debugsWithCodeView(ToolchainKind kind, const std::string& arch, Configuration config) {
@@ -859,10 +858,12 @@ Recipe assemblyRecipe(const Toolchain& tool, ToolchainKind kind,
     }
 
     recipe.assemblyPath = stem + ".s";
+    // assemblerFlag too: a Debug build's -g is CodeView, which only the GNU spelling carries (M10).
     recipe.command = quote(programOf(tool, kind)) + " -S" + languageFlag(kind, lang) + " " +
                      quote(source) + " -o " + quote(recipe.assemblyPath) +
                      (usesArch(kind) ? " -arch " + arch : std::string()) +
-                     configFlags(kind, config, arch) + includeFlags(tool, kind);
+                     configFlags(kind, config, arch) + assemblerFlag(kind, arch, config) +
+                     includeFlags(tool, kind);
     return recipe;
 }
 
@@ -877,7 +878,7 @@ std::string shownCommand(const Toolchain& tool, ToolchainKind kind,
     if (kind == ToolShc)
         return program + " -S " + source + " --target=" + arch;
     return program + " -S " + source + " -arch " + arch +
-           configFlags(kind, config, arch) + includeFlags(tool, kind);
+           configFlags(kind, config, arch) + assemblerFlag(kind, arch, config) + includeFlags(tool, kind);
 }
 
 // The environment Compiler Options asks for (options.h): set where it has a value, removed where it
@@ -902,7 +903,9 @@ bool prepareFor(ToolchainKind kind, Configuration config, const std::string& arc
     importMsvcEnvironment();
     // The project's assembler, where one is named: all three compilers read
     // the variable, and cpp11 also needs -masm=masm - see assemblerFlag.
-    std::string as = settings::assembler();
+    // Not for a Debug build with CodeView: the compilers take *_AS even for the GNU spelling, and the
+    // project's masm was handed clang's command line ("usage: asm -t x64") - so clang, by not naming one.
+    std::string as = debugsWithCodeView(kind, arch, config) ? std::string() : settings::assembler();
     _putenv_s("C90_AS", as.c_str());
     _putenv_s("CPP11_AS", as.c_str());
     _putenv_s("SHALIMAR_AS", as.c_str());

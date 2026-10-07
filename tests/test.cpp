@@ -515,8 +515,8 @@ void routing() {
     check(cc1Release.find("NDEBUG") != std::string::npos, "and its release defines NDEBUG");
     check(linuxDebug.find("-g") != std::string::npos, "debug asks x86_64-linux for -g");
     check(darwinDebug.find("-g") != std::string::npos, "and arm64-darwin for -g as well");
-    check(winDebug.find("-g") == std::string::npos,
-          "but not x86_64-windows, whose MASM carries no line table");
+    check(winDebug.find("-g") != std::string::npos,
+          "and x86_64-windows too, whose Debug build is CodeView through clang (M10)");
     check(winDebug.find("_DEBUG") != std::string::npos,
           "which still gets the define, since that is what assert reads");
 
@@ -536,7 +536,7 @@ void routing() {
     check(editor::emitsDebugInfo(editor::ToolCc1, kLinux) &&
               editor::emitsDebugInfo(editor::ToolCc1, kDarwin),
           "cc1 writes DWARF for two of its three targets");
-    check(!editor::emitsDebugInfo(editor::ToolCc1, kWindows), "and not for the third");
+    check(editor::emitsDebugInfo(editor::ToolCc1, kWindows), "and CodeView for the third (M10)");
     // cl is the other half of this machine's story, and not in the same
     // position: the C file goes to cc1 and carries no line table, while the
     // C++ file goes to cl, which writes CodeView into a .pdb and always could.
@@ -552,7 +552,7 @@ void routing() {
     // The words the panel says are the core's, and they follow the target
     // rather than being written out once and left.
     std::vector<std::string> carries = editor::debugNote(editor::ToolCc1, kDarwin);
-    std::vector<std::string> carriesNot = editor::debugNote(editor::ToolCc1, kWindows);
+    std::vector<std::string> carriesNot = editor::debugNote(editor::ToolCc1, "tms6747");
     check(!carries.empty() && !carriesNot.empty(), "the panel is told something either way");
     check(carries != carriesNot, "and not the same thing about both targets");
     check(joined(carries).find("DWARF") != std::string::npos &&
@@ -1295,6 +1295,9 @@ void projects() {
                                                       "x86_64-windows", editor::ConfigDebug).command;
             check(debug.find(" -masm=gnu") != std::string::npos && debug.find("-masm=masm") == std::string::npos,
                   "a Debug cpp11 build for x86_64-windows is the GNU spelling, for CodeView");
+            std::string debugC = editor::programRecipe(tool, editor::ToolCc1, "a.c", editor::LangC,
+                                                       "x86_64-windows", editor::ConfigDebug).command;
+            check(debugC.find(" -masm=gnu") != std::string::npos, "and so is a Debug c90 one");
         }
         check(editor::settings::rememberAssembler("bin/no-such.exe") && editor::settings::assembler().empty(),
               "a relative one that is not there counts for nothing either");
@@ -3159,11 +3162,13 @@ void theSeamTheWindowUses() {
 
     // The two compilers are not in the same position on the same machine, and
     // the reason given has to say which one it is talking about.
-    check(ride_debugger_for(editor::ToolCc1, "x86_64-windows") == 0,
-          "what cc1 builds for Windows can never be debugged");
-    check(std::string(ride_no_debugger_because(editor::ToolCc1, "x86_64-windows"))
-              .find("MASM") != std::string::npos,
-          "and the reason names the MASM that has no line table");
+    // M10: what cc1 builds for Windows is debugged in cdb, where Debugging Tools for Windows is.
+    const bool cdbHere = editor::dbg_for(editor::ToolCc1, "x86_64-windows") == editor::DebuggerCdb;
+    check(ride_debugger_for(editor::ToolCc1, "x86_64-windows") == (cdbHere ? static_cast<int>(editor::DebuggerCdb) : 0),
+          "what cc1 builds for Windows is debugged in cdb where cdb is");
+    check(cdbHere ? std::string(ride_no_debugger_because(editor::ToolCc1, "x86_64-windows")).empty()
+                  : std::string(ride_no_debugger_because(editor::ToolCc1, "x86_64-windows")).find("cdb") != std::string::npos,
+          "and where it is not, the reason names cdb");
     // cl is a different matter on the same machine, and which way it goes
     // depends on whether Microsoft's own debugger is installed - so the check
     // is that the answer and the reason agree, not that either is fixed.

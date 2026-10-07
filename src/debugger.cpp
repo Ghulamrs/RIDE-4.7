@@ -65,6 +65,9 @@ std::vector<std::string> preamble(DebuggerKind kind) {
 
         said.push_back(".lines -e");
         said.push_back("l+t");
+        // Source mode as well (M10): with l+t alone `t` stopped on a function's first byte, before its
+        // parameters were stored - for cl's programs too - where l+s goes on to the first statement.
+        said.push_back("l+s");
         said.push_back("n 10");
     } else {
 
@@ -193,7 +196,7 @@ bool gdbOwn(const std::string& line) {
 
 bool ourCommand(const std::string& bare) {
     static const char* const said[] = {
-        "g", "p", "t", "gu", "k", "q", "ln", "dv", "l+t", "n 10",
+        "g", "p", "t", "gu", "k", "q", "ln", "dv", "l+t", "l+s", "n 10",
         ".lines -e", ".lastevent", ".echo", ".printf"
     };
     for (size_t i = 0; i < sizeof said / sizeof said[0]; ++i)
@@ -962,7 +965,27 @@ Stop Debugger::afterStepping(const std::string& command) {
 
 Stop Debugger::resume() { return afterMoving(kind_ == DebuggerCdb ? "g" : "continue"); }
 Stop Debugger::stepOver() { return afterStepping(kind_ == DebuggerCdb ? "p" : "next"); }
-Stop Debugger::stepInto() { return afterStepping(kind_ == DebuggerCdb ? "t" : "step"); }
+// **cdb's `t` stops on a callee's first instruction**, before its prologue has stored the arguments -
+// cl's programs as much as c90's and cpp11's (M10) - so one more step over goes to its first line, where
+// gdb and lldb stop. A first instruction is the one cdb names "module!function:" with no offset.
+static bool atFunctionEntry(const std::string& said) {
+    const std::vector<std::string> all = lines(said);
+    for (size_t i = all.size(); i-- > 0;) {
+        const std::string bare = trimmed(all[i]);
+        if (bare.find('!') == std::string::npos || !endsWith(bare, ':')) continue;
+        return bare.find("+0x") == std::string::npos && bare.find(' ') == std::string::npos;
+    }
+    return false;
+}
+
+Stop Debugger::stepInto() {
+    Stop stop = afterStepping(kind_ == DebuggerCdb ? "t" : "step");
+    if (kind_ != DebuggerCdb || !atFunctionEntry(stop.said)) return stop;
+    Stop first = afterStepping("p");
+    first.said = stop.said + '\n' + first.said;
+    return first;
+}
+
 Stop Debugger::stepOut() { return afterMoving(kind_ == DebuggerCdb ? "gu" : "finish"); }
 
 std::vector<Variable> Debugger::locals() {
