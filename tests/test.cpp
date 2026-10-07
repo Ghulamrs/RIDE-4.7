@@ -1267,7 +1267,7 @@ void projects() {
         checkEqual(editor::settings::assembler(),
                    editor::path::absolute((app / "bin" / "masm.exe").string()),
                    "and is found beside the editor, made absolute against it");
-        // With the assembler named, every recipe that assembles x86_64-windows
+        // With the assembler named, every Release recipe that assembles x86_64-windows
         // C++ has to tell cpp11 to write MASM's spelling - F5's Run file was
         // the one that did not, and masm.exe got clang's command line.
         {
@@ -1276,20 +1276,25 @@ void projects() {
             std::vector<std::string> srcs(1, "a.cpp"), objs;
             std::vector<std::string> lines;
             lines.push_back(editor::programRecipe(tool, editor::ToolCxx1, "a.cpp", editor::LangCpp,
-                                                  "x86_64-windows", editor::ConfigDebug).command);
+                                                  "x86_64-windows", editor::ConfigRelease).command);
             lines.push_back(editor::shownProgramCommand(tool, editor::ToolCxx1, "a.cpp", editor::LangCpp,
-                                                        "x86_64-windows", editor::ConfigDebug));
+                                                        "x86_64-windows", editor::ConfigRelease));
             lines.push_back(editor::targetRecipe(tool, editor::ToolCxx1, srcs, editor::LangCpp,
-                                                 "x86_64-windows", editor::ConfigDebug, "a.exe").command);
+                                                 "x86_64-windows", editor::ConfigRelease, "a.exe").command);
             lines.push_back(editor::objectRecipe(tool, editor::ToolCxx1, srcs, editor::LangCpp,
-                                                 "x86_64-windows", editor::ConfigDebug, ".", objs).command);
+                                                 "x86_64-windows", editor::ConfigRelease, ".", objs).command);
             bool all = true;
             for (size_t i = 0; i < lines.size(); ++i)
                 if (lines[i].find(" -masm=masm") == std::string::npos) all = false;
             check(all, "Run file, its shown line, F4 and a part's objects all pass -masm=masm to cpp11");
             std::string c = editor::programRecipe(tool, editor::ToolCc1, "a.c", editor::LangC,
-                                                  "x86_64-windows", editor::ConfigDebug).command;
+                                                  "x86_64-windows", editor::ConfigRelease).command;
             check(c.find("-masm") == std::string::npos, "c90, which reads C90_AS alone, gets no flag");
+            // M10: a Debug build carries CodeView, which only clang assembles, whatever masm is named.
+            std::string debug = editor::programRecipe(tool, editor::ToolCxx1, "a.cpp", editor::LangCpp,
+                                                      "x86_64-windows", editor::ConfigDebug).command;
+            check(debug.find(" -masm=gnu") != std::string::npos && debug.find("-masm=masm") == std::string::npos,
+                  "a Debug cpp11 build for x86_64-windows is the GNU spelling, for CodeView");
         }
         check(editor::settings::rememberAssembler("bin/no-such.exe") && editor::settings::assembler().empty(),
               "a relative one that is not there counts for nothing either");
@@ -1297,8 +1302,8 @@ void projects() {
             editor::Toolchain tool;
             tool.cxx1 = "cpp11.exe";
             check(editor::programRecipe(tool, editor::ToolCxx1, "a.cpp", editor::LangCpp,
-                                        "x86_64-windows", editor::ConfigDebug).command.find("-masm") == std::string::npos,
-                  "and with no assembler named, Run file leaves cpp11's spelling alone");
+                                        "x86_64-windows", editor::ConfigRelease).command.find("-masm") == std::string::npos,
+                  "and with no assembler named, a Release Run file leaves cpp11's spelling alone");
         }
         check(editor::settings::rememberAssembler(std::string()) && editor::settings::assembler().empty(),
               "and `-` puts ml64 back");

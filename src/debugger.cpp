@@ -345,7 +345,8 @@ DebuggerKind dbg_for(ToolchainKind kind, const std::string& arch) {
 
     if (!emitsDebugInfo(kind, arch)) return DebuggerNone;
 
-    if (kind == ToolMsvc)
+    // cl's PDB, and since M10 c90's and cpp11's on x86_64-windows: CodeView, which cdb reads.
+    if (kind == ToolMsvc || arch == "x86_64-windows")
         return path::exists(dbg_program(DebuggerCdb)) ? DebuggerCdb : DebuggerNone;
 
     return dbg_here();
@@ -388,8 +389,8 @@ std::string dbg_whyNot(ToolchainKind kind, const std::string& arch) {
     if (isEmulated(arch))
         return arch + " runs on vm6747, the VM6747 emulator, which is not a debugger "
                "yet - F5 runs it, and vm6747 -t traces every instruction";
-    if (kind == ToolMsvc)
-        return "cl writes a .pdb and cdb reads one, but cdb is not installed - "
+    if (kind == ToolMsvc || (emitsDebugInfo(kind, arch) && arch == "x86_64-windows"))
+        return std::string(toolchainName(kind)) + " writes a .pdb and cdb reads one, but cdb is not installed - "
                "add Debugging Tools for Windows";
     if (!emitsDebugInfo(kind, arch))
         return std::string(toolchainName(kind)) + " generates MASM for " + arch +

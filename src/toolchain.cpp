@@ -388,10 +388,16 @@ bool emitsDebugInfo(ToolchainKind kind, const std::string& arch) {
 
     if (kind == ToolCxx) return true;
 
-    // cc1 and cxx1 alike: DWARF on the two GNU targets, MASM on the third,
+    // cc1 and cxx1 alike: DWARF on the two GNU targets, CodeView on x86_64-windows (M10, cpp11 first),
     // and nothing for the C6000 - the emulator runs it, no debugger reads it.
     if (kind != ToolCc1 && kind != ToolCxx1) return false;
+    if (arch == "x86_64-windows") return kind == ToolCxx1;
     return arch == "x86_64-linux" || arch == "arm64-darwin";
+}
+
+bool debugsWithCodeView(ToolchainKind kind, const std::string& arch, Configuration config) {
+    return config == ConfigDebug && arch == "x86_64-windows" &&
+           (kind == ToolCc1 || kind == ToolCxx1) && emitsDebugInfo(kind, arch);
 }
 
 std::string configFlags(ToolchainKind kind, Configuration config,
@@ -426,6 +432,11 @@ std::vector<std::string> debugNote(ToolchainKind kind, const std::string& arch) 
         said.push_back("about that one. What is below is the assembly the build produced,");
         said.push_back("read back out of itself; the editor stops at -S and assembles");
         said.push_back("nothing, so nothing has been linked or run.");
+    } else if (emitsDebugInfo(kind, arch) && arch == "x86_64-windows") {
+        said.push_back(std::string(toolchainName(kind)) + " writes CodeView for " + arch +
+                       " - line tables, types and");
+        said.push_back("objects - which link.exe /DEBUG makes a .pdb of and cdb reads. What");
+        said.push_back("is below is the assembly the build produced, read back out of itself.");
     } else if (emitsDebugInfo(kind, arch)) {
         said.push_back(std::string(toolchainName(kind)) + " writes DWARF for " + arch +
                        " - line tables, types, objects and");
@@ -738,7 +749,8 @@ Recipe linkRecipe(const Toolchain& tool, const std::vector<std::string>& objects
     const char* crt = (config == ConfigDebug)
                           ? " libcmtd.lib libucrtd.lib libvcruntimed.lib"
                           : " libcmt.lib libucrt.lib libvcruntime.lib";
-    recipe.command = quote(linkerNameFor(true, withCpp)) +
+    // Debug links with link.exe /DEBUG: the project's LINK writes no PDB, and without one cdb sees no line.
+    recipe.command = quote(config == ConfigDebug ? std::string(hostLinker()) : linkerNameFor(true, withCpp)) +
                      " /nologo /subsystem:console" +
                      (config == ConfigDebug ? std::string(" /DEBUG") : std::string()) +
                      " /out:" + quote(program) + named + crt +
@@ -882,7 +894,7 @@ static void optionEnvironment(Configuration config) {
     }
 }
 
-bool prepareFor(ToolchainKind kind, Configuration config) {
+bool prepareFor(ToolchainKind kind, Configuration config, const std::string& arch) {
     optionEnvironment(config);
 #ifdef _WIN32
     if (kind == ToolMsvc) return importMsvcEnvironment();
@@ -897,13 +909,15 @@ bool prepareFor(ToolchainKind kind, Configuration config) {
     // And the linker for x86_64-windows the same way, where one is named: each compiler links its
     // own program through what *_LD says, else link.exe. An empty value unsets the variable,
     // which is what a yes to the native tools needs (settings::forceNative).
-    std::string ld = settings::linker();
+    // A Debug build that carries CodeView links with Microsoft's link.exe, the one linker that writes a PDB.
+    std::string ld = debugsWithCodeView(kind, arch, config) ? std::string() : settings::linker();
     _putenv_s("C90_LD", ld.c_str());
     _putenv_s("CPP11_LD", ld.c_str());
     _putenv_s("SHALIMAR_LD", ld.c_str());
     return true;
 #else
     (void)kind;
+    (void)arch;
     return true;
 #endif
 }
@@ -922,7 +936,9 @@ bool nativeToolsAvailable(const std::string& arch) {
 }
 
 std::string assemblerFlag(ToolchainKind kind, const std::string& arch, Configuration config) {
-    (void)config;
+    // **A Debug build's CodeView goes through clang's assembler**, whatever assembler is named:
+    // the project's masm carries no CodeView (M10, RIDE docs/M10-ANALYSIS.md).
+    if (debugsWithCodeView(kind, arch, config)) return " -masm=gnu";
     if (kind == ToolCxx1 && arch == "x86_64-windows" && !settings::assembler().empty())
         return " -masm=masm";
     return std::string();
