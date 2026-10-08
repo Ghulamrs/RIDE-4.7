@@ -59,7 +59,7 @@ the emulator:
 | `x86_64-windows` | Windows                                   |
 | `x86_64-linux`   | Linux                                     |
 | `arm64-darwin`   | macOS (Apple silicon)                     |
-| `tms6747`        | the **vm6747** emulator, on every system  |
+| `tms6747`        | Run: **sim6747** on the linked `.out`; Build ▸ Emulate on vm6747: the **vm6747** emulator - on every system |
 
 **Shalimar assigns with `:`**, never `=`: `x : 2`, `int n : 5`. `=` compares.
 Writing `int x = 2` is answered `Unexpected '=' use ':'`.

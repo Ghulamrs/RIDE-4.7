@@ -610,6 +610,16 @@ Where one compiler makes the whole of it, it does the linking too - `c90 a.c
 b.c -o prog`, since several inputs link together, and cl the same when it is
 not given `/c`.
 
+**On tms6747 a Run is the TI program on sim6747.** `F5` and `Run project`
+compile each source with `-S`, assemble with RIDE's `asm6x`, link with RIDE's
+`lnk6x` against RTS6x into `<program>.out`, and run that on `sim6747` - so the
+assembler, the linker and the runtime are on every run's path. A build that
+makes no `.out` fails and says why, unless the project's `.pro` says
+`"emulateOnly": true`. `Build > Emulate on vm6747` (`--emulate` on the console)
+runs the assembly on the emulator and links nothing; `Build > Verify` runs both
+and compares them. The C6000 sources of a group compile at once on RIDE's own
+pool, one `-S` command per source, each one's output written in source order.
+
 ### Input, and Stop
 
 **A program run from a window reads what you type under its Output, and Stop

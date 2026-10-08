@@ -203,7 +203,7 @@ footer { color: var(--muted); font-size: 12.5px; margin-top: 28px; }
           <li>Linker: <b class="ours">lnk6x</b> <span class="mono">LNK6x/src</span> (the default); TI's lnk6x when TI's compiler directory is named under Tools, or on a prompted retry after lnk6x failed</li>
           <li>Runtime: <b class="ours">rts6x.lib / rts6xd.lib</b> <span class="mono">RTS6x/src</span> - <em>itself compiled by cpp11 and assembled by asm6x</em>; TI's rts6740_elf[_eh].lib when TI's directory is named</li>
           <li>Shalimar also links <b>shmrt6x.lib / shmrt6xd.lib</b> - <em>cpp11's output too</em> (<code>workspace.mk</code>)</li>
-          <li>Output: .out, beside the .s files the emulator runs</li></ul>
+          <li>Output: .out, which Run hands to sim6747, beside the .s files Emulate on vm6747 runs</li></ul>
     </div>
   </div>
   <div class="arrow">▼<small>run</small></div>
@@ -216,8 +216,8 @@ footer { color: var(--muted); font-size: 12.5px; margin-top: 28px; }
     <div class="box t-mac"><h3>macOS host</h3></div>
     <div class="box t-c6x">
       <h3>C6747</h3>
-      <ul><li><b class="ours">vm6747</b> <span class="mono">VM6747/Emulator</span>: <b>Run (F5), Run project</b> - reads the compiler's .s as text and runs it over <em>a C library and an exception-handling runtime of its own</em>; it never sees asm6x's encoding, lnk6x's image or RTS6x</li>
-          <li><b class="ours">sim6747</b> <span class="mono">SIM6747/src</span>: <b>Build ▸ Run on Simulator</b> - runs the linked .out machine code with TI's boot code and the runtime the build linked; <b>Build ▸ Verify</b> runs both and compares</li>
+      <ul><li><b class="ours">sim6747</b> <span class="mono">SIM6747/src</span>: <b>Run (F5), Run project</b> - runs the linked .out machine code with TI's boot code and the RTS6x the build linked, so asm6x, lnk6x and RTS6x are on every run's path; a build that makes no .out fails, unless the .pro says <code>"emulateOnly"</code></li>
+          <li><b class="ours">vm6747</b> <span class="mono">VM6747/Emulator</span>: <b>Build ▸ Emulate on vm6747</b> - reads the compiler's .s as text and runs it over <em>a C library and an exception-handling runtime of its own</em>, linking no .out; it never sees asm6x's encoding, lnk6x's image or RTS6x. <b>Build ▸ Verify</b> runs both and compares</li>
           <li>The TI C6747 board itself - <em>via Code Composer Studio, not RIDE</em>: the .out is the file CCS loads; RIDE has no loader</li></ul>
     </div>
   </div>
@@ -227,18 +227,18 @@ footer { color: var(--muted); font-size: 12.5px; margin-top: 28px; }
     <li><b>cpp11 → RTS6x, shmrt-tms6747.</b> The C6747 runtime a program links against is compiled by cpp11 and assembled by asm6x (<code>RTS6x/Makefile</code>); so is Shalimar's C6000 runtime (<code>workspace.mk</code>). A fault in the compiler reaches the runtime it links.</li>
     <li><b>cpp11 standalone → TI lnk6x + rts6740.</b> Run from a command line, <code>cpp11 -arch tms6747</code> without <code>-S</code> links through TI's lnk6x against <code>rts6740_elf[_eh].lib</code> under <code>CPP11_TI</code>/<code>CPP11_TILIB</code> (<code>Driver.cpp</code>, <code>linkTi</code>). RIDE's build is the other line - RIDE's lnk6x against RTS6x - and is the default inside the editor; the compiler alone has no RTS6x option today.</li>
     <li><b>Debug on x86_64-windows → clang → link.exe /DEBUG → cdb.</b> Drawn above; the two configurations go through different assemblers and linkers on this target.</li>
-    <li><b>The prompted native retry</b>: RIDE → Visual Studio's ml64 and link.exe, or TI's lnk6x, after one of RIDE's own tools failed and the user said yes. Today nothing marks the program it made beyond the console line <code>building again with the native tools, as asked</code>.</li>
+    <li><b>The prompted native retry</b>: RIDE → Visual Studio's ml64 and link.exe, or TI's lnk6x, after one of RIDE's own tools failed and the user said yes. The console says <code>building again with Visual Studio's ml64 and link.exe in place of the project's masm and link, as asked</code>, and the build's output ends <code>[built with Visual Studio's ml64 and link.exe, not RIDE's masm and link]</code> - or <code>[not built: ... failed as well]</code>.</li>
   </ul>
 
   <h2>How a build runs</h2>
   <p>A project build is one compiler command per group, in the order the project's <code>"build"</code> names them, and
     the link is one command after them. Inside a cpp11 command the files are compiled and assembled on cpp11's own
     pool of threads (one per file up to the machine's cores, one thread below four files, <code>-j n</code> to say
-    otherwise); c90 and shalimar compile one file after another. <b>A tms6747 group is the exception today</b>: RIDE
-    writes one <code>cpp11 -S -arch tms6747</code> command per source and joins them with <code>&amp;&amp;</code>
-    (<code>toolchain.cpp</code>, <code>compileRecipe</code>), so the C6000 sources of a group compile serially whatever the
-    machine has; one <code>asm6x</code> command then takes every <code>.s</code>, and one <code>lnk6x</code> command the
-    objects. The editor itself runs a build on one worker thread, so the window keeps drawing; nothing else overlaps.</p>
+    otherwise); c90 and shalimar compile one file after another. <b>A tms6747 group runs on RIDE's own pool</b>: RIDE
+    writes one <code>-S -arch tms6747</code> command per source (<code>toolchain.cpp</code>, <code>Recipe::commands</code>) and
+    runs them at once, one per source up to the machine's cores, each one's output written in source order
+    (<code>compile.cpp</code>, <code>runRecipe</code>); one <code>asm6x</code> command then takes every <code>.s</code>, and one
+    <code>lnk6x</code> command the objects. The editor itself runs a build on one worker thread, so the window keeps drawing; nothing else overlaps.</p>
 
   <h2>What verifies each tier</h2>
   <p>Each program is held to an oracle outside this workspace, not to itself. The long form is each repository's README

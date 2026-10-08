@@ -96,9 +96,10 @@ console. Each takes its own defines, optimisation level and link options from
 as `--build` and `--run` do on the console. The target is tms6747 whatever the
 editor was set to. A build compiles with cpp11 (C++) or c90 (C), assembles
 every `.s` with asm6x and links the objects with lnk6x into `<program>.out`;
-**Run project runs the assembly on vm6747**, the C6747 emulator, in the console
-pane, and **Build ▸ Run on Simulator** runs the `.out` on sim6747 - see
-*A `.out` for the board* below for what each of the two proves.
+**Run project runs that `.out` on sim6747**, the C6747 simulator, in the console
+pane (`$ sim6747 --run <program>.out`), and **Build ▸ Emulate on vm6747** runs the
+assembly on the emulator instead - see *A `.out` for the board* below for what
+each of the two proves.
 
 **What the first lines say.** Before anything is compiled, one line names every
 option of the project that RIDE's tools do not take, and that RIDE's default
@@ -133,30 +134,36 @@ the `.out`, and nothing of TI's is on the link line - the console says
 `$ lnk6x N objects, rts6x.lib` (`rts6xd.lib` in Debug) and a build that linked
 ends with `[linked <program>.out]`.
 
-**What each run proves, and what it cannot.** `F5` and **Run project** hand
-the compiler's `.s` files to **vm6747**, which reads the assembly text and
-executes it with a C library and an exception-handling runtime *of its own*
-inside the emulator: it proves what the compiler generated computes the right
-answer, and nothing else. It never sees the bytes asm6x encoded, the image
-lnk6x laid out, or RTS6x - a fault in any of those runs clean there. **Build ▸
-Run on Simulator** runs the linked `.out` on **sim6747**, which boots it as the
-board would, with the machine code, the image and the runtime the build
-actually made; it is the run to believe before loading the file onto a C6747.
-**Build ▸ Verify** does both and compares the two outputs line for line. Both
-work on a single file as well as on a project: with no project, or the file in
-front of you outside it, they build that file and link a `.out` beside its
-`.s` for the simulator to run - which a plain `F5` or `Ctrl-B` does not do.
+**What each run proves, and what it cannot.** `F5` and **Run project** run the
+linked `.out` on **sim6747**, which boots it as the board would, with the
+machine code asm6x encoded, the image lnk6x laid out and the RTS6x the build
+actually linked - the run to believe before loading the file onto a C6747, and
+the one every Run makes. **Build ▸ Emulate on vm6747** hands the compiler's
+`.s` files to **vm6747**, which reads the assembly text and executes it with a C
+library and an exception-handling runtime *of its own* inside the emulator: it
+proves what the compiler generated computes the right answer, and nothing
+else - a fault in asm6x, lnk6x or RTS6x runs clean there - and it needs none of
+them, so it links no `.out` (`[no .out: Emulate on vm6747 runs the assembly]`).
+**Build ▸ Verify** does both and compares the two outputs line for line. All
+three work on a single file as well as on a project: with no project, or the
+file in front of you outside it, Run and Verify build that file and link a
+`.out` beside its `.s`. The simulator takes no command line: a project with
+**Build ▸ Command-line arguments** is told `[run] the simulator takes no
+command line - Emulate on vm6747 hands them over` and runs without them.
 
-**When the `.out` is not made.** asm6x refusing the assembly, or lnk6x
-failing, fails the build and says so - `asm6x refused the assembly - the
-emulator would run it, but it is not a TI program`, `lnk6x did not link it`.
-Two cases stop short of a `.out` today without failing: an editor with no
-`asm6x` beside it builds the `.s` files and runs them on the emulator with no
-word about the missing assembler, and one with asm6x but neither RTS6x in
-`bin/lib/rts6x-tms6747` nor TI's compiler named under Tools ends with `[N TI
-objects made; a .out needs RTS6x ... or TI's compiler named under Tools]` and
-is reported as a successful build. An installation has all three, so neither
-case arises there; both do in a tree built by hand. A CCS project's `libc.a` or `rts6740*` library is read
+**When the `.out` is not made, the build fails.** A tms6747 build is a TI
+program, and a build that makes no `.out` says why and fails: asm6x refusing
+the assembly (`asm6x refused the assembly - the emulator would run it, but it
+is not a TI program`), lnk6x failing (`lnk6x did not link it`), no asm6x beside
+the editor (`no asm6x beside RIDE: a tms6747 build is a TI program, and nothing
+here assembles one - ...`), `$ASM6X` naming one that is gone (`asm6x named by
+$ASM6X is not there: <path>`), and asm6x with neither RTS6x in
+`bin/lib/rts6x-tms6747` nor TI's compiler named under Tools (`[N TI objects
+made] no .out: a tms6747 build links against RTS6x ... and neither is here`).
+An installation has all of them, so these arise only in a tree built by hand.
+**A project that wants no `.out` says so**: `"emulateOnly": true` in its `.pro`
+builds the `.s` files alone, ends `[no .out: the project says emulateOnly - Run
+is Emulate on vm6747]`, and its Run runs on the emulator. A CCS project's `libc.a` or `rts6740*` library is read
 as the configuration's RTS6x library. To link against TI's runtime instead, name TI's compiler
 directory under **Tools ▸ TI compiler for tms6747...** (`ti-cgt-c6000_x.y.z`, the
 one with `bin/lnk6x`) and a directory holding `rts6740_elf_eh.lib` - CCS ships

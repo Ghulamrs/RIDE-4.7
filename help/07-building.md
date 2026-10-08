@@ -53,7 +53,7 @@ rather than in whichever file the target happened to list first.
 | `x86_64-windows` | Debug: clang's assembler and `link.exe /DEBUG`; Release: RIDE's own `masm` and `link` | see below |
 | `x86_64-linux` | the system's, through `cc` or `c++` | GNU assembly |
 | `arm64-darwin` | Apple's clang toolchain | this Mac's own |
-| `tms6747` | RIDE's own `asm6x` and `lnk6x`, against RTS6x | the TI C6747; runs on `vm6747` and `sim6747` on any host |
+| `tms6747` | RIDE's own `asm6x` and `lnk6x`, against RTS6x | the TI C6747; Run runs the `.out` on `sim6747`, Build ▸ Emulate on vm6747 the assembly on `vm6747`, on any host |
 
 **Only the host's own target reaches a program, and tms6747 reaches one
 everywhere.** c90, cpp11 and shalimar generate for all four, but the three host
@@ -106,7 +106,9 @@ the source, the editor asks:
 
 A **Yes** builds again through the vendor's tools — Visual Studio's, found the
 way `cl` is found, or TI's `lnk6x` under the directory Tools names — and the
-console says `building again with the native tools, as asked`. A **No** leaves
+console says what with, in the question's own words: `building again with
+Visual Studio's ml64 and link.exe in place of the project's masm and link, as
+asked`. A **No** leaves
 the build failed. The question is put only when the vendor's tools are on this
 machine (otherwise the line says they are not), only when the failure was the
 tool's and not the program's (an unresolved or duplicate symbol, a library made
@@ -115,10 +117,12 @@ and never for a `cl` build, which links with its own. `"askNative": false` in
 `settings.json` never asks; `--build` and `--run` on the console have nobody to
 ask and let the build stand as failed, saying so.
 
-**What a Yes does not do today is mark the program it made.** The console
-line above is the only record that this program came out of Visual Studio's
-tools rather than RIDE's; nothing in the build's last line or in the file says
-so afterwards.
+**A Yes marks the program it made.** The build's output, the console and the
+Output window, ends `[built with Visual Studio's ml64 and link.exe, not RIDE's
+masm and link]` (`[built with TI's lnk6x, not RIDE's lnk6x]` for tms6747), or
+`[not built: Visual Studio's ml64 and link.exe failed as well]` when the second
+build failed too - so the record of which tools made this program stays with the
+build. The file itself carries no mark.
 
 ## Debug and release
 
@@ -170,11 +174,13 @@ on the line. What happens inside that command is the compiler's:
   count is cpp11's own; on a command line `-j n` asks for another, and `-j 1`
   is serial. Assembling goes on the same pool. c90 and shalimar compile one
   file after another.
-- **A tms6747 group is the exception today.** Each source is its own
-  `cpp11 -S -arch tms6747` command, joined with `&&`, so the C6000 sources of
-  a group compile one after another whatever the machine has. The `asm6x` step
-  that follows takes every `.s` in one command, and the link is one `lnk6x`.
-  (The one-command form, with cpp11's pool doing the work, is WS-G's P3.)
+- **A tms6747 group compiles on RIDE's own pool.** Each source is its own
+  `-S -arch tms6747` command - the drivers write one `.s` per input and take
+  no output directory - and RIDE runs them at once, one thread per source up to
+  the machine's cores; each one's output is captured and written to the
+  console in source order as it completes, and the first failure in that order
+  is the build's. The `asm6x` step that follows takes every `.s` in one
+  command, and the link is one `lnk6x`.
 - **The link is one command**, and the run is one program; nothing overlaps a
   build with a run or two builds with each other. The window keeps drawing
   while a build runs, because the build is on a worker thread of its own —

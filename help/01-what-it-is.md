@@ -112,9 +112,10 @@ program links against by default, all RIDE's own; **`vm6747`**, an emulator
 that runs the compiler's assembly as it is, with a C library and an
 exception-handling runtime of its own inside it; and **`sim6747`**, a
 simulator that runs the linked `.out` — TI's own boot code and runtime, the
-machine code asm6x encoded, the image lnk6x laid out. `F5` runs on the
-emulator, **Build ▸ Run on Simulator** on the simulator, and **Build ▸ Verify**
-on both and compares them. On Windows the same releases brought RIDE's own
+machine code asm6x encoded, the image lnk6x laid out. `F5` and **Run project**
+build that `.out` and run it on the simulator, so asm6x, lnk6x and RTS6x are on
+every run's path; **Build ▸ Emulate on vm6747** runs the assembly on the
+emulator, and **Build ▸ Verify** runs both and compares them. On Windows the same releases brought RIDE's own
 **`masm`** and **`link`** for Release builds and, in 5.1, debugging of c90 and
 cpp11 programs through CodeView and cdb. A Code Composer Studio project opens
 as it is. [Page 6](06-the-project.md) and [page 7](07-building.md) have all of

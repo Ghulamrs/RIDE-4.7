@@ -65,9 +65,10 @@ File. No item here repeats the word "project": the column says it. The five
 above the rule are the project itself; the three below are its list of files,
 and none of those three touches the disk except New File, which makes one.
 **Build** — Compile file, Run file, Build project, Run project, Debug, Release, Clean,
-Run on Simulator, Verify. The last two are tms6747's: they build as Run does
-and then run the linked `.out` on `sim6747` — Verify runs it on `vm6747` as
-well and compares the two outputs ([page 6](06-the-project.md)).
+Emulate on vm6747, Verify. On tms6747 Run file and Run project build the TI
+program and run the linked `.out` on `sim6747`; the last two are tms6747's:
+Emulate on vm6747 runs the assembly on `vm6747` and links no `.out`, and Verify
+runs both and compares the two outputs ([page 6](06-the-project.md)).
 **Debug** — Start / continue, Debug project, Toggle breakpoint, Step over, Step
 into, Step out, Up the stack, Down the stack, Watch expression, Stop debugging.
 **Language** — By extension, C, C++, Shalimar, JSON, Plain text.

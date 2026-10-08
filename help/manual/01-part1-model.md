@@ -221,9 +221,10 @@ a chip binary (Part VI, the TI build path).
 the order the build names them; inside that command cpp11 compiles its files
 on a pool of threads, one per file up to the machine's cores (one thread below
 four files; `-j n` on a command line asks for another count) and assembles on
-the same pool, while c90 and shalimar go file by file. A tms6747 group is the
-exception today: each source is its own `cpp11 -S` command, run one after
-another, before one `asm6x` and one `lnk6x` command take them all.
+the same pool, while c90 and shalimar go file by file. A tms6747 group runs on
+RIDE's own pool instead: each source is its own `-S` command, and RIDE runs
+them at once, one per source up to the machine's cores, writing each one's
+output in source order, before one `asm6x` and one `lnk6x` command take them all.
 
 The consequence worth internalising: **a target's "runs here" is a fact about
 this machine's tools, not about the compiler.** The compiler can generate
