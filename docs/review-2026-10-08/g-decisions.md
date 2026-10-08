@@ -92,7 +92,9 @@ vm6747, sim6747, RTS6x's libraries, RIDE.exe, `docs/ccs-reference`, the host's
 debugger). A third party's input - TI's `rts6740_elf_eh.lib` for the CCS
 reference projects - is said as `external` and stays a skip under the flag,
 because RIDE does not ship it. `make test TEST_FLAGS=--require-tools`;
-`build.bat test` reads `%RIDE_TEST_FLAGS%`.
+`build.bat test` reads `%RIDE_TEST_FLAGS%`. A case written for another platform - gdb or lldb on
+Windows, cl's debugger off it - is said as `not on this platform` and is not a
+skip either: nothing is missing, the case is not this machine's.
 
 ## D13 / A7 - the artefact table and the generated page
 
@@ -114,7 +116,9 @@ because RIDE does not ship it. `make test TEST_FLAGS=--require-tools`;
 `release.sh` and `release.cmd` refuse when VM6747's Compiler-Cppi pin is not
 the head of cpp11's default branch, printing both, unless `ALLOW_UNPINNED=1`.
 `release.cmd`'s `RELEASE_BRANCHES` rehearsal warns instead, as it does for the
-seals. `packaging/README.md` says so.
+seals. `packaging/README.md` says so. `release.cmd` gains `RELEASE_DRYRUN=1` (stop after the
+checks; with `RELEASE_BIN`, `build.bat confirm` over that bin) and `RELEASE_PIN`
+(stands in for the pin in a dry run), so both refusals can be rehearsed.
 
 ## S2 - six libraries
 
