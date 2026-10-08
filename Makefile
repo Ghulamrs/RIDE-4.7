@@ -189,9 +189,9 @@ check-tools:
 	    exit 1; }
 
 # The compilers are handed to the suites absolutely: a build runs them from
-# another directory, where `bin/c90.exe` names nothing.
+# another directory, where `bin/c90.exe` names nothing. TEST_FLAGS=--require-tools fails a skip (D14).
 test: tests/test check-tools
-	CC1="$(abspath $(CC1))" CXX1="$(abspath $(CXX1))" SHC="$(abspath $(SHC))" C2S="$(abspath $(C2S))" ./tests/test
+	CC1="$(abspath $(CC1))" CXX1="$(abspath $(CXX1))" SHC="$(abspath $(SHC))" C2S="$(abspath $(C2S))" ./tests/test $(TEST_FLAGS)
 
 tests/test: tests/test.cpp src/compile.cpp src/indent.cpp src/syntax.cpp \
             src/toolchain.cpp src/json.cpp src/project.cpp src/find.cpp \
@@ -252,6 +252,7 @@ check: test session
 DEPENDENCIES := c90.exe cpp11.exe vm6747.exe sim6747.exe asm6x.exe masm.exe link.exe lnk6x.exe shalimar.exe c2s.exe \
        lib/shmrt-$(SHM_TARGET).a lib/shmrt-$(SHM_TARGET)-debug.a \
        lib/shmrt-tms6747/Runtime.s lib/shmrt-tms6747-debug/Debug.s lib/rts6x-tms6747/rts6x.lib lib/rts6x-tms6747/rts6xd.lib \
+       lib/rts6x-tms6747/printf6x.lib lib/rts6x-tms6747/printf6xd.lib \
        lib/rts6x-tms6747/shmrt6x.lib lib/rts6x-tms6747/shmrt6xd.lib
 
 confirm: $(EDITOR)

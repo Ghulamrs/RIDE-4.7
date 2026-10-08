@@ -1,12 +1,14 @@
 #!/bin/sh
-# RIDE 4.0 as installed: nine programs, x86 through ours and the vendor's, C6000 on vm6747, through ASM6x+LNK6x and through TI's lnk6x.
+# RIDE as installed (or $RIDE_BIN): nine programs, x86 through ours and the vendor's, C6000 emulated on vm6747,
+# run as RIDE's Run does (R5: asm6x, lnk6x against RTS6x, the .out on sim6747), and linked through TI's lnk6x.
 set -u
 export MSYS_NO_PATHCONV=1
 # Microsoft's link.exe ahead of Git bash's coreutils `link`.
 export PATH="$(cygpath -u "$VCToolsInstallDir")bin/Hostx64/x64:$PATH"
-rm -f /c/meas0923/rc/progs/._*
-BIN="C:/Program Files/RIDE 4.0/bin"; ROOT="C:/Program Files/RIDE 4.0"
-P=/c/meas0923/rc/progs; W=/c/meas0923/rc/w; rm -rf $W; mkdir -p $W; R=/c/meas0923/rc/results.txt; : > $R; : > $R.detail
+RC=${RC_DIR:-/c/meas0923/rc}
+rm -f $RC/progs/._*
+BIN="${RIDE_BIN:-C:/Program Files/RIDE 5.1/bin}"
+P=$RC/progs; W=$RC/w; rm -rf $W; mkdir -p $W; R=$RC/results.txt; : > $R; : > $R.detail
 TI=C:/ti/ccsv7/tools/compiler/ti-cgt-c6000_8.2.2; TILIB=C:/Users/GRA/Documents/VM6747/tilib
 tool() { case $1 in c) echo c90 C90;; cpp) echo cpp11 CPP11;; shl) echo shalimar SHALIMAR;; esac; }
 norm() { tr -d '\r' < "$1" | md5sum | cut -c1-8; }
@@ -31,7 +33,7 @@ while read name lang srcs; do
   if (cd $d && "$BIN/$exe.exe" $files -o vend.exe > vend.build 2>&1) && [ -f $d/vend.exe ]; then
      (cd $d && ./vend.exe < /dev/null > vend.out 2>&1); e2=$?; o2=$(norm $d/vend.out); line="$line x86-vendor=$o2/$e2"
   else o2=FAIL; line="$line x86-vendor=BUILD-FAIL"; echo "  $name vendor: $(tail -2 $d/vend.build | tr -d '\r')" >> $R.detail; fi
-  # 3. C6000 on vm6747, as RIDE's Run file does: each source to assembly, then the emulator
+  # 3. C6000 on vm6747, as Build > Emulate on vm6747 does: each source to assembly, then the emulator
   unsetall; ss=""; ok=1
   if [ $lang = shl ]; then targ="--target=tms6747"; else targ="-arch tms6747"; fi
   for f in $srcs; do case $f in *.h) continue;; esac; b=$(basename $f); b=${b%.*}
@@ -40,6 +42,16 @@ while read name lang srcs; do
   rt="$BIN/lib/shmrt-tms6747"
   if [ $ok = 1 ]; then if [ $lang = shl ]; then (cd $d && timeout 120 "$BIN/vm6747.exe" $ss "$rt" < /dev/null > c6.out 2>&1); else (cd $d && timeout 120 "$BIN/vm6747.exe" $ss < /dev/null > c6.out 2>&1); fi; e3=$?; o3=$(norm $d/c6.out); line="$line c6000-vm=$o3/$e3"
   else o3=FAIL; line="$line c6000-vm=S-FAIL"; fi
+  # 3b. C6000 as RIDE's Run does (R5): the console builds a project of it, links the .out against RTS6x
+  # and runs it on sim6747; the program's output is what comes after the "$ sim6747" line.
+  r=$d/r5; rm -rf $r; mkdir -p $r; g=""; cp $P/*.h $r/ 2>/dev/null
+  for f in $srcs; do cp $P/$f $r/; case $f in *.h) ;; *) g="$g\"$f\",";; esac; done
+  printf '{ "arch": "tms6747", "groups": { "Sources": [%s] } }\n' "${g%,}" > $r/project.pro
+  (cd $r && timeout 300 "$BIN/RIDEConsole.exe" "$(cygpath -w $r)" --run --config release < /dev/null > run.log 2>&1); e5=$?
+  if grep -q '^\$ sim6747 --run' $r/run.log; then
+    sed -n '/^\$ sim6747 --run/,/^\[program returned/p' $r/run.log | sed '1d;$d' | tr -d '\r' | grep -v '^CYCLES ' > $d/c6sim.out
+    o5=$(norm $d/c6sim.out); line="$line c6000-run=$o5/$e5"
+  else o5=FAIL; line="$line c6000-run=FAIL"; echo "  $name run: $(tail -3 $r/run.log | tr -d '\r')" >> $R.detail; fi
   # 4/5. C6000 linked: ASM6x with LNK6x (ours) and with TI's lnk6x (vendor) - c90 and cpp11
   if [ $lang != shl ]; then
     unsetall; export ${V}_AS="$BIN/asm6x.exe" ${V}_TI=$TI ${V}_TILIB=$TILIB ${V}_LD="$BIN/lnk6x.exe"
@@ -49,7 +61,7 @@ while read name lang srcs; do
     line="$line c6000-link ours=$l4 TI=$l5"
   fi
   # agreement: all run outputs the same, and against the recorded expectation where there is one
-  agree=yes; for o in $o2 $o3 $o4; do [ "$o" = "$o1" ] || agree=NO; done
+  agree=yes; for o in $o2 $o3 $o4 $o5; do [ "$o" = "$o1" ] || agree=NO; done
   exp=""; [ -f $P/$name.expected ] && exp=" expected=$(norm $P/$name.expected)"
   echo "$line$exp agree=$agree" | tee -a $R
 done < $P/list.txt

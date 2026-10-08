@@ -5,7 +5,8 @@
 #   packaging/release.sh [version]    -> <RELEASE_DIR>/<stamp>/RIDE-<ver>/dist/ and RELEASE.txt beside it
 #
 # What is final is each repository's default branch on GitHub (main or master), never a
-# side branch: VM6747's Compiler-Cppi is taken at the head of its own default branch, not at the commit pinned.
+# side branch: VM6747's Compiler-Cppi is taken at the head of its own default branch, and that head must be
+# the commit VM6747 pins - a release refuses otherwise unless ALLOW_UNPINNED=1 (D16).
 # RELEASE_DIR (default ~/ride-release, outside iCloud's ~/Documents), JOBS (8 on a Mac, 2 on Linux).
 set -eu
 
@@ -45,6 +46,16 @@ PIN=$(git -C "$W/VM6747" ls-tree HEAD Compiler-Cppi | awk '{print $3}')
 $GIT -C "$W/VM6747" submodule -q update --init --remote Compiler-Cppi
 CPPI=$(git -C "$W/VM6747/Compiler-Cppi" rev-parse HEAD)
 say "  VM6747/Compiler-Cppi  $(echo "$CPPI" | cut -c1-7)  default branch$( [ "$CPPI" = "$PIN" ] || echo ", VM6747 pins $(echo "$PIN" | cut -c1-7)")"
+# The compiler shipped is the one VM6747 pins, or the release says it is not (D16).
+if [ "$CPPI" != "$PIN" ]; then
+    say "  cpp11's default branch is at $CPPI"
+    say "  VM6747 pins Compiler-Cppi at   $PIN"
+    if [ "${ALLOW_UNPINNED:-}" != 1 ]; then
+        say "release.sh: VM6747's pin is not the head of cpp11's default branch - repin VM6747 (sync, commit, push), or set ALLOW_UNPINNED=1"
+        exit 1
+    fi
+    say "  WARNING: ALLOW_UNPINNED=1 - this release ships a cpp11 VM6747 does not pin"
+fi
 
 {
     say "RIDE $VER, built $(date '+%d-%m-%Y %H:%M:%S') PKT on $(hostname) ($HOST) from fresh checkouts"
@@ -71,8 +82,14 @@ else
     PRODUCT=$R/dist/RIDE-$VER-linux-x86_64.run
 fi
 [ -f "$PRODUCT" ] || { say "release.sh: no $PRODUCT"; exit 1; }
+# workspace.mk's installer ran `confirm`, which stops on a MISSING one of the six libraries (S2).
+# What was packaged, by SHA-256, in a second table of MASTER.SEAL beside RELEASE.txt (D13).
+if [ "$HOST" = Darwin ]; then SHIPPED=$R/dist/mac/bin; else SHIPPED=$R/bin; fi
+python3 "$R/tools/master-seal" artefacts "$SHIPPED" --release "RIDE $VER, $(basename "$PRODUCT"), built $(date '+%d-%m-%Y %H:%M:%S') PKT on $(hostname)"
+cp "$R/MASTER.SEAL" "$W/MASTER.SEAL"
 
 say "[3/3] Done"
 say "  installer : $PRODUCT"
 say "  record    : $W/RELEASE.txt"
+say "  artefacts : $W/MASTER.SEAL"
 say "installer $PRODUCT  $(date -r "$PRODUCT" '+%d-%m-%Y %H:%M:%S') PKT" >> "$W/RELEASE.txt"

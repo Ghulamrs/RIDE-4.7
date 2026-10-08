@@ -30,6 +30,27 @@ directory, so the three compilers are **resources** fetched from their own
 repositories — which means the formula installs what is *pushed*, not what is
 in your tree.
 
+## The release scripts, and what they refuse
+
+`packaging/release.sh` (Mac, Linux) and `packaging/windows/release.cmd` build a release from fresh
+checkouts of every repository's default branch. Before a line is compiled they refuse:
+
+- **an unpinned cpp11** (D16): VM6747 pins `Compiler-Cppi` at a commit, and the release takes cpp11's
+  default branch; when the two differ both are printed and the release stops, unless `ALLOW_UNPINNED=1`.
+  The fix is to sync VM6747's submodule to cpp11's head, commit and push. A `RELEASE_BRANCHES` rehearsal
+  on Windows warns instead.
+- **sources that do not match their seals** - `verify_seals.py`, from `MASTER.SEAL` down.
+
+After the build, `confirm` stops a release whose `bin/` is MISSING anything RIDE drives - the six
+libraries in `bin/lib/rts6x-tms6747` among it (`rts6x.lib`, `rts6xd.lib`, `printf6x.lib`, `printf6xd.lib`,
+`shmrt6x.lib`, `shmrt6xd.lib`) - and when the installer is made, `tools/master-seal artefacts` writes a
+second table into `MASTER.SEAL`: the SHA-256 and size of every executable and library packaged. That
+`MASTER.SEAL` is left beside `RELEASE.txt`. **The seal is of sources, and a development `bin/` is sealed by
+nothing**: only the artefact table of a release says which binaries were built from the sealed sources.
+
+On Windows `RELEASE_DRYRUN=1` stops after the checks (with `RELEASE_BIN` naming a built `bin\`, after
+`build.bat confirm` over it too), and `RELEASE_PIN` stands in for VM6747's pin there, to rehearse a refusal.
+
 ## What packaging had to fix first
 
 Neither program could be installed anywhere before this, and both reasons are
