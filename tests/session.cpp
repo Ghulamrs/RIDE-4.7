@@ -1163,12 +1163,22 @@ void compilingCpp(const std::string& ride, const std::string& cxx1) {
     file::remove_all(dir);
 }
 
-// **The fourth target, tms6747, runs on the VM6747 emulator** - vm6747, found beside the editor
-// like the compilers. F5 builds a file with c90 -S and runs the assembly; F4 writes one .s per
-// source into <target>.vm and Run project hands the directory to vm6747; Debug is turned away with the reason. The project file names the target.
+// What a tms6747 Run needs beside the editor (R5): asm6x, lnk6x, RTS6x and sim6747 - the TI program's path.
+bool tiToolsBeside(const std::string& ride) {
+    const std::string at = editor::path::parent(ride);
+    return editor::path::exists(at + "/asm6x.exe") && editor::path::exists(at + "/lnk6x.exe") &&
+           editor::path::exists(at + "/sim6747.exe") && editor::path::exists(at + "/lib/rts6x-tms6747/rts6x.lib");
+}
+// Build > Emulate on vm6747, the eighth item of the Build menu.
+const std::string kEmulate = kF10 + times(kRight, 3) + times(kDown, 7) + kEnter;
+
+// **The fourth target, tms6747** (R5): F5 builds a file with c90 -S, asm6x and lnk6x against RTS6x and runs
+// the .out on sim6747; Build > Emulate on vm6747 runs the assembly; F4 writes one .s per source into
+// <target>.vm and links <target>.out. Without the TI tools F5 fails, saying why, and Emulate still runs.
 void emulatedTarget(const std::string& ride, const std::string& cc1,
                     const std::string& cxx1) {
-    std::printf("the tms6747 target, run on the VM6747 emulator\n");
+    std::printf("the tms6747 target, run on sim6747 and emulated on vm6747\n");
+    const bool ti = tiToolsBeside(ride);
 
     if (cc1.empty()) {
         std::printf("  (no cc1 named, so those cases are not tried)\n");
@@ -1185,9 +1195,17 @@ void emulatedTarget(const std::string& ride, const std::string& cc1,
     std::string withCc1 = "\"" + file.string() + "\" --project \"" + dir.string() +
                           "\" --c90 \"" + cc1 + "\"";
 
-    Screen ran = drive(ride, withCc1, kF5 + ctrl('q'), dir);
-    check(rowsSaying(ran, "counted to three") == 2,
-          "F5 on the C6000 target builds with c90 and runs on vm6747, and the output reaches the console");
+    if (ti) {
+        Screen simulated = drive(ride, withCc1, kF5 + ctrl('q'), dir);
+        check(rowsSaying(simulated, "counted to three") == 2 && wasShown(simulated, "$ sim6747 --run"),
+              "F5 on the C6000 target builds the TI program and runs its .out on sim6747 (R5)");
+    } else {
+        Screen refusedRun = drive(ride, withCc1, kF5 + ctrl('q'), dir);
+        check(wasShown(refusedRun, "no asm6x beside"), "F5 with no asm6x fails the build, saying why (D2)");
+    }
+    Screen ran = drive(ride, withCc1, kEmulate + ctrl('q'), dir);
+    check(rowsSaying(ran, "counted to three") == 2 && wasShown(ran, "$ vm6747"),
+          "Emulate on vm6747 builds with c90 and runs the assembly, and the output reaches the console");
     check(wasShown(ran, "[program returned 3]"), "and what it returned is said as a number");
     check(message(ran).find("tms6747") != std::string::npos || onScreen(ran, "tms6747"),
           "and the target is named");
@@ -1204,8 +1222,9 @@ void emulatedTarget(const std::string& ride, const std::string& cc1,
                        "    return 5;\n}\n");
         Screen threw = drive(ride, "\"" + cpp.string() + "\" --project \"" + dir.string() +
                                       "\" --cpp11 \"" + cxx1 + "\"",
-                             kF5 + ctrl('q'), dir);
-        check(wasShown(threw, "caught 3"), "C++ with an exception runs on the emulator too");
+                             (ti ? kF5 : kEmulate) + ctrl('q'), dir);
+        check(wasShown(threw, "caught 3"), ti ? "C++ with an exception runs on sim6747, against RTS6x's unwinder"
+                                             : "C++ with an exception runs on the emulator too");
         check(wasShown(threw, "[program returned 5]"), "and returns what it returned");
     }
 
@@ -1220,30 +1239,34 @@ void emulatedTarget(const std::string& ride, const std::string& cc1,
               "  \"groups\": {\n"
               "    \"Sources\": [\"src/sum.c\", \"src/main.c\"],\n"
               "    \"Headers\": [\"src/sum.h\"]\n  },\n"
-              "  \"build\": { \"target\": \"sums\", \"groups\": [\"Sources\"] }\n}\n");
+              "  \"build\": { \"target\": \"sums\", \"groups\": [\"Sources\"] }" +
+              std::string(ti ? "" : ",\n  \"emulateOnly\": true") + "\n}\n");
     std::string arguments = "--project \"" + dir.string() + "\" --c90 \"" + cc1 + "\"";
     Screen built = drive(ride, arguments, kF4 + ctrl('q'), dir);
     check(onScreen(built, "2 sources"), "F4 builds the project's two sources for the C6000");
     check(editor::path::isDirectory((dir / "sums.vm").string()), "into a directory of assembly beside the project");
     Screen ran2 = drive(ride, arguments,
                         kF10 + times(kRight, 3) + times(kDown, 3) + kEnter + ctrl('q'), dir);
-    check(wasShown(ran2, "answer 42"), "and Run project hands it to vm6747, which runs it");
+    check(wasShown(ran2, "answer 42"), ti ? "and Run project runs the linked .out on sim6747 (R5)"
+                                          : "and Run project, the .pro saying emulateOnly, hands it to vm6747");
 
-    // **asm6x beside the editor turns that assembly into TI objects** - the project's own C6000
-    // assembler, built with the editor - and with TI's compiler directory named, lnk6x links them
-    // into a .out. Without one named, the objects are made and the console says what is missing.
-    if (editor::path::exists(editor::path::parent(ride) + "/asm6x.exe")) {
+    // **asm6x beside the editor turns that assembly into TI objects**, and lnk6x links them against RTS6x
+    // into a .out (5.1); a TI directory named without lnk6x in it is refused by name.
+    if (ti) {
         check(wasShown(built, "$ asm6x 2 sources"), "and with asm6x beside the editor the two .s are assembled");
         check(editor::path::exists((dir / "sums.vm" / "main.obj").string()) &&
               editor::path::exists((dir / "sums.vm" / "sum.obj").string()),
               "into TI objects beside the assembly");
-        check(wasShown(built, "2 TI objects made; a .out needs TI's linker"),
-              "and the console says a .out needs TI's linker, named under Tools");
+        check(wasShown(built, "[linked ") && editor::path::exists((dir / "sums.out").string()),
+              "and lnk6x links them against RTS6x into sums.out");
         Screen noTi = drive(ride, arguments + " --ti \"" + dir.string() + "\"", kF4 + ctrl('q'), dir);
         check(wasShown(noTi, "no lnk6x under"), "a TI directory without lnk6x is refused by name");
     } else {
-        std::printf("  (no asm6x beside the editor, so the TI object cases are not tried)\n");
+        std::printf("  (no asm6x, lnk6x, RTS6x or sim6747 beside the editor, so the TI program cases are not tried)\n");
     }
+    // Last: an Emulate builds <target>.vm again and links nothing, so the objects above are gone after it.
+    Screen emulated2 = drive(ride, arguments, kEmulate + ctrl('q'), dir);
+    check(wasShown(emulated2, "answer 42") && wasShown(emulated2, "$ vm6747"), "and Emulate on vm6747 runs the assembly");
 
     file::remove_all(dir);
 }
@@ -1252,7 +1275,8 @@ void emulatedTarget(const std::string& ride, const std::string& cc1,
 // program runs on vm6747 beside the runtime cpp11 compiled - lib/shmrt-tms6747
 // beside the editor, which the launch adds and the compilers know nothing of.
 void emulatedShalimar(const std::string& ride, const std::string& shc) {
-    std::printf("Shalimar on the tms6747 target, run on the VM6747 emulator\n");
+    std::printf("Shalimar on the tms6747 target, run on sim6747 and emulated on vm6747\n");
+    const bool ti = tiToolsBeside(ride);
 
     if (shc.empty()) {
         std::printf("  (no shc named, so those cases are not tried)\n");
@@ -1273,9 +1297,10 @@ void emulatedShalimar(const std::string& ride, const std::string& shc) {
                     "    a : b\n    b : r\n  }\n  ? \"gcd is\" a\n}\n");
     std::string arguments = "\"" + file.string() + "\" --project \"" + dir.string() +
                             "\" --shalimar \"" + shc + "\"";
-    Screen ran = drive(ride, arguments, kF5 + ctrl('q'), dir);
+    Screen ran = drive(ride, arguments, (ti ? kF5 : kEmulate) + ctrl('q'), dir);
     check(wasShown(ran, "gcd is 6"),
-          "F5 on a Shalimar file for the C6000 builds with shalimar --target=tms6747 and runs on vm6747 with the runtime");
+          ti ? "F5 on a Shalimar file for the C6000 links it against shmrt6x.lib and RTS6x and runs it on sim6747"
+             : "Emulate on a Shalimar file for the C6000 runs it on vm6747 with the runtime");
     check(wasShown(ran, "[program returned 0]"), "and what it returned is said as a number");
 
     // A Shalimar project of two files, one of them a library with no main():
@@ -1286,16 +1311,16 @@ void emulatedShalimar(const std::string& ride, const std::string& shc) {
     writeFile(dir / "project.pro",
               "{\n  \"name\": \"pair\",\n  \"indent\": 4,\n  \"arch\": \"tms6747\",\n"
               "  \"groups\": { \"Sources\": [\"src/prog.shl\", \"src/twice.shl\"] },\n"
-              "  \"build\": { \"target\": \"prog\", \"groups\": [\"Sources\"] }\n}\n");
+              "  \"build\": { \"target\": \"prog\", \"groups\": [\"Sources\"] }" +
+              std::string(ti ? "" : ",\n  \"emulateOnly\": true") + "\n}\n");
     std::string project = "--project \"" + dir.string() + "\" --shalimar \"" + shc + "\"";
     Screen built = drive(ride, project, kF4 + ctrl('q'), dir);
     check(editor::path::exists((dir / "prog.vm" / "prog.s").string()),
           "F4 on a two-file Shalimar project for the C6000 compiles them as one .s");
     Screen ran2 = drive(ride, project, kF10 + times(kRight, 3) + times(kDown, 3) + kEnter + ctrl('q'), dir);
-    check(wasShown(ran2, "twice 42"), "and Run project runs it on vm6747 with the runtime");
-    if (editor::path::exists(editor::path::parent(ride) + "/asm6x.exe"))
-        check(editor::path::exists((dir / "prog.vm" / "shmrt" / "Runtime.obj").string()),
-              "and with asm6x beside the editor the runtime's assembly is assembled beside the program's");
+    check(wasShown(ran2, "twice 42"), ti ? "and Run project runs its .out on sim6747" : "and Run project runs it on vm6747 with the runtime");
+    if (ti)
+        check(editor::path::exists((dir / "prog.out").string()), "and the build links prog.out, the runtime packed as shmrt6x.lib");
 
     file::remove_all(dir);
 }

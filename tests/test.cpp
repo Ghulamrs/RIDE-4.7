@@ -2,6 +2,7 @@
 // rules, and the reading of cc1's one diagnostic. Neither needs a terminal, so
 // neither is checked by typing into one and looking.
 
+#include <cstdarg>
 #include <cstdio>
 
 #include <algorithm>
@@ -77,6 +78,29 @@ namespace {
 
 int failures = 0;
 int checks = 0;
+// --require-tools (D14): a case skipped for a tool or input of RIDE's own is a failure, said by name.
+bool requireTools = false;
+int skips = 0;
+
+// A case not run, and why: "  (why)", and under --require-tools a FAIL - unless what is missing is a third party's.
+void skippedWith(bool external, const char* format, va_list args) {
+    char why[1024];
+    std::vsnprintf(why, sizeof why, format, args);
+    ++skips;
+    if (requireTools && !external) {
+        ++checks; ++failures;
+        std::printf("  FAIL  skipped: %s\n", why);
+    } else {
+        std::printf("  (%s%s)\n", external ? "external: " : "", why);
+    }
+}
+void skipped(const char* format, ...) { va_list a; va_start(a, format); skippedWith(false, format, a); va_end(a); }
+void skippedExternal(const char* format, ...) { va_list a; va_start(a, format); skippedWith(true, format, a); va_end(a); }
+// A case for another platform: nothing is missing here, so it is no failure under --require-tools either.
+void skippedNotHere(const char* format, ...) {
+    char why[1024]; va_list a; va_start(a, format); std::vsnprintf(why, sizeof why, format, a); va_end(a);
+    std::printf("  (not on this platform: %s)\n", why);
+}
 
 const std::string kWindows = "x86_64-windows";
 const std::string kLinux = "x86_64-linux";
@@ -1454,8 +1478,10 @@ void projects() {
                                                       editor::ConfigRelease, any);
             check(!askedQuestion.empty() && askedQuestion.find("lnk6x") != std::string::npos,
                   "a failed build puts the question to the front end");
-            check(twice.output.find("building again with the native tools, as asked") != std::string::npos,
-                  "and a yes builds again, saying so");
+            check(twice.output.find("building again with TI's lnk6x in place of the project's lnk6x, as asked") != std::string::npos,
+                  "and a yes builds again, saying with what (D5):\n" + twice.output);
+            check(twice.output.find("[not built: TI's lnk6x failed as well]") != std::string::npos,
+                  "and the second build failing is said as such (D5)");
             check(!editor::settings::nativeForced(), "the switch is back off afterwards");
             askedQuestion.clear(); askedAnswer = false;
             editor::Built once = editor::buildTarget(tool, editor::ToolCc1, srcs, editor::LangC, "tms6747",
@@ -1483,6 +1509,8 @@ void projects() {
                                                          editor::ConfigRelease, any);
                 check(askedQuestion.find("own masm") != std::string::npos, "for real: a masm.exe that is no assembler fails c90 and asks");
                 check(forReal.ok, "and the yes builds the program through ml64");
+                check(forReal.output.find("[built with Visual Studio's ml64, not RIDE's masm]") != std::string::npos,
+                      "and the program is marked as the vendor's tools' (D5):\n" + forReal.output);
                 if (forReal.ok) editor::path::remove(forReal.program);
                 editor::setAskNative(0, 0);
             }
@@ -2447,7 +2475,7 @@ void stoppingTheHostsOwnCompiler() {
     editor::ToolchainKind kind = editor::hostCppToolchain();
     editor::DebuggerKind which = editor::dbg_for(kind, editor::hostArch());
     if (which == editor::DebuggerNone) {
-        std::printf("  (no debugger for %s here)\n", editor::toolchainName(kind));
+        skipped("no debugger for %s here", editor::toolchainName(kind));
         return;
     }
 
@@ -2479,7 +2507,7 @@ void stoppingTheHostsOwnCompiler() {
                                                   editor::hostArch(), editor::ConfigDebug);
     if (std::system(shellCommand(recipe.command + kNowhere).c_str()) != 0 ||
         !editor::path::exists(recipe.assemblyPath)) {
-        std::printf("  (%s built nothing to debug)\n", editor::toolchainName(kind));
+        skipped("%s built nothing to debug", editor::toolchainName(kind));
         editor::path::removeTree(dir);
         return;
     }
@@ -2530,15 +2558,15 @@ void debuggingForReal() {
     // expands, and a build with an unfindable compiler fails in a way that reads as a broken editor
     // rather than as a path nobody resolved. That cost most of a day once.
     if (cc1 && *cc1 && !editor::path::exists(cc1)) {
-        std::printf("  (no cc1 at %s, so nothing is built to debug)\n", cc1);
+        skipped("no cc1 at %s, so nothing is built to debug", cc1);
         return;
     }
     if (!cc1 || !*cc1) {
-        std::printf("  (no $CC1, so nothing is built to debug)\n");
+        skipped("no $CC1, so nothing is built to debug");
         return;
     }
     if (editor::dbg_here() == editor::DebuggerNone) {
-        std::printf("  (no debugger on this machine)\n");
+        skippedNotHere("no gdb or lldb on this platform - cdb's cases are below");
         return;
     }
 
@@ -2567,7 +2595,7 @@ void debuggingForReal() {
     std::string build = "\"" + std::string(cc1) + "\" \"" + source + "\" -o \"" + program +
                         "\" -g" + kNowhere;
     if (std::system(shellCommand(build).c_str()) != 0 || !editor::path::exists(program)) {
-        std::printf("  (cc1 built nothing to debug)\n");
+        skipped("cc1 built nothing to debug");
         editor::path::removeTree(dir);
         return;
     }
@@ -2871,12 +2899,12 @@ void whatTheDebuggerHeard() {
 
     const std::string host = editor::hostArch();
     if (editor::dbg_for(editor::ToolCc1, host) == editor::DebuggerNone) {
-        std::printf("  (no debugger on this machine, so nothing is listened to)\n");
+        skipped("no debugger on this machine, so nothing is listened to");
         return;
     }
     const char* cc1 = std::getenv("CC1");
     if (!cc1 || !*cc1 || !editor::path::exists(cc1)) {
-        std::printf("  (no cc1, so nothing is built to listen to)\n");
+        skipped("no cc1, so nothing is built to listen to");
         return;
     }
 
@@ -2903,7 +2931,7 @@ void whatTheDebuggerHeard() {
                                           source.c_str(), editor::LangC, host.c_str(),
                                           editor::ConfigDebug);
     if (ride_program_ok(built) == 0) {
-        std::printf("  (cc1 did not build it, so there is nothing to stop inside)\n");
+        skipped("cc1 did not build it, so there is nothing to stop inside");
         ride_program_free(built);
         editor::path::removeTree(dir);
         return;
@@ -2938,7 +2966,7 @@ void debuggingCppForReal() {
     std::printf("stopping inside what cl built\n");
 
     if (editor::dbg_for(editor::ToolMsvc, editor::hostArch()) == editor::DebuggerNone) {
-        std::printf("  (%s)\n",
+        skippedNotHere("%s",
                     editor::dbg_whyNot(editor::ToolMsvc, editor::hostArch()).c_str());
         return;
     }
@@ -3182,17 +3210,17 @@ void theSeamTheWindowUses() {
     }
 
     if (editor::dbg_for(editor::ToolCc1, host) == editor::DebuggerNone) {
-        std::printf("  (no debugger on this machine, so the rest is not tried)\n");
+        skipped("no debugger on this machine, so the rest is not tried");
         return;
     }
 
     const char* cc1 = std::getenv("CC1");
     if (cc1 && *cc1 && !editor::path::exists(cc1)) {
-        std::printf("  (no cc1 at %s, so nothing is built to stop inside)\n", cc1);
+        skipped("no cc1 at %s, so nothing is built to stop inside", cc1);
         return;
     }
     if (!cc1 || !*cc1) {
-        std::printf("  (no $CC1, so nothing is built to stop inside)\n");
+        skipped("no $CC1, so nothing is built to stop inside");
         return;
     }
 
@@ -3743,11 +3771,11 @@ void whatALinkFailureSays() {
 
     const char* cc1 = std::getenv("CC1");
     if (cc1 && *cc1 && !editor::path::exists(cc1)) {
-        std::printf("  (no cc1 at %s, so nothing is linked)\n", cc1);
+        skipped("no cc1 at %s, so nothing is linked", cc1);
         return;
     }
     if (!cc1 || !*cc1) {
-        std::printf("  (no $CC1, so nothing is linked)\n");
+        skipped("no $CC1, so nothing is linked");
         return;
     }
 
@@ -3782,7 +3810,7 @@ void theManualsContents() {
     std::printf("the manual, and what the editor says is in it\n");
 
     if (!editor::path::isDirectory("help")) {
-        std::printf("  (no help/ from here, so the manual is not checked)\n");
+        skipped("no help/ from here, so the manual is not checked");
         return;
     }
 
@@ -3975,7 +4003,7 @@ void theWindowsRuleAboutStatics() {
     std::printf("no static with a destructor in what the window compiles\n");
 
     if (!editor::path::isDirectory("winforms")) {
-        std::printf("  (no winforms/ from here, so the window's sources are not scanned)\n");
+        skipped("no winforms/ from here, so the window's sources are not scanned");
         return;
     }
     std::string project = readWholeFile("winforms/RIDEGui.vcxproj");
@@ -4032,11 +4060,11 @@ void theFourthCompiler() {
 
     const char* cxx1 = std::getenv("CXX1");
     if (cxx1 && *cxx1 && !editor::path::exists(cxx1)) {
-        std::printf("  (no cxx1 at %s, so nothing is built)\n", cxx1);
+        skipped("no cxx1 at %s, so nothing is built", cxx1);
         return;
     }
     if (!cxx1 || !*cxx1) {
-        std::printf("  (no $CXX1, so nothing is built)\n");
+        skipped("no $CXX1, so nothing is built");
         return;
     }
     const std::string host = editor::hostArch();
@@ -4166,11 +4194,11 @@ void theFourthCompiler() {
                 debugger.stop();
             }
         } else if (both.ok) {
-            std::printf("  (%s)\n", editor::dbg_whyNot(editor::ToolCxx1, host).c_str());
+            skipped("%s", editor::dbg_whyNot(editor::ToolCxx1, host).c_str());
         }
         editor::removeProgram(both);
     } else {
-        std::printf("  (no $CC1, so the mixed project is not built)\n");
+        skipped("no $CC1, so the mixed project is not built");
     }
 
     editor::path::removeTree(dir);
@@ -4595,14 +4623,14 @@ void steppingShalimar() {
 
     const char* shc = std::getenv("SHC");
     if (!shc || !*shc) {
-        std::printf("  (no $SHC, so nothing is built to stop inside)\n");
+        skipped("no $SHC, so nothing is built to stop inside");
         return;
     }
 
     std::string dir = editor::path::join(editor::path::tempDir(), "ride-shm-step");
     editor::path::removeTree(dir);
     if (!editor::path::makeDirectories(dir)) {
-        std::printf("  (could not make %s - this case is about shc, not about that)\n",
+        skipped("could not make %s - this case is about shc, not about that",
                     dir.c_str());
         return;
     }
@@ -4623,7 +4651,7 @@ void steppingShalimar() {
     // its file says nothing, and shc then reports "cannot read" and takes the
     // blame for a file this suite never wrote.
     if (!editor::path::exists(source)) {
-        std::printf("  (could not write %s - this case is about shc, not about that)\n",
+        skipped("could not write %s - this case is about shc, not about that",
                     source.c_str());
         editor::path::removeTree(dir);
         return;
@@ -4645,7 +4673,7 @@ void steppingShalimar() {
                               "\" --debug -o \"" + program + "\" > \"" + log +
                               "\" 2>&1";
     if (std::system(shellCommand(build).c_str()) != 0) {
-        std::printf("  (shc did not build it, so there is nothing to stop inside)\n");
+        skipped("shc did not build it, so there is nothing to stop inside");
         std::printf("   %s\n", build.c_str());
         std::string said = readWholeFile(log);
         if (!said.empty()) std::printf("   it said: %s\n", said.c_str());
@@ -4748,14 +4776,14 @@ void theWindowStoppingShalimar() {
 
     const char* shc = std::getenv("SHC");
     if (!shc || !*shc) {
-        std::printf("  (no $SHC, so nothing is built to stop inside)\n");
+        skipped("no $SHC, so nothing is built to stop inside");
         return;
     }
 
     std::string dir = editor::path::join(editor::path::tempDir(), "ride-window-shm");
     editor::path::removeTree(dir);
     if (!editor::path::makeDirectories(dir)) {
-        std::printf("  (could not make %s - this case is about the seam, not about that)\n",
+        skipped("could not make %s - this case is about the seam, not about that",
                     dir.c_str());
         return;
     }
@@ -4772,7 +4800,7 @@ void theWindowStoppingShalimar() {
                 "  ? b\n"
                 "}\n");
     if (!editor::path::exists(source)) {
-        std::printf("  (could not write %s - this case is about the seam, not about that)\n",
+        skipped("could not write %s - this case is about the seam, not about that",
                     source.c_str());
         editor::path::removeTree(dir);
         return;
@@ -5046,7 +5074,7 @@ void theWindowsProjectDebug() {
         }
         if (made != nullptr) ride_build_free(made);
     } else {
-        std::printf("  (no $SHC, so the project's program is not built and stopped)\n");
+        skipped("no $SHC, so the project's program is not built and stopped");
     }
 
     ride_project_free(shm);
@@ -5207,7 +5235,7 @@ void aProgramThatReads() {
 
     const char* cc1 = std::getenv("CC1");
     if (!cc1 || !*cc1 || !editor::path::exists(cc1)) {
-        std::printf("  (no $CC1, so no C program reads with scanf here)\n");
+        skipped("no $CC1, so no C program reads with scanf here");
         editor::path::removeTree(dir);
         return;
     }
@@ -5403,7 +5431,7 @@ void ccsProjectsAsTheyAre() {
     using editor::ccs::Config;
 
     const std::string reference = ccsReference();
-    if (reference.empty()) { std::printf("  (no docs/ccs-reference beside the suite, so nothing is read)\n"); return; }
+    if (reference.empty()) { skipped("no docs/ccs-reference beside the suite, so nothing is read"); return; }
     const std::string k74c = editor::path::join(editor::path::join(reference, "ccs74"), "K6747c");
     const std::string k74cpp = editor::path::join(editor::path::join(reference, "ccs74"), "K6747cpp");
     const std::string k55c = editor::path::join(editor::path::join(reference, "ccs55"), "K6747c");
@@ -5748,6 +5776,8 @@ void ccsProjectsBuiltAndRun() {
     std::string vm = fromEnv && *fromEnv ? fromEnv : editor::path::join(beside, "vm6747.exe");
     fromEnv = std::getenv("LNK6X");
     std::string lnk = fromEnv && *fromEnv ? fromEnv : editor::path::join(beside, "lnk6x.exe");
+    fromEnv = std::getenv("SIM6747");
+    std::string sim = fromEnv && *fromEnv ? fromEnv : editor::path::join(beside, "sim6747.exe");
     fromEnv = std::getenv("C6747_EHLIB");
     std::string ehlib = fromEnv && *fromEnv ? fromEnv : editor::path::join(editor::path::homeDir(), "c6747-lib");
     std::string missing;
@@ -5758,8 +5788,13 @@ void ccsProjectsBuiltAndRun() {
     if (!editor::path::exists(asm6x)) missing += " asm6x";
     if (!editor::path::exists(vm)) missing += " vm6747";
     if (!editor::path::exists(lnk)) missing += " lnk6x";
-    if (!editor::path::exists(editor::path::join(ehlib, "rts6740_elf_eh.lib"))) missing += " rts6740_elf_eh.lib";
-    if (!missing.empty()) { std::printf("  (not here, so nothing is built:%s)\n", missing.c_str()); return; }
+    if (!editor::path::exists(sim)) missing += " sim6747";
+    if (!missing.empty()) { skipped("not here, so nothing is built:%s", missing.c_str()); return; }
+    // TI's runtime is a third party's, and RIDE does not ship it: its absence is not RIDE's (D14).
+    if (!editor::path::exists(editor::path::join(ehlib, "rts6740_elf_eh.lib"))) {
+        skippedExternal("no rts6740_elf_eh.lib in %s, so the CCS projects are not linked against TI's runtime", ehlib.c_str());
+        return;
+    }
 
     file::path dir = file::temp_directory_path() / "ride-ccs-run";
     file::remove_all(dir);
@@ -5774,9 +5809,11 @@ void ccsProjectsBuiltAndRun() {
 #ifdef _WIN32
     _putenv_s("ASM6X", asm6x.c_str());
     _putenv_s("VM6747", vm.c_str());
+    _putenv_s("SIM6747", sim.c_str());
 #else
     setenv("ASM6X", asm6x.c_str(), 1);
     setenv("VM6747", vm.c_str(), 1);
+    setenv("SIM6747", sim.c_str(), 1);
 #endif
     for (int i = 0; i < 2; ++i) {
         std::string from = editor::path::join(editor::path::join(reference, "ccs74"), names[i]);
@@ -5800,7 +5837,16 @@ void ccsProjectsBuiltAndRun() {
                   what + ": the console carries the CCS line");
             check(output.find("C6747.cmd -o") != std::string::npos, what + ": lnk6x links against the project's own C6747.cmd");
             check(output.find(r ? release[i] : debug[i]) != std::string::npos, what + ": prints what CCS's build of it prints");
+            check(output.find("$ sim6747 --run") != std::string::npos, what + ": Run is the .out on sim6747 (R5):\n" + output);
             checkEqual(ccsFingerprint(to), before, what + ": and leaves the CCS folder as it was");
+            // Emulate on vm6747: the assembly run, and no .out linked for it.
+            command.replace(command.find(" --run "), 7, " --emulate ");
+            output.clear();
+            status = editor::runCaptured(command, output);
+            check(status == 0 && output.find(r ? release[i] : debug[i]) != std::string::npos &&
+                  output.find("$ vm6747 ") != std::string::npos && output.find("[no .out: Emulate on vm6747") != std::string::npos,
+                  what + ": --emulate runs the assembly on vm6747 and links nothing:\n" + output);
+            checkEqual(ccsFingerprint(to), before, what + ": and Emulate leaves the CCS folder as it was");
         }
     }
     sayWhereHomeIs(homeWas);
@@ -5840,13 +5886,14 @@ void rts6xLinksTheOut() {
     if (!editor::path::exists(sim)) missing += " sim6747";
     if (!editor::path::exists(editor::path::join(rts, "rts6x.lib"))) missing += " rts6x.lib";
     if (!editor::path::exists(editor::path::join(rts, "rts6xd.lib"))) missing += " rts6xd.lib";
-    if (!missing.empty()) { std::printf("  (not here, so nothing is built:%s)\n", missing.c_str()); return; }
+    if (!missing.empty()) { skipped("not here, so nothing is built:%s", missing.c_str()); return; }
 
     file::path dir = file::temp_directory_path() / "ride-rts6x-run";
     file::remove_all(dir);
     file::create_directories(dir / "home");
     file::create_directories(dir / "p");
-    writeSource((dir / "p" / "project.pro").string(), "{ \"arch\": \"tms6747\" }\n");
+    writeSource((dir / "p" / "project.pro").string(),
+                "{ \"arch\": \"tms6747\", \"groups\": { \"Sources\": [\"main.cpp\"] } }\n");
     writeSource((dir / "p" / "main.cpp").string(),
                 "extern \"C\" int printf(const char *, ...);\n"
                 "struct Oops { int code; Oops(int c) : code(c) {} };\n"
@@ -5902,7 +5949,7 @@ void rts6xLinksTheOut() {
             check(output.find("done") != std::string::npos, what + ": and it runs to its end:\n" + output);
         }
     } else {
-        std::printf("  (no $SHC or no shmrt6x.lib, so the Shalimar half is not built)\n");
+        skipped("no $SHC or no shmrt6x.lib, so the Shalimar half is not built");
     }
     sayWhereHomeIs(homeWas);
     file::remove_all(dir);
@@ -5914,7 +5961,7 @@ void rts6xLinksTheOut() {
 void ccsWorkspacesOneProjectAtATime() {
     std::printf("CCS workspaces, one project at a time\n");
     const std::string reference = ccsReference();
-    if (reference.empty()) { std::printf("  (no docs/ccs-reference beside the suite, so nothing is read)\n"); return; }
+    if (reference.empty()) { skipped("no docs/ccs-reference beside the suite, so nothing is read"); return; }
     const std::string k74c = editor::path::join(editor::path::join(reference, "ccs74"), "K6747c");
     const std::string k74cpp = editor::path::join(editor::path::join(reference, "ccs74"), "K6747cpp");
 
@@ -6164,7 +6211,112 @@ void cleaning() {
     file::remove_all(dir);
 }
 
+namespace {
+void putEnv(const char* name, const std::string& value) {
+#ifdef _WIN32
+    _putenv_s(name, value.c_str());
+#else
+    if (value.empty()) unsetenv(name); else setenv(name, value.c_str(), 1);
+#endif
+}
+std::string envOr(const char* name) { const char* v = std::getenv(name); return v ? v : ""; }
+}
+
+// **A tms6747 build without a .out is a failed build (D2)**, unless the project says emulateOnly or
+// the run is an Emulate on vm6747 (R5). A stand-in compiler writes each .s; the states are the
+// assembler gone, the assembler named and gone, no runtime to link against, and the two that succeed.
+void aTiProgramOrAFailedBuild() {
+    std::printf("a tms6747 build makes a .out or fails\n");
+    file::path dir = file::temp_directory_path() / "ride-ti-or-fail";
+    file::remove_all(dir);
+    file::create_directories(dir / "home");
+    file::create_directories(dir / "noruntime");
+    const std::string homeWas = editor::path::homeDir();
+    sayWhereHomeIs((dir / "home").string());
+    const std::string asWas = envOr("ASM6X"), rtsWas = envOr("RTS6X");
+    editor::Toolchain tool;
+#ifdef _WIN32
+    tool.cc1 = (dir / "fake-cc.cmd").string();
+    writeSource(tool.cc1, "@echo off\r\n:loop\r\nif \"%~1\"==\"\" exit /b 0\r\n"
+                          "if \"%~1\"==\"-o\" echo ; a TI program, in name> \"%~2\"\r\nshift\r\ngoto loop\r\n");
+    const std::string fakeAs = (dir / "fake-asm6x.cmd").string();
+    writeSource(fakeAs, "@exit /b 0\r\n");
+#else
+    tool.cc1 = (dir / "fake-cc.sh").string();
+    writeSource(tool.cc1, "#!/bin/sh\nwhile [ $# -gt 0 ]; do\n  if [ \"$1\" = -o ]; then echo '; a TI program, in name' > \"$2\"; fi\n"
+                          "  shift\ndone\nexit 0\n");
+    chmod(tool.cc1.c_str(), 0755);
+    const std::string fakeAs = (dir / "fake-asm6x.sh").string();
+    writeSource(fakeAs, "#!/bin/sh\nexit 0\n");
+    chmod(fakeAs.c_str(), 0755);
+#endif
+    std::vector<std::string> srcs(1, (dir / "main.c").string());
+    writeSource(srcs[0], "int main(void) { return 0; }\n");
+    const std::string program = (dir / "main.exe").string();
+    auto made = [&](const editor::Toolchain& t) {
+        return editor::buildTarget(t, editor::ToolCc1, srcs, editor::LangC, "tms6747", editor::ConfigRelease, program);
+    };
+
+    putEnv("ASM6X", (dir / "no-such-asm6x.exe").string());
+    editor::Built gone = made(tool);
+    check(!gone.ok && gone.output.find("asm6x named by $ASM6X is not there") != std::string::npos,
+          "an asm6x named and gone fails the build, naming it:\n" + gone.output);
+
+    putEnv("ASM6X", std::string());
+    if (editor::c6xAssembler().empty()) {
+        editor::Built none = made(tool);
+        check(!none.ok && none.output.find("no asm6x beside") != std::string::npos &&
+                  none.output.find("emulateOnly") != std::string::npos,
+              "no asm6x fails the build, and says how to build without one:\n" + none.output);
+    }
+
+    putEnv("ASM6X", fakeAs);
+    putEnv("RTS6X", (dir / "noruntime").string());
+    editor::Built bare = made(tool);
+    check(!bare.ok && bare.output.find("TI objects made] no .out:") != std::string::npos,
+          "objects made and nothing to link them against fails the build, saying why:\n" + bare.output);
+
+    editor::Toolchain only = tool;
+    only.emulateOnly = true;
+    editor::Built emulateOnly = made(only);
+    check(emulateOnly.ok && emulateOnly.output.find("[no .out: the project says emulateOnly") != std::string::npos,
+          "a project that says emulateOnly builds with no .out, and says so:\n" + emulateOnly.output);
+    editor::Toolchain emulating = tool;
+    emulating.emulating = true;
+    putEnv("ASM6X", (dir / "no-such-asm6x.exe").string());
+    editor::Built emulated = made(emulating);
+    check(emulated.ok && emulated.output.find("[no .out: Emulate on vm6747") != std::string::npos,
+          "an Emulate on vm6747 needs no asm6x and links nothing:\n" + emulated.output);
+
+    file::create_directories(dir / "pro");
+    writeSource((dir / "pro" / "project.pro").string(), "{ \"arch\": \"tms6747\", \"emulateOnly\": true }\n");
+    editor::Project pro;
+    std::string error;
+    check(pro.load((dir / "pro").string(), error) && pro.emulateOnly(), "\"emulateOnly\": true is read from the .pro");
+    std::string saveError;
+    check(pro.save(saveError) && readWholeFile((dir / "pro" / "project.pro").string()).find("emulateOnly") != std::string::npos,
+          "and kept when the project is saved");
+
+    check(editor::runnerFor(editor::RunAsked, "tms6747", false) == editor::RunSimulator,
+          "Run on tms6747 is the .out on sim6747 (R5)");
+    check(editor::runnerFor(editor::RunAsked, "tms6747", true) == editor::RunEmulator,
+          "unless the project says emulateOnly");
+    check(editor::runnerFor(editor::RunAsked, editor::hostArch(), false) == editor::RunAsked,
+          "and a host target's Run is the program, as it was");
+    checkEqual(editor::runnerLine(editor::RunSimulator, "/x/p.vm"), "$ sim6747 --run p.out", "the line names sim6747 and the .out");
+    checkEqual(editor::runnerLine(editor::RunEmulator, "/x/p.vm/"), "$ vm6747 p.vm", "or vm6747 and the assembly");
+
+    putEnv("ASM6X", asWas);
+    putEnv("RTS6X", rtsWas);
+    sayWhereHomeIs(homeWas);
+    file::remove_all(dir);
+}
+
 int main(int argc, char** argv) {
+    for (int i = 1; i < argc; ++i) {
+        if (std::string(argv[i]) == "--require-tools") requireTools = true;
+        else { std::fprintf(stderr, "test: unknown option %s (only --require-tools)\n", argv[i]); return 2; }
+    }
     // The flags the suite expects are the defaults, not what this machine's settings.json has chosen
     // in Compiler Options: an empty store stands in for the installation's for the whole run.
     editor::options::Store* none = new editor::options::Store();
@@ -6239,7 +6391,9 @@ int main(int argc, char** argv) {
     ccsWorkspacesOneProjectAtATime();
     ccsProjectsBuiltAndRun();
     rts6xLinksTheOut();
+    aTiProgramOrAFailedBuild();
 
-    std::printf("\n%d checks, %d failed\n", checks, failures);
+    std::printf("\n%d checks, %d failed, %d skipped%s\n", checks, failures, skips,
+                requireTools ? " (--require-tools: a skip of RIDE's own is a failure)" : "");
     return failures == 0 ? 0 : 1;
 }
