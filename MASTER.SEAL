@@ -1,7 +1,7 @@
 ©2026 G. R. Akhtar - RIDE 5.1 and the programs it drives
 Master seal: each project's seal, listed and combined into one
 Written by tools/master-seal; check it with `tools/master-seal check`.
-12 projects, 837 files, master seal 23D69F79
+12 projects, 837 files, master seal 49BE94EC
 ------------------------------------------------------------------------
 program   seal     file CRC  files  seal file
 RIDE      0A46C214 7C7A329F     80  ride-5.1.dat
@@ -14,8 +14,8 @@ asm6x     8044A2EE 120B5509     10  ../ASM6x/asm6x-1.0.dat
 masm      5E4155D7 162F02E2     11  ../MASM/masm-1.0.dat
 link      E35FB5A3 3513B069      6  ../LINK/link-1.0.dat
 lnk6x     1D45D6CE 33294E86      8  ../LNK6x/lnk6x-1.1.dat
-sim6747   DDB5751B 0FEEA59A     27  ../SIM6747/sim6747-1.1.dat
+sim6747   2D1A3C81 BDDF2DDE     27  ../SIM6747/sim6747-1.2.dat
 rts6x     3346A221 F0A9E721    378  ../RTS6x/rts6x-1.1.dat
 ------------------------------------------------------------------------
-Master seal 23D69F79
+Master seal 49BE94EC
 Sealed on 08-10-2026
