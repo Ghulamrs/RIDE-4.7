@@ -59,9 +59,11 @@ DWARF debug info.
 **x86_64-windows (Microsoft x64).** Integer/pointer arguments in
 `rcx, rdx, r8, r9`, then the stack, with a 32-byte **shadow space** the caller
 reserves; results in `rax`. Floating arguments in `xmm0..3`. Callee-saved
-includes `rsi, rdi` (unlike System V). `long` is 32-bit (LLP64). MASM spelling
-for `ml64`, linked by `link.exe`; **no line table** in the MASM spelling (Part V
-chapter 22). A `static` function is kept out of the object's external symbols
+includes `rsi, rdi` (unlike System V). `long` is 32-bit (LLP64). Two
+spellings: MASM for RIDE's `masm` and `link` in a Release build, with **no
+line table**, and the GNU spelling for clang's assembler and `link.exe /DEBUG`
+in a Debug build, with CodeView (Part V chapter 22). A `static` function is
+kept out of the object's external symbols
 with `OPTION PROC:PRIVATE`, and a name colliding with a MASM reserved word is
 handled with `OPTION NOKEYWORD` — decisions made at the emission site.
 

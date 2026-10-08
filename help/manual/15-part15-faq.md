@@ -9,16 +9,19 @@ about the same syntax. One binary pretending to be all three would have to guess
 language it should be told; instead the suffix (or the Language menu) chooses, and
 each compiler refuses a language that is not its own — by name (Parts II, IV).
 
-**Why does the compiler need Visual Studio / vcvars on Windows?** The compiler
-emits assembly; the *assembler* (`ml64`) and *linker* (`link`) are Microsoft's and
-are on `PATH` only inside a Developer Command Prompt. The compiler finds Visual
-Studio and sources `vcvars64.bat` for those steps, so it works from an ordinary
-shell too (Part V chapter 22). If yours is somewhere it does not look, name
-the file once with *Tools ▸ Locate vcvars64.bat...*.
+**Why does the compiler need Visual Studio / vcvars on Windows?** A Release
+build needs nothing of Visual Studio's: RIDE's own `masm` and `link` assemble
+and link it. A Debug build does — clang's assembler and `link.exe /DEBUG`,
+which are what carry CodeView to cdb — and so does a `cl` build or the vendor
+fallback; those are on `PATH` only inside a Developer Command Prompt, so the
+compiler finds Visual Studio and sources `vcvars64.bat` for them and works from
+an ordinary shell too (Part V chapter 22). If yours is somewhere it does not
+look, name the file once with *Tools ▸ Locate vcvars64.bat...*.
 
-**Why can't I step through C on Windows?** The `x86_64-windows` MASM path carries
-no line table and `ml64` cannot relocate CodeView. Use `-masm=gnu` for a
-steppable DWARF build, or build the C++ with `cl` for CodeView (Part V chapter 22).
+**Why can't I step through a Release build on Windows?** Its MASM spelling
+carries no line table and `ml64` cannot relocate CodeView. A Debug build is
+the GNU spelling with CodeView in it, and cdb steps it — C and C++ alike,
+since 5.1 (Part V chapter 22).
 
 **Why does `long` change size between platforms?** LLP64 on Windows (and the
 C6000) makes `long` 32-bit; Linux/macOS make it 64-bit. The compiler follows each

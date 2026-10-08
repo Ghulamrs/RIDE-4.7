@@ -39,9 +39,10 @@ refuses by name and points at `cpp11`. It is not a linker or an assembler; it
 emits assembly and calls the host tools (Part I chapter 5).
 
 **Targets.** All four: `x86_64-linux`, `x86_64-windows`, `arm64-darwin`,
-`tms6747`. Debug information (DWARF) on the two GNU targets; none on
-`x86_64-windows` in the MASM spelling (Part V) and none on `tms6747` (the
-emulator runs it, no debugger reads it).
+`tms6747`. Debug information: DWARF on the two GNU targets, CodeView on
+`x86_64-windows` in the GNU spelling a Debug build uses (none in the MASM
+spelling, Part V), and none on `tms6747` (the emulator and the simulator run
+it, no debugger reads it).
 
 --------------------------------------------------------------------------------
 ## 8. C++ — `cpp11`

@@ -1,8 +1,11 @@
 # Packaging
 
-RIDE and the three compilers it drives, as one installable thing on each
-platform. They are packaged together because they are used together: the editor
-drives cc1, cxx1 and shc and is not much good without them.
+RIDE and the programs it drives, as one installable thing on each platform.
+They are packaged together because they are used together: the editor drives
+c90, cpp11 and shalimar, and for the C6747 target asm6x, lnk6x, vm6747 and
+sim6747 with the RTS6x libraries, and for Windows its own masm and link - and
+is not much good without them. `MASTER.SEAL` lists the twelve, and
+`docs/ride-architecture.html` draws them.
 
 | | | built and installed |
 | --- | --- | --- |
@@ -12,7 +15,7 @@ drives cc1, cxx1 and shc and is not much good without them.
 **Named `ride-editor`, not `ride`.** "RIDE" is also a widely packaged
 IDE for R, and a package by that name installing something else would be a trap
 for whoever typed it. The programs keep their own names — `RIDE.exe`,
-`cc1.exe`, `shc.exe`.
+`c90.exe`, `cpp11.exe`, `shalimar.exe` and the rest.
 
 ## Building them
 

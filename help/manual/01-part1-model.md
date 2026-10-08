@@ -14,7 +14,7 @@
 - Part IV — Choosing and driving a compiler: `auto` vs the Language and Tools
   menus, the full command-line flag reference, compiling from a shell.
 - Part V — The four targets: the three host targets and tms6747, the assembler
-  and linker each uses, why `ml64.exe` works and CodeView does not.
+  and linker each uses, and how a Windows program is debugged.
 - Part VI — The fourth target in depth: the C6000, the `vm6747` emulator, and
   the license-safe TI build path to real `.out`/`.hex`.
 - Part VII — Reference: keys, diagnostics, troubleshooting, the glossary.
@@ -169,21 +169,27 @@ differ only in how it is spelled (GNU vs MASM).
 The compiler generates assembly. It does **not** assemble or link — it calls the
 host's tools for that. Three jobs go to native tools:
 
-1. **Assembling** the `.s`/`.asm` into an object. On `x86_64-windows` that is
-   the MASM dialect: since 4.0 the project's own `masm.exe` beside the editor
-   assembles it (the installation's `settings.json` names it, `"assembler":
-   "bin/masm.exe"`; Tools > Assembler for x86_64-windows... changes or clears
-   it), and without one it is Microsoft's `ml64.exe`. `masm` takes ml64's own
+1. **Assembling** the `.s`/`.asm` into an object. On `x86_64-windows` a
+   **Release** build is the MASM dialect: since 4.0 the project's own
+   `masm.exe` beside the editor assembles it (the installation's
+   `settings.json` names it, `"assembler": "bin/masm.exe"`; Tools > Assembler
+   for x86_64-windows... changes or clears it). `masm` takes ml64's own
    command line and is held to ml64 byte for byte on the compilers' whole
-   corpus. With `-masm=gnu` it is the GNU assembler spelling. On
-   `x86_64-linux` it is the GNU assembler; on `arm64-darwin` it is the
-   assembler `clang` drives.
+   corpus; Microsoft's `ml64.exe` is used only on the vendor fallback below.
+   A **Debug** build on that target is the GNU spelling (`-masm=gnu`), which
+   `clang`'s assembler turns into a COFF object carrying CodeView — the line
+   table a Windows debugger reads, which the MASM spelling cannot carry (Part
+   V chapter 22). Without an assembler named, cpp11 writes the GNU spelling in
+   Release too and clang assembles it. On `x86_64-linux` it is the GNU
+   assembler; on `arm64-darwin` it is the assembler `clang` drives.
 
-2. **Linking** objects into a program. On Windows that is Microsoft's `link.exe`.
-   The project's own linker, `link.exe` beside the editor (LINK, held to
-   Microsoft's byte for byte on its probe bed), is built and shipped with 4.0
-   and the installed `settings.json` names it (`"linker": "bin/link.exe"`) as
-   it names `masm`. When one of the project's own tools fails a build and
+2. **Linking** objects into a program. On Windows a **Release** build goes to
+   the project's own linker, `link.exe` beside the editor (LINK, held to
+   Microsoft's byte for byte on its probe bed), built and shipped with 4.0 and
+   named by the installed `settings.json` (`"linker": "bin/link.exe"`) as it
+   names `masm`; a **Debug** build goes to Microsoft's `link.exe /DEBUG`,
+   which writes the `.pdb` cdb reads and LINK does not. When one of the
+   project's own tools fails a build and
    the compilers found no fault in the source, the editor asks - *"The
    project's own masm and link did not build it. Use Visual Studio's ml64 and
    link.exe for this build instead?"* - and a Yes builds again through the
@@ -196,18 +202,28 @@ host's tools for that. Three jobs go to native tools:
    `clang++`. A link of C++ objects goes through the C++ driver so the C++
    runtime is pulled in.
 
-3. **Finding those tools.** On Windows `ml64` and `link` are on `PATH` only
-   inside a Developer Command Prompt. The compiler finds Visual Studio itself
-   (via `vswhere`, pinned to VS 2022) and runs the assemble and link steps
-   inside a shell that has sourced `vcvars64.bat`, so a build started from an
-   editor opened off the Desktop works the same as one started from a developer
-   prompt. This is why a bare build once failed with `'ml64.exe' is not
-   recognized` — the environment, not the compiler, was missing.
+3. **Finding Visual Studio's tools.** On Windows `cl`, `link.exe`, `ml64` and
+   clang's assembler are on `PATH` only inside a Developer Command Prompt. The
+   compiler finds Visual Studio itself (via `vswhere`, pinned to VS 2022) and
+   runs the step inside a shell that has sourced `vcvars64.bat`, so a build
+   started from an editor opened off the Desktop works the same as one started
+   from a developer prompt. This is why a bare build once failed with
+   `'ml64.exe' is not recognized` — the environment, not the compiler, was
+   missing.
 
-For the fourth target, tms6747, there is a different answer entirely: the
-`vm6747` emulator assembles and runs the `.s` itself, so no native assembler is
-involved at all (Part VI). And, optionally, TI's own tools can assemble and link
-our `.s` into a real chip binary (Part VI, the TI build path).
+For the fourth target, tms6747, the tools are the project's own on every host:
+`asm6x` assembles each `.s`, `lnk6x` links the objects against RTS6x into a
+`.out`, `sim6747` runs that `.out` and `vm6747` runs the assembly text as it is
+(Part VI). And, optionally, TI's own tools can assemble and link our `.s` into
+a chip binary (Part VI, the TI build path).
+
+**What runs at once.** A project build is one compiler command per group, in
+the order the build names them; inside that command cpp11 compiles its files
+on a pool of threads, one per file up to the machine's cores (one thread below
+four files; `-j n` on a command line asks for another count) and assembles on
+the same pool, while c90 and shalimar go file by file. A tms6747 group is the
+exception today: each source is its own `cpp11 -S` command, run one after
+another, before one `asm6x` and one `lnk6x` command take them all.
 
 The consequence worth internalising: **a target's "runs here" is a fact about
 this machine's tools, not about the compiler.** The compiler can generate

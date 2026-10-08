@@ -103,9 +103,9 @@ Two diagnostics worth recognising:
 - **A C++ feature is refused** — check it against Part II chapter 8 and the C++
   compiler's `docs/EXCLUSIONS.md`; cpp11 is C++11 minus a documented list, and it
   refuses by name.
-- **`-g` refused for `x86_64-windows`** — MASM carries no line table; use
-  `-masm=gnu` for a steppable DWARF build, or build the C++ with `cl` for
-  CodeView (Part V chapter 22).
+- **`-g` refused for `x86_64-windows`** — the MASM spelling carries no line
+  table; `-masm=gnu -g` writes CodeView through clang's assembler, which is
+  what the editor's Debug configuration does (Part V chapter 22).
 - **Shalimar won't share a build with C** — by design; build two programs (Part
   III chapter 13).
 - **`ti-build` says "TI CGT not found"** — install TI's free C6000 Code
@@ -136,9 +136,11 @@ Two diagnostics worth recognising:
   no TI tools.
 - **CGT** — TI's Code Generation Tools (`cl6x`/`asm6x`/`lnk6x`/`hex6x`), used by
   the optional `ti-build` path, found on the machine, never shipped by us.
-- **MASM / ml64** — the `x86_64-windows` assembly dialect, and Microsoft's
-  assembler for it; `masm.exe` beside the editor is the project's own, used in
-  its place since 4.0 (`asm6x.exe` is the C6000 counterpart).
+- **MASM / ml64** — the `x86_64-windows` assembly dialect of a Release build,
+  and Microsoft's assembler for it; `masm.exe` beside the editor is the
+  project's own, used in its place since 4.0, and `ml64` runs only on the
+  vendor fallback (`asm6x.exe` is the C6000 counterpart). A Debug build is the
+  GNU spelling, assembled by clang with CodeView in it.
 - **LINK / link.exe** — Microsoft's linker, and the project's own `link.exe`
   beside the editor since 4.0, held to Microsoft's byte for byte on its probe
   bed; Tools > Linker for x86_64-windows... names it, and a build resolves a
@@ -149,7 +151,11 @@ Two diagnostics worth recognising:
   Tools > Linker for tms6747... names it, and TI's is always run by full path
   under the CGT directory.
 - **DWARF / CodeView** — the two debug-info formats; DWARF on the GNU targets,
-  CodeView only via `cl`.
+  CodeView on `x86_64-windows` from `cl` and, since 5.1, from c90 and cpp11 in
+  a Debug build.
+- **vm6747 / sim6747** — the two ways a tms6747 program runs on a host: the
+  emulator reads the assembly text and runs it over a runtime of its own; the
+  simulator runs the linked `.out` with its real runtime and boot code.
 
 --------------------------------------------------------------------------------
 *This manual describes RIDE 5.1. RIDE 3.0 is the same editor with three
