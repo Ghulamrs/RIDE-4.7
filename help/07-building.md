@@ -191,7 +191,7 @@ repository's README and, for cpp11, `docs/` beside its sources:
 | --- | --- | --- |
 | c90, cpp11 | clang (`-std=c++11 -pedantic-errors`) for every recorded output and every linkage name; cl for the Microsoft ABI | the compilers' suites on three machines (`tools/verify-three`) |
 | cpp11 on tms6747 | TI's own assembler, linker and the CCS 5.5 cycle-accurate simulator | `tools/verify-three c6747`, a scheduled job on the Windows box |
-| masm, link | Visual Studio's `ml64` and `link.exe`, object and image byte for byte | their probe beds |
+| masm, link | Visual Studio's `ml64` and `link.exe`, object and image byte for byte | their probe beds — and not yet by cpp11's own suites, which assemble the GNU spelling; the MASM spelling a Release build goes through has been proven by hand runs so far |
 | asm6x, lnk6x | TI's `asm6x` and `lnk6x`, object and image byte for byte | their probe beds; lnk6x's known differences pinned by name |
 | RTS6x | TI's `rts6740` on sim6747 and on CCS 5.5's simulator | `make check` |
 | sim6747 | CCS 5.5's C6747 simulator, output and cycle count | its suite |

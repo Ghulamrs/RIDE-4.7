@@ -166,6 +166,13 @@ does not change the default. With TI's linker, RIDE passes `--rom_model`, CCS's
 default, where the project does not say. **Help ▸ About** says which runtime
 links: a `runtime` row naming RTS6x, or TI's compiler and its library.
 
+**Two link lines for one compiler, and this is the one RIDE uses.** Run on its
+own command line without `-S`, `cpp11 -arch tms6747` links through TI's `lnk6x`
+against TI's `rts6740_elf.lib` (or the `_eh` build where `CPP11_TILIB` names
+one), as its own README says; it has no RTS6x option. Inside RIDE the link is
+RIDE's `lnk6x` against RTS6x as described above, and the console line names
+the library it used.
+
 **What does not open.** Only C6000 C674x devices: any other is refused with its
 device named. The sources are every file in the folder by extension, the linked
 files from `.project`, minus what `.cproject` excludes. The **Compiler Options**
