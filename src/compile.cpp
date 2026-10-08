@@ -659,9 +659,9 @@ std::vector<std::string> assemblyIn(const std::string& dir) {
     return found;
 }
 
-// **A tms6747 build makes a real TI program too.** The emulator runs the assembly in <program>.vm;
-// with asm6x beside the editor each .s becomes a TI object, and with TI's compiler directory named
-// under Tools lnk6x links them into <program>.out for the board. A refusal or a failed link fails the build: what the emulator runs must be a TI program.
+// **A tms6747 build is a TI program** (R5): asm6x makes each .s in <program>.vm a TI object and lnk6x links
+// them against RTS6x, or TI's runtime named under Tools, into <program>.out, which Run hands to sim6747.
+// A refusal, a failed link or no .out at all fails the build (D2), unless emulateOnly or an Emulate asks for none.
 void makeTiProgram(Built& result, const Toolchain& tool, const std::string& program, Configuration config,
                    LineSink sink, void* context) {
     if (!result.ok) return;

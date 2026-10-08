@@ -8,7 +8,7 @@ namespace help {
 namespace {
 
 const Page kPages[] = {
-    {"1",  "What it is",       "three languages, three variants, one core",     "01-what-it-is.md"},
+    {"1",  "What it is",       "three languages, four targets, one core",       "01-what-it-is.md"},
     {"2",  "Getting started",  "first run, the demo, where things land",        "02-getting-started.md"},
     {"3",  "The screen",       "panes, tabs, the status bar, what is where",    "03-the-screen.md"},
     {"4",  "Editing",          "indenting, UTF-8, undo, selection, clipboard",  "04-editing.md"},
@@ -18,8 +18,8 @@ const Page kPages[] = {
     {"8",  "Debugging",        "breakpoints, stepping, variables, the stack",   "08-debugging.md"},
     {"9",  "The panel",        "Console, Debug, Assembly, enter on a line",     "09-the-panel.md"},
     {"10", "Keys",            "every key, every menu, every flag",             "10-keys.md"},
-    {"",   "C",                "c90, three targets, DWARF on two of them",      "c.md"},
-    {"",   "C++",              "cpp11, three targets, and the host's compiler",  "cpp.md"},
+    {"",   "C",                "c90, four targets, DWARF or CodeView on three", "c.md"},
+    {"",   "C++",              "cpp11, four targets, and the host's compiler",   "cpp.md"},
     {"",   "Shalimar",         "shalimar, the borrowed library, the indent dialect", "shalimar.md"},
     {"",   "C and Shalimar",   "calling a C library from a Shalimar program",   "mixing-c-and-shalimar.md"},
     {"",   "Appendix A",       "the Shalimar language, in full",                "appendix-a-shalimar-language.md"},

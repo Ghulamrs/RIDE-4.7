@@ -78,8 +78,7 @@ struct Toolchain {
     std::vector<std::string> libraries;
     // A CCS project's link, for tms6747; given nowhere else.
     TiLink tiLink;
-    // A single file's tms6747 build links its .out as well - what Run and Verify run (R5).
-    // A project's build always does; a single file's Run has no use for it, so only when this asks.
+    // A single file's tms6747 build links its .out as well, for a Run or a Verify (R5); a project's always does.
     bool linkSingleFile = false;
     // No .out, and the build still succeeds: the project's "emulateOnly", or an Emulate on vm6747 (D2, R5).
     bool emulateOnly = false;
