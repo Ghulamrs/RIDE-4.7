@@ -89,7 +89,7 @@ examples are in the two compilers' own repositories.
 **3.0 — cxx1.** The release this manual is for. A fourth compiler, and the
 second language of our own that has one: C++ goes to **cpp11**, the C++11
 compiler that grew out of c90, the way C goes to c90 — by default, on every
-machine alike, with the same three targets and DWARF on the same two of them.
+machine alike, with the same targets and DWARF on the same two of them.
 The host's C++ compiler is not gone; it is what a group asks for by name now,
 which is exactly the position the host's C compiler has always been in. So C
 stopped being the only language with a decision in it, and the two decisions
@@ -102,6 +102,24 @@ compilers, one per line, because cpp11's `--version` is two lines long; and
 the workspace on each machine builds five programs rather than four.
 [C++](cpp.md) is the page.
 
+**3.5 to 5.1 — the fourth target, and the tools that make it one.** Since 3.5
+the three compilers generate for a fourth machine, **`tms6747`**, TI's
+TMS320C6747 DSP, and the editor builds and runs for it on every host — which
+no host target can say. What makes that possible is the other half of the
+product, twelve sealed programs in all: **`asm6x`**, the C6000 assembler,
+**`lnk6x`**, the C6000 linker, and **RTS6x**, the C6747 run-time library a
+program links against by default, all RIDE's own; **`vm6747`**, an emulator
+that runs the compiler's assembly as it is, with a C library and an
+exception-handling runtime of its own inside it; and **`sim6747`**, a
+simulator that runs the linked `.out` — TI's own boot code and runtime, the
+machine code asm6x encoded, the image lnk6x laid out. `F5` runs on the
+emulator, **Build ▸ Run on Simulator** on the simulator, and **Build ▸ Verify**
+on both and compares them. On Windows the same releases brought RIDE's own
+**`masm`** and **`link`** for Release builds and, in 5.1, debugging of c90 and
+cpp11 programs through CodeView and cdb. A Code Composer Studio project opens
+as it is. [Page 6](06-the-project.md) and [page 7](07-building.md) have all of
+it; `docs/ride-architecture.html` is the picture.
+
 ## What it will not do
 
 Said here so that the rest of the manual does not have to keep apologising.
@@ -110,8 +128,14 @@ Said here so that the rest of the manual does not have to keep apologising.
   Configuration is one JSON file per project and one per machine.
 - **It does not guess.** Where two things could be meant, it asks or refuses,
   and the refusal says which file to move or which line to change.
-- **It stops at the assembly for a cross target.** Building for a machine you
-  are not on produces assembly and nothing else, because the assembler and
-  linker it hands off to are this machine's.
-- **It has no optimiser of its own.** What optimisation you get is whatever
-  the compiler you chose does.
+- **It stops at the assembly for a cross host target.** Building for a Mac,
+  a Linux box or a Windows PC you are not on produces assembly and nothing
+  else, because the assembler and linker it hands off to are this machine's.
+  `tms6747` is not a cross target in that sense: its tools travel with the
+  editor.
+- **It has no optimiser of its own, and does not want one.** The editor
+  optimises nothing; what a Release build gets is the compiler's — cpp11's
+  `-O1` and `-O2` on every target, c90's on the x86-64 targets, nothing from
+  shalimar — and [page 7](07-building.md) says what each does.
+- **It does not put a program on a C6747 board.** The `.out` it links is the
+  file Code Composer Studio loads onto one; the loading is CCS's.

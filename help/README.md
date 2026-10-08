@@ -1,4 +1,4 @@
-# RIDE 3.0 — the manual
+# RIDE 5.1 — the manual
 
 Ten pages about the editor, and one about each language it drives. Every page
 stands on its own; read them in order the first time and out of order after
@@ -6,8 +6,8 @@ that.
 
 **1.0** was the editor for C and C++; **1.1** is the release Shalimar arrived
 in; **1.2** let Shalimar borrow, and call C; **3.0** is the release cxx1
-arrived in, and the one this manual is for. [Page 1](01-what-it-is.md) has
-the differences in full.
+arrived in; **3.5** brought the fourth target, tms6747, and **5.1** debugging
+on Windows. [Page 1](01-what-it-is.md) has the differences in full.
 
 `Help ▸ Contents` in the editor lists these same pages with a line each, and
 `F1` shows the keys. This directory is the long form.
@@ -30,8 +30,8 @@ not of the others:
 
 | | |
 | --- | --- |
-| [C](c.md) | c90, three targets, DWARF on two of them |
-| [C++](cpp.md) | cpp11, three targets, and the host's compiler by name |
+| [C](c.md) | c90, four targets, DWARF on two of them and CodeView on Windows |
+| [C++](cpp.md) | cpp11, four targets, and the host's compiler by name |
 | [Shalimar](shalimar.md) | shalimar, the library a file borrows, the indent dialect, and a program that stops itself |
 | [C and Shalimar](mixing-c-and-shalimar.md) | calling a C library from a Shalimar program |
 

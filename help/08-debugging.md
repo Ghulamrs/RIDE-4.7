@@ -40,7 +40,8 @@ line comes back to the stop.
 | | |
 | --- | --- |
 | c90 or cpp11 on `arm64-darwin`, `x86_64-linux` | lldb or gdb, reading the compiler's own DWARF |
-| c90 or cpp11 on `x86_64-windows` | **no** — MASM carries no line table |
+| c90 or cpp11 on `x86_64-windows` | cdb, reading the CodeView a Debug build carries — since 5.1; a Release build is MASM, which has no line table, and cannot be debugged |
+| c90 or cpp11 on `tms6747` | **no** — no line table, and the emulator and the simulator are not debuggers |
 | `cl` | cdb, reading CodeView from the `.pdb` |
 | `clang++`, `g++` | lldb or gdb |
 | `shalimar` | the program stops **itself** — no debugger at all |
@@ -54,6 +55,15 @@ the build starts — rather than letting you find out by pressing `F8`.
 compiler you are using: `-g` for c90, and for shalimar that release links a runtime
 with no debugger in it.
 
+**On Windows, a Debug build of c90 or cpp11 goes through clang's assembler and
+Microsoft's `link.exe /DEBUG`**, not through RIDE's own `masm` and `link`: the
+MASM spelling carries no CodeView and LINK writes no `.pdb`, so a program the
+project's own tools built could not be stopped on a line. [Page 7](07-building.md)
+has the two configurations side by side. What cdb then gives is what it gives
+a `cl` build - a breakpoint on a line, stepping, locals and the stack - with
+one difference: the editor keeps no position for a closing brace, so a step
+does not stop on `}` where cl's build would.
+
 ## Shalimar is different, and it is not a lesser version
 
 A Shalimar program **stops itself**. The compiler already emits
@@ -63,8 +73,7 @@ the program. There is no debug format, nothing to install, and no gdb, lldb or
 cdb involved.
 
 What that buys: statement granularity rather than an approximation, and the
-same behaviour on all four targets — including `x86_64-windows`, where c90's
-own debugging stops, and `tms6747`, where nothing else can stop: a Debug build
+same behaviour on all four targets — including `tms6747`, where nothing else can stop: a Debug build
 there runs its `.out` on `sim6747`, and the program's session talks to the
 editor through the simulator's host channel, as it does through a pipe on a host.
 

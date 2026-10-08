@@ -65,13 +65,18 @@ File. No item here repeats the word "project": the column says it. The five
 above the rule are the project itself; the three below are its list of files,
 and none of those three touches the disk except New File, which makes one.
 **Build** — Compile file, Run file, Build project, Run project, Debug, Release, Clean,
-Console, Debug, Assembly.
+Run on Simulator, Verify. The last two are tms6747's: they build as Run does
+and then run the linked `.out` on `sim6747` — Verify runs it on `vm6747` as
+well and compares the two outputs ([page 6](06-the-project.md)).
 **Debug** — Start / continue, Debug project, Toggle breakpoint, Step over, Step
 into, Step out, Up the stack, Down the stack, Watch expression, Stop debugging.
 **Language** — By extension, C, C++, Shalimar, JSON, Plain text.
 **Tools** — By language, c90, cpp11, shalimar, MSVC (cl), C++ (host). Ours first,
-then the machine's. `Ctrl-K` walks them in that order.
-**Target** — the three architectures.
+then the machine's. `Ctrl-K` walks them in that order. Below them, where a
+tool is found: Locate vcvars64.bat, Assembler for x86_64-windows, Linker for
+x86_64-windows, TI compiler for tms6747, Linker for tms6747.
+**Target** — the four architectures: `x86_64-windows`, `x86_64-linux`,
+`arm64-darwin`, `tms6747`.
 
 Those last three are one chain and sit in that order: what the file **is**,
 which **compiler** reads it, and which **machine** the output runs on. Target

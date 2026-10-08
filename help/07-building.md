@@ -46,22 +46,79 @@ rather than in whichever file the target happened to list first.
 
 ## Targets
 
-`Ctrl-T` moves to the next target; the Target menu names all three.
+`Ctrl-T` moves to the next target; the Target menu names all four.
 
-| | |
-| --- | --- |
-| `x86_64-windows` | MASM, assembled by `ml64` |
-| `x86_64-linux` | GNU assembly |
-| `arm64-darwin` | this Mac's own |
+| | assembled and linked by | |
+| --- | --- | --- |
+| `x86_64-windows` | Debug: clang's assembler and `link.exe /DEBUG`; Release: RIDE's own `masm` and `link` | see below |
+| `x86_64-linux` | the system's, through `cc` or `c++` | GNU assembly |
+| `arm64-darwin` | Apple's clang toolchain | this Mac's own |
+| `tms6747` | RIDE's own `asm6x` and `lnk6x`, against RTS6x | the TI C6747; runs on `vm6747` and `sim6747` on any host |
 
-**Only the host's own target reaches a program.** c90, cpp11 and shalimar generate
-for all three, but the assembler and linker they hand off to are this machine's, so a
-cross target stops at the assembly — which is shown in the Assembly tab. The
-editor says so rather than failing obscurely.
+**Only the host's own target reaches a program, and tms6747 reaches one
+everywhere.** c90, cpp11 and shalimar generate for all four, but the three host
+targets are assembled and linked by this machine's tools, so a cross target
+stops at the assembly — which is shown in the Assembly tab — and the editor says
+so rather than failing obscurely. The fourth target has no machine to be on: its
+assembler, linker, runtime, emulator and simulator ship with the editor, so a
+tms6747 program builds and runs on a Mac, a Linux box and a Windows PC alike.
+[Page 6](06-the-project.md) has that target in full.
 
 `cl`, `clang++` and `g++` take no target from this editor at all: they generate
 for the machine they were installed on, so what they build is what this machine
 runs whatever the Target menu says.
+
+## What assembles and links a Windows program
+
+Two different answers, and the configuration decides, because a debugger
+decides it. The console names what ran, so a build never has to be guessed at.
+
+**Debug.** cpp11 and c90 are given `-masm=gnu`: they write the GNU spelling of
+the Microsoft ABI, **clang's assembler** turns it into a COFF object carrying
+**CodeView** — the line table and the locals a Windows debugger reads — and
+**Microsoft's `link.exe /DEBUG`** writes the `.pdb` beside the program, which
+`cdb` reads. This is what makes a Debug build steppable on Windows (page 8), and
+it is why neither RIDE's own assembler nor its own linker is in a Debug build:
+`masm` carries no CodeView, and LINK writes no `.pdb`.
+
+**Release.** cpp11 is given `-masm=masm` whenever **Tools ▸ Assembler for
+x86_64-windows...** names one, which the installed `settings.json` does
+(`bin/masm.exe`): it writes MASM, and RIDE's own `masm` beside it assembles. A
+project's link goes to the linker **Tools ▸ Linker for x86_64-windows...** names
+— `bin/link.exe`, RIDE's own LINK, in an installation; a single file's link is
+cpp11's, which takes the `link.exe` beside itself for the same spelling. With
+no assembler named, cpp11 writes the GNU spelling and clang assembles it, and
+the link is Microsoft's `link.exe`. c90 writes MASM by default and takes the
+`masm` and `link` beside it where they are.
+
+**`ml64` is never named by RIDE.** It is Visual Studio's assembler, and it
+enters a build in one way only: when RIDE's own `masm` or `link` has failed and
+you say yes to the question below.
+
+## When the project's own tools fail
+
+When one of RIDE's own assemblers or linkers fails a build — `masm` or `link`
+on `x86_64-windows`, `lnk6x` on `tms6747` — and the compilers found no fault in
+the source, the editor asks:
+
+    The project's own masm and link did not build it. Use Visual Studio's ml64
+    and link.exe for this build instead?
+
+A **Yes** builds again through the vendor's tools — Visual Studio's, found the
+way `cl` is found, or TI's `lnk6x` under the directory Tools names — and the
+console says `building again with the native tools, as asked`. A **No** leaves
+the build failed. The question is put only when the vendor's tools are on this
+machine (otherwise the line says they are not), only when the failure was the
+tool's and not the program's (an unresolved or duplicate symbol, a library made
+for another platform — the vendor's tools would refuse those the same way),
+and never for a `cl` build, which links with its own. `"askNative": false` in
+`settings.json` never asks; `--build` and `--run` on the console have nobody to
+ask and let the build stand as failed, saying so.
+
+**What a Yes does not do today is mark the program it made.** The console
+line above is the only record that this program came out of Visual Studio's
+tools rather than RIDE's; nothing in the build's last line or in the file says
+so afterwards.
 
 ## Debug and release
 
@@ -72,7 +129,7 @@ differs, and the editor says which rather than pretending they are the same:
 | --- | --- | --- |
 | `cl` | `/Od /Zi /D_DEBUG /MTd` | `/O2 /DNDEBUG /MT` |
 | `clang++`, `g++` | `-g -D_DEBUG=1` | `-O2 -DNDEBUG=1` |
-| `c90`, `cpp11` | `-g -D_DEBUG=1`, and the define alone where there is no line table | `-O2 -DNDEBUG=1` |
+| `c90`, `cpp11` | `-g -D_DEBUG=1` — DWARF on the GNU targets, CodeView on `x86_64-windows`; the define alone on `tms6747`, which has no line table | `-O2 -DNDEBUG=1` |
 | `shalimar` | `--debug` | nothing |
 
 These are the defaults; **Project ▸ Compiler Options** changes them per
@@ -99,3 +156,44 @@ whether the link worked or not. What survives is the program.
 On Windows the linker is `link` with the C runtime named, because c90's objects
 carry no `/DEFAULTLIB` directive to say which one; `cl` is given `/MT` there to
 match. Everywhere else it is the same host driver c90 hands its own linking to.
+
+## How a build runs, and what runs at once
+
+A project build compiles one group at a time, in the order `"build"` names
+them, and each group is one command to one compiler with all of its sources
+on the line. What happens inside that command is the compiler's:
+
+- **cpp11 compiles its files on a pool of threads** — one per file up to the
+  machine's cores, and one thread for fewer than four files — and says so on
+  its first lines: `6 source files, 6 compilation threads`, then `[thread 2]
+  parser.cpp` as each thread takes a file. The editor passes no `-j`, so the
+  count is cpp11's own; on a command line `-j n` asks for another, and `-j 1`
+  is serial. Assembling goes on the same pool. c90 and shalimar compile one
+  file after another.
+- **A tms6747 group is the exception today.** Each source is its own
+  `cpp11 -S -arch tms6747` command, joined with `&&`, so the C6000 sources of
+  a group compile one after another whatever the machine has. The `asm6x` step
+  that follows takes every `.s` in one command, and the link is one `lnk6x`.
+  (The one-command form, with cpp11's pool doing the work, is WS-G's P3.)
+- **The link is one command**, and the run is one program; nothing overlaps a
+  build with a run or two builds with each other. The window keeps drawing
+  while a build runs, because the build is on a worker thread of its own —
+  that is the only concurrency in the editor itself.
+
+## What stands behind each tool
+
+The compilers and tools a build goes through are RIDE's own, and each is held
+to an outside oracle rather than to itself. The short form, so a reader of
+this page knows what a green build rests on; the long form is each
+repository's README and, for cpp11, `docs/` beside its sources:
+
+| | held to | by |
+| --- | --- | --- |
+| c90, cpp11 | clang (`-std=c++11 -pedantic-errors`) for every recorded output and every linkage name; cl for the Microsoft ABI | the compilers' suites on three machines (`tools/verify-three`) |
+| cpp11 on tms6747 | TI's own assembler, linker and the CCS 5.5 cycle-accurate simulator | `tools/verify-three c6747`, a scheduled job on the Windows box |
+| masm, link | Visual Studio's `ml64` and `link.exe`, object and image byte for byte | their probe beds |
+| asm6x, lnk6x | TI's `asm6x` and `lnk6x`, object and image byte for byte | their probe beds; lnk6x's known differences pinned by name |
+| RTS6x | TI's `rts6740` on sim6747 and on CCS 5.5's simulator | `make check` |
+| sim6747 | CCS 5.5's C6747 simulator, output and cycle count | its suite |
+| vm6747 | the host targets' output for the same program | the compilers' suites — see the note on page 6 about what it cannot see |
+| RIDE | its own suites: `tests/test`, `tests/session`, `tests/toolchain-check` | on all three machines |

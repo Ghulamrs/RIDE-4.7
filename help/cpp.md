@@ -11,9 +11,9 @@ away, and every project written for it still builds.
 | --- | --- |
 | suffix | `.cpp`, `.cc`, `.cxx` |
 | compiler | `cpp11` by default; `cl` or the host's `c++` when a group says so |
-| targets | `x86_64-windows`, `x86_64-linux`, `arm64-darwin` — the same three as c90 |
-| debug | `-g -D_DEBUG=1`, and the define alone where there is no line table |
-| release | `-DNDEBUG=1` — cpp11, like c90, has no optimiser |
+| targets | `x86_64-windows`, `x86_64-linux`, `arm64-darwin`, `tms6747` — the same four as c90 |
+| debug | `-g -D_DEBUG=1` — DWARF on two targets, CodeView on `x86_64-windows`; the define alone on `tms6747`, which has no line table |
+| release | `-O2 -DNDEBUG=1` — cpp11 optimises every target; see [page 7](07-building.md) |
 
 ## Where cpp11 is found
 
@@ -68,8 +68,16 @@ newer Visual Studio, which is not the toolset this is built with.
 
 **cpp11 writes DWARF for `x86_64-linux` and `arm64-darwin`** — line tables,
 types, objects and lexical blocks — and lldb or gdb read it like c90's, so
-breakpoints, stepping, locals and the stack all work. On `x86_64-windows` it
-writes MASM and no line table, exactly as c90 does, and the Debug tab says so.
+breakpoints, stepping, locals and the stack all work.
+
+**On `x86_64-windows` it writes CodeView**, since RIDE 5.1: a Debug build is
+given `-masm=gnu`, clang assembles the object with its line table and its
+procedure and local records, Microsoft's `link.exe /DEBUG` writes the `.pdb`,
+and **cdb** stops on a line, steps, shows locals and walks the stack — the same
+debugger that reads a `cl` build. The MASM spelling, which a Release build
+uses through RIDE's own `masm`, carries no line table; that is why Debug and
+Release go through different assemblers on this target ([page 7](07-building.md)).
+On `tms6747` there is no line table and no debugger: the Debug tab says so.
 
 **cl writes CodeView into a `.pdb`, and `cdb` reads one.** cdb comes with the
 Windows SDK's debugging tools and is not installed by default, so the editor
@@ -79,10 +87,10 @@ one, but cdb is not installed"* when it is missing.
 `clang++` and `g++` write DWARF and are read by lldb and gdb like anything
 else.
 
-So on Windows, C++ under cpp11 is where C under c90 is — no line table — and
-C++ under cl carries everything. That is a fact about the compilers, not about
-the machine, which is why the editor asks `debuggerFor(compiler, target)` and
-never `debuggerFor(machine)`.
+So on Windows, C++ under cpp11 and C under c90 are debugged by cdb through
+CodeView, exactly as C++ under cl is. Which debugger applies is a fact about
+the compiler and the target, not about the machine, which is why the editor
+asks `debuggerFor(compiler, target)` and never `debuggerFor(machine)`.
 
 ## Beside C in one program
 
