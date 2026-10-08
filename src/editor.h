@@ -188,9 +188,9 @@ private:
     void convertFile();
 
     void buildProject(bool andRun);
-    // Run on Simulator and Verify: Run again with what runs the program changed, and then put back.
+    // Emulate on vm6747 and Verify: Run again with what runs the program changed, and then put back.
     void runWith(int runner);
-    Ran runChosen(const std::string& program, bool shalimar, const std::vector<std::string>& args);
+    Ran runChosen(int runner, const std::string& program, bool shalimar, const std::vector<std::string>& args);
     void clean();
     bool saveEveryDirty();
 

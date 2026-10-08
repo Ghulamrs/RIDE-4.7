@@ -92,6 +92,7 @@ void Project::begin(const std::string& dir, const std::string& name) {
     includes_.clear();
     libraries_.clear();
     open_.clear();
+    emulateOnly_ = false;
     options_ = options::Store();
     options::setActive(&options_);
     ccs_ = false;
@@ -344,6 +345,7 @@ bool Project::load(const std::string& dir, std::string& error) {
         if (!named.empty()) includes_.push_back(named);
     }
     open_ = withSlashes(root.get("open").text(std::string()));
+    emulateOnly_ = root.get("emulateOnly").boolean(false);
     options_.fromJson(root.get("options"));
     options::setActive(&options_);
 
@@ -454,6 +456,7 @@ bool Project::save(std::string& error) {
         root.set("libraries", files);
     }
     if (!open_.empty()) root.set("open", Json::fromText(open_));
+    if (emulateOnly_) root.set("emulateOnly", Json::fromBool(true));
     if (!options_.empty()) root.set("options", options_.toJson());
 
     if (builds()) {
@@ -935,6 +938,7 @@ bool Project::loadCcs(const std::string& folder, std::string& error, const std::
     for (size_t i = 0; i < ws.notes.size(); ++i) reading.notes.push_back("workspace: " + ws.notes[i]);
     ccsReading_ = reading;
     ccs_ = true;
+    emulateOnly_ = false;
     ccsWorkspace_ = workspace.empty() ? std::string() : ws.dir;
     root_ = reading.dir;
     file_ = path::join(root_, ".ccsproject");

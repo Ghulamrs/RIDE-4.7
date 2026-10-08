@@ -283,6 +283,7 @@ editor::Toolchain toolFrom(RIDEProject* project, const char* cc1, const char* cl
         tool.libraries = project->project.absoluteLibraries();
         // A CCS project's link, for the configuration being built (ccs/ccsproject.h).
         if (config >= 0) tool.tiLink = project->project.tiLink(static_cast<editor::Configuration>(config));
+        tool.emulateOnly = project->project.emulateOnly();
     }
     std::vector<std::string> shared = editor::settings::includes();
     tool.includes.insert(tool.includes.end(), shared.begin(), shared.end());
@@ -290,6 +291,11 @@ editor::Toolchain toolFrom(RIDEProject* project, const char* cc1, const char* cl
     tool.libraries.insert(tool.libraries.end(), shared.begin(), shared.end());
     return tool;
 }
+
+// What the next ride_*_start runs (bridge.h): taken by it and reset, so a Run after it is a plain run.
+std::atomic<int> nextRunner{RIDE_RUN_PROGRAM};
+// Whether the last project build made no .out on purpose, its .pro saying emulateOnly: its Run then emulates (R5).
+std::atomic<bool> builtEmulateOnly{false};
 
 }
 
@@ -1142,7 +1148,8 @@ const char* ride_shown_run_command(RIDEProject* project, const char* cc1, const 
                                             source ? source : "",
                                             static_cast<editor::Language>(language),
                                             arch ? arch : "",
-                                            static_cast<editor::Configuration>(config));
+                                            static_cast<editor::Configuration>(config),
+                                            nextRunner.load() == RIDE_RUN_EMULATOR);
     return scratch().c_str();
 }
 
@@ -1770,6 +1777,9 @@ RIDEBuild* ride_build_target(RIDEProject* project, const char* cc1, const char* 
     editor::Toolchain tool = toolFrom(project, cc1, cl, shc, cxx1, config);
 
     tool.kind = static_cast<editor::ToolchainKind>(kind);
+    // An Emulate asked for before this build builds no .out; the .pro's emulateOnly the same (R5, D2).
+    tool.emulating = nextRunner.load() == RIDE_RUN_EMULATOR;
+    builtEmulateOnly = tool.emulateOnly;
 
     RIDEBuild* out = new RIDEBuild();
     editor::BuildScope scope;
@@ -1941,8 +1951,6 @@ void runningChunk(void* context, const char* bytes, size_t size, bool isStderr) 
                           isStderr ? RIDE_STREAM_ERR : RIDE_STREAM_OUT);
 }
 
-// What the next ride_*_start runs (bridge.h): taken by it and reset, so a Run after it is a plain run.
-std::atomic<int> nextRunner{RIDE_RUN_PROGRAM};
 
 void runningSay(void* context, const std::string& line) {
     RIDERunning* running = static_cast<RIDERunning*>(context);
@@ -1962,7 +1970,11 @@ void runTheProgram(RIDERunning* running) {
     bool shalimar = running->shalimar;
     std::string program = running->program;
     if (running->fromSource && !stopFirst) {
-        running->tool.linkSingleFile = running->runner != RIDE_RUN_PROGRAM;
+        // A single file has no .pro: on tms6747 its Run is the simulator's, and links the .out (R5).
+        running->runner = editor::runnerFor(running->runner, running->arch, false);
+        running->tool.emulateOnly = false;
+        running->tool.emulating = running->runner == RIDE_RUN_EMULATOR;
+        running->tool.linkSingleFile = running->runner == RIDE_RUN_SIMULATOR || running->runner == RIDE_RUN_VERIFY;
         made = editor::buildProgram(running->tool, running->kind, running->source, running->language,
                                     running->arch, running->config, runningLine, running);
         running->buildOutput = made.output;
@@ -1975,10 +1987,17 @@ void runTheProgram(RIDERunning* running) {
         std::lock_guard<std::mutex> held(running->state);
         std::lock_guard<std::mutex> in(running->input);
         running->built = !program.empty() && !stopFirst;
-        if (running->built && running->runner != RIDE_RUN_PROGRAM) {
-            // Run on Simulator, or Verify: neither is for a program the emulator does not run.
+        // A project's program: a tms6747 Run is the .out on sim6747, or vm6747's when the .pro says emulateOnly.
+        if (running->runner == RIDE_RUN_PROGRAM && editor::isEmulatedProgram(program))
+            running->runner = builtEmulateOnly ? RIDE_RUN_EMULATOR : RIDE_RUN_SIMULATOR;
+        if (running->built && running->runner == RIDE_RUN_EMULATOR && !editor::isEmulatedProgram(program)) {
+            runningSay(running, "Emulate on vm6747 is for a tms6747 build - choose tms6747 under Target");
+            running->status = 2;
+            running->built = false;
+        } else if (running->built && (running->runner == RIDE_RUN_SIMULATOR || running->runner == RIDE_RUN_VERIFY)) {
+            // The simulator, or Verify: neither is for a program the emulator does not run.
             std::string why = editor::isEmulatedProgram(program) ? editor::simulationMissing(program)
-                : "Run on Simulator and Verify are for a tms6747 build - choose tms6747 under Target";
+                : "Verify is for a tms6747 build - choose tms6747 under Target";
             if (!why.empty()) { runningSay(running, why); running->status = 2; }
         }
         if (running->built && running->runner == RIDE_RUN_VERIFY && !running->stopWanted && !editor::buildCancelled()
@@ -1989,10 +2008,15 @@ void runTheProgram(RIDERunning* running) {
         } else if (running->built && running->runner == RIDE_RUN_SIMULATOR) {
             if (!running->stopWanted && !editor::buildCancelled() && editor::isEmulatedProgram(program)
                 && editor::simulationMissing(program).empty()) {
-                runningSay(running, "[simulator] sim6747 " + editor::path::filename(editor::tiProgramOf(program)));
+                if (!running->args.empty())
+                    runningSay(running, "[run] the simulator takes no command line - Emulate on vm6747 hands them over");
+                if (running->fromSource) runningSay(running, editor::runnerLine(editor::RunSimulator, program));
                 running->ran = editor::startSimulated(running->process, program);
             }
-        } else if (running->built && running->runner == RIDE_RUN_PROGRAM && !running->stopWanted && !editor::buildCancelled()) {
+        } else if (running->built && (running->runner == RIDE_RUN_PROGRAM || running->runner == RIDE_RUN_EMULATOR)
+                   && !running->stopWanted && !editor::buildCancelled()) {
+            if (running->runner == RIDE_RUN_EMULATOR && running->fromSource)
+                runningSay(running, editor::runnerLine(editor::RunEmulator, program));
             running->ran = editor::startProgram(running->process, program, shalimar, running->args);
             if (running->ran) {
                 if (!running->waiting.empty())
@@ -2038,7 +2062,8 @@ RIDERunning* startRunning(RIDERunning* running) {
 }
 
 void ride_run_next(int runner) {
-    nextRunner = runner == RIDE_RUN_SIMULATOR || runner == RIDE_RUN_VERIFY ? runner : RIDE_RUN_PROGRAM;
+    nextRunner = runner == RIDE_RUN_SIMULATOR || runner == RIDE_RUN_VERIFY || runner == RIDE_RUN_EMULATOR
+                     ? runner : RIDE_RUN_PROGRAM;
 }
 
 int ride_simulator_here(void) { return editor::simulatorProgram().empty() ? 0 : 1; }
@@ -2134,6 +2159,17 @@ int ride_project_set_arguments(RIDEProject* project, const char* line) {
 
 char* ride_run_line(RIDEProject* project, const char* program, const char* line) {
     std::string shown = program ? program : "";
+    // A tms6747 program is run by sim6747 or vm6747, and the line names which (R5).
+    if (editor::isEmulatedProgram(shown)) {
+        int runner = nextRunner.load();
+        if (runner == RIDE_RUN_PROGRAM) runner = builtEmulateOnly ? RIDE_RUN_EMULATOR : RIDE_RUN_SIMULATOR;
+        if (runner == RIDE_RUN_VERIFY)
+            return give(editor::runnerLine(editor::RunEmulator, shown) + ", then " +
+                        editor::runnerLine(editor::RunSimulator, shown).substr(2) + ", compared");
+        std::string said = editor::runnerLine(runner, shown);
+        if (runner == RIDE_RUN_EMULATOR && line && *line) said += std::string(" ") + line;
+        return give(said);
+    }
     if (project && project->project.loaded()) {
         // Under the project's folder, by its name there; elsewhere - the emulator's temporary build - in full.
         const std::string rel = project->project.relative(shown);

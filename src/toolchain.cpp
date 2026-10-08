@@ -319,6 +319,17 @@ std::string c6xAssembler() {
     return path::besideProgram("asm6x.exe");
 }
 
+// Why no asm6x can run: none beside the editor, or $ASM6X naming one that is not there (D2).
+std::string c6xAssemblerMissing() {
+    const std::string as = c6xAssembler();
+    if (as.empty())
+        return std::string("no asm6x beside ") + product::kName + ": a tms6747 build is a TI program, and nothing here "
+               "assembles one - Build > Emulate on vm6747 runs the .s without it, and \"emulateOnly\": true in the "
+               "project's .pro makes that the project's build";
+    if (!path::exists(as)) return "asm6x named by $ASM6X is not there: " + as;
+    return std::string();
+}
+
 std::string emulatedProgram(const std::string& program) {
     std::string name = program;
     if (name.size() > 4 && name.compare(name.size() - 4, 4, ".exe") == 0) name.resize(name.size() - 4);
@@ -626,11 +637,11 @@ Recipe targetRecipe(const Toolchain& tool, ToolchainKind kind,
             return recipe;
         }
         for (size_t i = 0; i < sources.size(); ++i) {
-            if (i > 0) recipe.command += " && ";
-            recipe.command += quote(programOf(tool, kind)) + " -S" + archFlag(kind, arch) +
-                              " " + quote(sources[i]) + " -o " +
-                              quote(path::join(dir, objectFor(std::string(), sources[i], ".s"))) +
-                              configFlags(kind, config, arch) + includeFlags(tool, kind);
+            recipe.commands.push_back(quote(programOf(tool, kind)) + " -S" + archFlag(kind, arch) +
+                                      " " + quote(sources[i]) + " -o " +
+                                      quote(path::join(dir, objectFor(std::string(), sources[i], ".s"))) +
+                                      configFlags(kind, config, arch) + includeFlags(tool, kind));
+            recipe.command += (i > 0 ? " && " : "") + recipe.commands.back();
         }
         return recipe;
     }
@@ -709,10 +720,10 @@ Recipe objectRecipe(const Toolchain& tool, ToolchainKind kind,
     if (isEmulated(arch)) {
         for (size_t i = 0; i < sources.size(); ++i) {
             std::string out = objectFor(objectDir, sources[i], ".s");
-            if (i > 0) recipe.command += " && ";
-            recipe.command += quote(programOf(tool, kind)) + " -S" + archFlag(kind, arch) +
-                              " " + quote(sources[i]) + " -o " + quote(out) +
-                              configFlags(kind, config, arch) + includeFlags(tool, kind);
+            recipe.commands.push_back(quote(programOf(tool, kind)) + " -S" + archFlag(kind, arch) +
+                                      " " + quote(sources[i]) + " -o " + quote(out) +
+                                      configFlags(kind, config, arch) + includeFlags(tool, kind));
+            recipe.command += (i > 0 ? " && " : "") + recipe.commands.back();
             objects.push_back(out);
         }
         recipe.leftovers = objects;
@@ -812,13 +823,14 @@ Recipe programRecipe(const Toolchain& tool, ToolchainKind kind,
 
 std::string shownProgramCommand(const Toolchain& tool, ToolchainKind kind,
                                 const std::string& source, Language lang,
-                                const std::string& arch, Configuration config) {
+                                const std::string& arch, Configuration config, bool emulate) {
     std::string program = programOf(tool, kind);
     if (isEmulated(arch) && usesArch(kind))
         return program + " -S" + archFlag(kind, arch) + " " + source + " -o " + productNamed("run") + ".s" +
                configFlags(kind, config, arch) + includeFlags(tool, kind) +
-               " && vm6747 " + productNamed("run") + ".s" +
-               (kind == ToolShc ? " lib/shmrt-tms6747" : "");
+               (emulate ? " && vm6747 " + productNamed("run") + ".s" + (kind == ToolShc ? " lib/shmrt-tms6747" : "")
+                        : " && asm6x && lnk6x -o " + productNamed("run") + ".out && sim6747 --run " +
+                              productNamed("run") + ".out");
     if (kind == ToolMsvc)
         return program + " /diagnostics:column" +
                ((lang == LangCpp) ? " /TP /EHsc /std:c++14" : " /TC") +

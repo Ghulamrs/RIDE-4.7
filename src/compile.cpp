@@ -6,6 +6,9 @@
 #include "settings.h"
 
 #include <atomic>
+#include <mutex>
+#include <condition_variable>
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <thread>
@@ -371,6 +374,21 @@ bool ownToolFailed(const std::string& output, bool emulated) {
     return true;
 }
 
+// The project's own tools in play for a target and the vendor's that would stand in, as the question names them.
+bool nativeNames(const std::string& arch, std::string& ours, std::string& theirs) {
+    if (isEmulated(arch)) {
+        if (settings::tilinker().empty()) return false;
+        ours = "lnk6x"; theirs = "TI's lnk6x";
+        return true;
+    }
+    if (arch != "x86_64-windows") return false;
+    bool as = !settings::assembler().empty(), ld = !settings::linker().empty();
+    if (!as && !ld) return false;
+    ours = as && ld ? "masm and link" : as ? "masm" : "link";
+    theirs = as && ld ? "Visual Studio's ml64 and link.exe" : as ? "Visual Studio's ml64" : "Microsoft's link.exe";
+    return true;
+}
+
 bool nativeFallbackWanted(bool ok, bool sourceFault, const std::string& arch,
                           const std::string& output, std::string& question) {
     question.clear();
@@ -378,17 +396,7 @@ bool nativeFallbackWanted(bool ok, bool sourceFault, const std::string& arch,
     if ((isEmulated(arch) || arch == "x86_64-windows") && !ownToolFailed(output, isEmulated(arch)))
         return false;
     std::string ours, theirs;
-    if (isEmulated(arch)) {
-        if (settings::tilinker().empty()) return false;
-        ours = "lnk6x"; theirs = "TI's lnk6x";
-    } else if (arch == "x86_64-windows") {
-        bool as = !settings::assembler().empty(), ld = !settings::linker().empty();
-        if (!as && !ld) return false;
-        ours = as && ld ? "masm and link" : as ? "masm" : "link";
-        theirs = as && ld ? "Visual Studio's ml64 and link.exe" : as ? "Visual Studio's ml64" : "Microsoft's link.exe";
-    } else {
-        return false;
-    }
+    if (!nativeNames(arch, ours, theirs)) return false;
     if (!nativeToolsAvailable(arch)) {
         question = "The project's own " + ours + " did not build it, and " + theirs +
                    (isEmulated(arch) ? " is not on this machine - Tools names TI's C6000 compiler directory"
@@ -426,13 +434,20 @@ Built withNativeFallback(Built first, const std::string& arch, LineSink sink, vo
         return first;
     }
     if (!askNative(askNativeContext, question)) return first;
-    std::string said = "building again with the native tools, as asked";
+    // The names the question used, so the line and the mark on the result cannot disagree with it (D5).
+    std::string ours, theirs;
+    nativeNames(arch, ours, theirs);
+    std::string said = "building again with " + theirs + " in place of the project's " + ours + ", as asked";
     first.output += said + "\n";
     if (sink) sink(context, said);
     settings::forceNative(true);
     Built second = again();
     settings::forceNative(false);
     second.output = first.output + second.output;
+    const std::string mark = second.ok ? "[built with " + theirs + ", not " + product::kName + "'s " + ours + "]"
+                                       : "[not built: " + theirs + " failed as well]";
+    second.output += mark + "\n";
+    if (sink) sink(context, mark);
     return second;
 }
 
@@ -502,6 +517,48 @@ namespace {
 void makeTiProgram(Built& result, const Toolchain& tool, const std::string& program, Configuration config,
                    LineSink sink, void* context);
 
+// **A recipe's commands at once, on min(commands, cores) threads (P3).** Each one's output is captured
+// whole and handed on in source order as it completes; the status is the first failure's, in that order.
+int runRecipe(const Recipe& recipe, std::string& output, LineSink sink, void* context) {
+    const size_t n = recipe.commands.size();
+    if (n <= 1) return runCaptured(recipe.command, output, sink, context);
+    const unsigned epoch = epochNow();
+    std::vector<std::string> said(n);
+    std::vector<int> status(n, 0);
+    std::vector<char> done(n, 0);
+    std::atomic<size_t> next(0);
+    std::mutex held;
+    std::condition_variable ended;
+    auto work = [&]() {
+        for (size_t i; (i = next.fetch_add(1)) < n;) {
+            std::string out;
+            int rc = cancelEpoch.load() != epoch ? kStoppedStatus : runCaptured(recipe.commands[i], out);
+            if (rc == kStoppedStatus && out.empty()) out = "[stopped]\n";
+            std::lock_guard<std::mutex> lock(held);
+            said[i] = out; status[i] = rc; done[i] = 1;
+            ended.notify_all();
+        }
+    };
+    const unsigned cores = (std::max)(1u, std::thread::hardware_concurrency());
+    std::vector<std::thread> pool;
+    for (size_t t = 0; t < (std::min<size_t>)(n, cores); ++t) pool.emplace_back(work);
+    int first = 0;
+    for (size_t i = 0; i < n; ++i) {
+        std::string out;
+        {
+            std::unique_lock<std::mutex> lock(held);
+            ended.wait(lock, [&] { return done[i] != 0; });
+            out = said[i];
+        }
+        Lines lines(output, sink, context);
+        lines.add(out);
+        lines.end();
+        if (first == 0 && status[i] != 0) first = status[i];
+    }
+    for (size_t t = 0; t < pool.size(); ++t) pool[t].join();
+    return first;
+}
+
 Built buildProgramOnce(const Toolchain& tool, ToolchainKind kind, const std::string& sourcePath,
                        Language lang, const std::string& arch, Configuration config,
                        LineSink sink, void* context) {
@@ -534,7 +591,7 @@ Built buildProgramOnce(const Toolchain& tool, ToolchainKind kind, const std::str
         result.output += hint + "\n";
         if (sink) sink(context, hint);
     }
-    // Run on Simulator and Verify run the .out: a single file's build links one beside its .s (5.0).
+    // Run and Verify run the .out: a single file's build links one beside its .s (5.0).
     if (result.ok && tool.linkSingleFile && isEmulated(arch) && isEmulatedProgram(result.program))
         makeTiProgram(result, tool, result.program.substr(0, result.program.size() - 2), config, sink, context);
     return result;
@@ -610,8 +667,18 @@ void makeTiProgram(Built& result, const Toolchain& tool, const std::string& prog
     if (!result.ok) return;
     // A step said as it happens where there is a sink (the console), into the output where there is not (the window).
     auto tell = [&](const std::string& line) { if (sink) sink(context, line); else result.output += line + "\n"; };
+    // **A tms6747 build without a .out is a failed build** (D2), unless the project or the run asks for none.
+    auto fail = [&](const std::string& line) {
+        result.ok = false; result.output += line + "\n"; if (sink) sink(context, line);
+    };
+    if (tool.emulateOnly || tool.emulating) {
+        tell(tool.emulating ? "[no .out: Emulate on vm6747 runs the assembly]"
+                            : "[no .out: the project says emulateOnly - Run is Emulate on vm6747]");
+        return;
+    }
+    const std::string asMissing = c6xAssemblerMissing();
+    if (!asMissing.empty()) { fail(asMissing); return; }
     std::string as = c6xAssembler();
-    if (as.empty()) return;
     std::string dir = result.program;
     std::vector<std::string> sources;
     // A single file's build is one .s, not a .vm directory: it is linked as well, beside itself (5.0).
@@ -661,10 +728,10 @@ void makeTiProgram(Built& result, const Toolchain& tool, const std::string& prog
     const std::string named = settings::namedTi(), ours = rts6xRuntimeDir();
     const bool rts6x = named.empty() && !ours.empty();
     std::string ti = rts6x ? std::string() : settings::ti();
-    const std::string made = "[" + std::to_string(objects.size()) + " TI objects made; a .out needs TI's linker";
+    const std::string made = "[" + std::to_string(objects.size()) + " TI objects made] no .out: ";
     if (!rts6x && ti.empty()) {
-        tell("[" + std::to_string(objects.size()) + " TI objects made; a .out needs RTS6x in "
-                                "lib/rts6x-tms6747 beside the editor, or TI's compiler named under Tools]");
+        fail(made + "a tms6747 build links against RTS6x in lib/rts6x-tms6747 beside " + product::kName +
+             ", or TI's runtime when its compiler directory is named under Tools, and neither is here");
         return;
     }
     // A CCS found rather than named ships rts6740_elf.lib alone, and these objects want the
@@ -673,7 +740,8 @@ void makeTiProgram(Built& result, const Toolchain& tool, const std::string& prog
     const bool eh = rts6x || path::exists(path::join(lib, "rts6740_elf_eh.lib")) ||
                     (!extra.empty() && path::exists(path::join(extra, "rts6740_elf_eh.lib")));
     if (!eh && named.empty()) {
-        tell(made + " and rts6740_elf_eh.lib, named under Tools - " + ti + " has only rts6740_elf.lib]");
+        fail(made + ti + " has only rts6740_elf.lib - these objects need rts6740_elf_eh.lib, "
+             "named under Tools (TI library directory)");
         return;
     }
     // The project's own C6000 linker where one is named, TI's otherwise; the runtime and the
@@ -820,7 +888,7 @@ Built buildTargetOnce(const Toolchain& tool, ToolchainKind kind,
     result.shalimar = kind == ToolShc;
     result.leftovers = recipe.leftovers;
 
-    int made = runCaptured(recipe.command, result.output, sink, context);
+    int made = runRecipe(recipe, result.output, sink, context);
     if (made < 0) {
         result.output = std::string("could not run ") + programOf(tool, kind);
         return result;
@@ -913,7 +981,7 @@ Built buildPartsOnce(const Toolchain& tool, const std::vector<Part>& parts,
         Recipe recipe = objectRecipe(tool, kind, parts[i].sources, parts[i].lang,
                                      arch, config, objects, theirs);
 
-        int rc = runCaptured(recipe.command, result.output, sink, context);
+        int rc = runRecipe(recipe, result.output, sink, context);
         if (rc != 0) {
 
             result.diag = parseDiagnostic(result.output, parts[i].sources[0]);
@@ -1021,6 +1089,18 @@ void removeProgram(const Built& built) {
     // Left behind, the temporary directory filled with ride-run-<pid>.dSYM bundles, one per F8.
     if (!built.program.empty()) path::removeTree(built.program + ".dSYM");
 #endif
+}
+
+int runnerFor(int asked, const std::string& arch, bool emulateOnly) {
+    if (asked != RunAsked || !isEmulated(arch)) return asked;
+    return emulateOnly ? RunEmulator : RunSimulator;
+}
+
+std::string runnerLine(int runner, const std::string& program) {
+    if (runner == RunSimulator) return "$ sim6747 --run " + path::filename(tiProgramOf(program));
+    std::string leaf = program;
+    while (!leaf.empty() && (leaf.back() == '/' || leaf.back() == '\\')) leaf.pop_back();
+    return "$ vm6747 " + path::filename(leaf);
 }
 
 std::string simulationMissing(const std::string& program) {

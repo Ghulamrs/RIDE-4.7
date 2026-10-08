@@ -393,11 +393,12 @@ char* ride_project_run_line(RIDEProject* project, const char* program);
 /* "$ program line", the program by its name in the project where it is in one. */
 char* ride_run_line(RIDEProject* project, const char* program, const char* line);
 
-/* **Build > Run on Simulator and Build > Verify (5.0), for tms6747.** Said just before a ride_*_start, which
-   takes it: RIDE_RUN_SIMULATOR runs the build's linked <program>.out on sim6747, the C6747 simulator, in
-   place of the emulator; RIDE_RUN_VERIFY runs both, captured, and reports whether their outputs agree -
+/* **What a ride_*_start runs, for tms6747 (R5).** Said just before the build, and taken by the start:
+   RIDE_RUN_PROGRAM on tms6747 is the build's linked <program>.out on sim6747, as RIDE_RUN_SIMULATOR
+   says outright - or vm6747's when the .pro says emulateOnly; RIDE_RUN_EMULATOR (Build > Emulate on
+   vm6747) runs the assembly on vm6747 and the build links no .out; RIDE_RUN_VERIFY runs both, captured -
    status 0 they agree, 1 they differ, 2 one could not run. Why not is said on the output when it cannot. */
-enum { RIDE_RUN_PROGRAM = 0, RIDE_RUN_SIMULATOR = 1, RIDE_RUN_VERIFY = 2 };
+enum { RIDE_RUN_PROGRAM = 0, RIDE_RUN_SIMULATOR = 1, RIDE_RUN_VERIFY = 2, RIDE_RUN_EMULATOR = 3 };
 void ride_run_next(int runner);
 /* 1 when sim6747 is beside the editor (or named by $SIM6747). */
 int ride_simulator_here(void);

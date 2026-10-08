@@ -2110,6 +2110,7 @@ Toolchain Editor::toolFor() const {
         tool.includes = project_.absoluteIncludes();
         tool.libraries = project_.absoluteLibraries();
         tool.tiLink = project_.tiLink(config_);
+        tool.emulateOnly = project_.emulateOnly();
     }
     std::vector<std::string> shared = settings::includes();
     tool.includes.insert(tool.includes.end(), shared.begin(), shared.end());
@@ -2710,23 +2711,25 @@ void Editor::buildAndRun() {
     shownAs.cl = baseName(tool_.cl);
     std::string shownFile = project_.loaded() ? project_.relative(buf_.path())
                                               : baseName(buf_.path());
+    // A single file has no .pro, so no emulateOnly: its Run links the .out, its Emulate does not (R5).
+    const int runner = runnerFor(runner_, kArches[arch_], false);
     console_.push_back("$ " + shownProgramCommand(shownAs, kind, shownFile, lang_,
-                                                  kArches[arch_], config_));
+                                                  kArches[arch_], config_, runner == RunEmulator));
     panelOff_ = 0;
     say(std::string("building and running with ") + toolchainName(kind) + " ...");
     refresh();
 
     Ran result;
-    if (runner_ == 0) {
+    if (runner == RunAsked) {
         result = runProgram(toolFor(), kind, buf_.path(), lang_, kArches[arch_], config_, consoleSink, this);
     } else {
         Toolchain linking = toolFor();
-        linking.linkSingleFile = true;
+        linking.linkSingleFile = runner != RunEmulator;
         Built made = buildProgram(linking, kind, buf_.path(), lang_, kArches[arch_], config_, consoleSink, this);
         result.output = made.output;
         result.diag = made.diag;
         result.built = made.ok;
-        if (made.ok) result = runChosen(made.program, made.shalimar, std::vector<std::string>());
+        if (made.ok) result = runChosen(runner, made.program, made.shalimar, std::vector<std::string>());
         removeProgram(made);
     }
 
@@ -2756,12 +2759,12 @@ void Editor::buildAndRun() {
     panelOff_ = panelTopForEnd();
 }
 
-// **Build > Run on Simulator and Build > Verify (5.0).** The same build a Run makes - the project when
-// one is open and the file is its own, the file otherwise - with what runs the program changed for
-// that one run. Both are tms6747's: the simulator runs the .out the build linked.
+// **Build > Emulate on vm6747 and Build > Verify.** The same build a Run makes - the project when one
+// is open and the file is its own, the file otherwise - with what runs the program changed for that run.
 void Editor::runWith(int runner) {
     if (std::string(kArches[arch_]) != "tms6747") {
-        say("Run on Simulator and Verify are for tms6747 - choose it under Target");
+        say(runner == RunEmulator ? "Emulate on vm6747 is for tms6747 - choose it under Target"
+                                  : "Verify is for tms6747 - choose it under Target");
         return;
     }
     runner_ = runner;
@@ -2774,14 +2777,16 @@ void Editor::runWith(int runner) {
     runner_ = 0;
 }
 
-Ran Editor::runChosen(const std::string& program, bool shalimar, const std::vector<std::string>& args) {
-    if (runner_ == 2) return verifyBuilt(program, shalimar, args, consoleSink, this);
-    if (runner_ == 1) {
+Ran Editor::runChosen(int runner, const std::string& program, bool shalimar, const std::vector<std::string>& args) {
+    if (runner == RunVerify) return verifyBuilt(program, shalimar, args, consoleSink, this);
+    if (runner == RunEmulator) console_.push_back(runnerLine(runner, program));
+    if (runner == RunSimulator) {
         Ran result;
         result.built = true;
         const std::string why = simulationMissing(program);
         if (!why.empty()) { console_.push_back(why); result.status = 2; return result; }
-        console_.push_back("$ sim6747 --run " + baseName(tiProgramOf(program)));
+        if (!args.empty()) console_.push_back("[run] the simulator takes no command line - Emulate on vm6747 hands them over");
+        console_.push_back(runnerLine(runner, program));
         result.ran = true;
         result.status = runCaptured(simulateCommand(tiProgramOf(program)), result.output, consoleSink, this);
         return result;
@@ -2895,7 +2900,11 @@ void Editor::buildProject(bool andRun) {
     say("building " + baseName(program) + " with " + compilersNamed(parts) + " ...");
     refresh();
 
-    Built made = buildParts(toolFor(), parts, kArches[arch_], config_, program,
+    // On tms6747 a Run is the .out on sim6747 and an Emulate builds no .out (R5).
+    const int runner = andRun ? runnerFor(runner_, kArches[arch_], project_.emulateOnly()) : RunAsked;
+    Toolchain building = toolFor();
+    building.emulating = runner == RunEmulator;
+    Built made = buildParts(building, parts, kArches[arch_], config_, program,
                             consoleSink, this);
 
     const std::string compilers = compilersNamed(parts);
@@ -2934,8 +2943,8 @@ void Editor::buildProject(bool andRun) {
         std::string shown = project_.relative(made.program);
         for (size_t a = 0; a < project_.targetArgs().size(); ++a)
             shown += " " + project_.targetArgs()[a];
-        if (runner_ == 0) console_.push_back("$ " + shown);
-        Ran result = runChosen(made.program, made.shalimar, args);
+        if (runner == RunAsked) console_.push_back("$ " + shown);
+        Ran result = runChosen(runner, made.program, made.shalimar, args);
         lastRunStatus_ = result.status;
         console_.push_back("[program returned " + number(static_cast<size_t>(result.status)) + "]");
         say("ran " + project_.relative(program) + " - it returned " +
@@ -3475,8 +3484,8 @@ void Editor::perform(Action action) {
         case ActionRun:          buildAndRun(); break;
         case ActionBuildProject: buildProject(false); break;
         case ActionRunProject:   buildProject(true); break;
-        case ActionRunSimulator: runWith(1); break;
-        case ActionVerify:       runWith(2); break;
+        case ActionEmulate:      runWith(RunEmulator); break;
+        case ActionVerify:       runWith(RunVerify); break;
         case ActionClean:        clean(); break;
         case ActionToggleBreak:  toggleBreak(); break;
         case ActionDebug:        debug(false); break;

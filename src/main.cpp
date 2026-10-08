@@ -110,6 +110,8 @@ int main(int argc, char** argv) {
             build = true; runIt = true;
         } else if (std::strcmp(argv[i], "--simulate") == 0) {
             build = true; runIt = true; runner = 1;
+        } else if (std::strcmp(argv[i], "--emulate") == 0) {
+            build = true; runIt = true; runner = 3;
         } else if (std::strcmp(argv[i], "--verify") == 0) {
             build = true; runIt = true; runner = 2;
         } else if (std::strcmp(argv[i], "--plain") == 0) {
@@ -127,7 +129,7 @@ int main(int argc, char** argv) {
                 "           [--width n] [--tabs] [--case-indent] [--plain]\n"
                 "       %s <project.pro or dir> [--arch a] [--assembler path] [--linker path]\n"
                 "           [--ti dir [--tilib dir] [--tilinker path]] [--ccs [--ccs-root dir]]\n"
-                "           --build | --run | --simulate | --verify\n"
+                "           --build | --run | --emulate | --verify\n"
                 "       %s --crc32 file...      each file's CRC-32, as About and release.crc compute it\n"
                 "  %s - the console half, which is %s.exe on Linux and\n"
                 "  macOS and %sConsole.exe on Windows. %s.exe on Windows is the\n"
@@ -170,10 +172,13 @@ int main(int argc, char** argv) {
                 "                 --ccs opens a CCS 7.4 or 5.5 C6747 project folder as it\n"
                 "                 is, which settings.json's \"ccs\" switch does for every run,\n"
                 "                 and --ccs-root names the CCS install ${CG_TOOL_ROOT} is under\n"
-                "  --simulate,    for tms6747, as --run with the linked .out run on\n"
-                "  --verify       sim6747, the C6747 simulator, in place of the\n"
-                "                 emulator - or, for --verify, run on both and the two\n"
-                "                 outputs compared: 0 they agree, 3 they differ\n"
+                "                 For tms6747 --run builds the TI program - asm6x,\n"
+                "                 lnk6x, RTS6x - and runs the .out on sim6747, the\n"
+                "                 C6747 simulator (--simulate says the same)\n"
+                "  --emulate,     for tms6747, the assembly run on vm6747, the\n"
+                "  --verify       emulator, with no .out made - or, for --verify,\n"
+                "                 both runs and the two outputs compared: 0 they\n"
+                "                 agree, 3 they differ\n"
                 "  --width n      columns per indent step (4)\n"
                 "  --tabs         indent with tabs instead of spaces\n"
                 "  --plain        frame the screen with - | + instead of the box\n"

@@ -2817,22 +2817,23 @@ static NSColor* ColourOf(unsigned char kind) {
 
 - (void)compileFile:(id)sender { (void)sender; [self buildFile:NO]; }
 - (void)runFile:(id)sender { (void)sender; ride_run_next(RIDE_RUN_PROGRAM); [self buildFile:YES]; }
-- (void)buildProjectAction:(id)sender { (void)sender; [self buildProject:NO]; }
+- (void)buildProjectAction:(id)sender { (void)sender; ride_run_next(RIDE_RUN_PROGRAM); [self buildProject:NO]; }
 - (void)runProjectAction:(id)sender { (void)sender; ride_run_next(RIDE_RUN_PROGRAM); [self buildProject:YES]; }
 
-// **Build > Run on Simulator and Build > Verify (5.0), for tms6747.** The Run the file or the project in
-// front would make, with the bridge told which runs the program: the build's linked .out on sim6747, or
-// both that and the emulator, compared. Said to the next start (ride_run_next), which takes it.
+// **Build > Emulate on vm6747 and Build > Verify, for tms6747.** The Run the file or the project in
+// front would make, with the bridge told which runs the program: the assembly on vm6747 and no .out
+// linked, or both runs compared. Said to the next start (ride_run_next), which takes it.
 - (void)runOn:(int)runner {
     if (![arch_ isEqualToString:@"tms6747"]) {
-        [self say:@"Run on Simulator and Verify are for tms6747 - choose it under Target"];
+        [self say:runner == RIDE_RUN_EMULATOR ? @"Emulate on vm6747 is for tms6747 - choose it under Target"
+                                              : @"Verify is for tms6747 - choose it under Target"];
         return;
     }
     ride_run_next(runner);
     if ([self projectMode]) [self buildProject:YES];
     else [self buildFile:YES];
 }
-- (void)runSimulator:(id)sender { (void)sender; [self runOn:RIDE_RUN_SIMULATOR]; }
+- (void)emulateRun:(id)sender { (void)sender; [self runOn:RIDE_RUN_EMULATOR]; }
 - (void)verifyRun:(id)sender { (void)sender; [self runOn:RIDE_RUN_VERIFY]; }
 
 // Build > Stop: the program running, or the build - its compiler or linker killed, and the build
@@ -4006,7 +4007,7 @@ static const NSUInteger kOutputMost = 2000000;
     if (action == @selector(compileFile:) || action == @selector(runFile:)) return file && !busy_ && !mode;
     if (action == @selector(convertFile:)) return file && !busy_;
     if (action == @selector(buildProjectAction:) || action == @selector(runProjectAction:)) return mode && !busy_;
-    if (action == @selector(runSimulator:) || action == @selector(verifyRun:))
+    if (action == @selector(emulateRun:) || action == @selector(verifyRun:))
         return (mode || file) && !busy_ && [arch_ isEqualToString:@"tms6747"];
     if (action == @selector(nextCompiler:) || action == @selector(nextTarget:))
         return !busy_;
@@ -4245,7 +4246,7 @@ static NSString* Key(unichar c) { return [NSString stringWithCharacters:&c lengt
         fileArgs_ = @"";
     }
     // tms6747's linked .out on sim6747, the C6747 simulator, and that run compared with the emulator's (5.0).
-    [self add:@"Run on Simulator" to:build action:@selector(runSimulator:) key:@""];
+    [self add:@"Emulate on vm6747" to:build action:@selector(emulateRun:) key:@""];
     [self add:@"Verify" to:build action:@selector(verifyRun:) key:@""];
     [self add:@"Stop" to:build action:@selector(stopWork:) key:@"."];
     // What a build made, removed, and the panes emptied - said in so many words.

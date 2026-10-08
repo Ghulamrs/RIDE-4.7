@@ -117,9 +117,16 @@ Ran runBuilt(const std::string& program, LineSink sink = 0, void* context = 0,
 
 void removeProgram(const Built& built);
 
-// **Build > Run on Simulator and Build > Verify (5.0), for tms6747.** A build links <program>.out
-// when asm6x is beside RIDE and TI's runtime is named under Tools; sim6747 runs that TI program
-// as TI's simulator does. Why a simulated run cannot happen, or empty when it can.
+// **What a Run runs (R5).** Asked: 0 Run, 1 the simulator, 2 Verify, 3 Emulate on vm6747. On tms6747 a
+// Run is the linked .out on sim6747 - asm6x, lnk6x and RTS6x on its path - or Emulate when the project says emulateOnly.
+enum { RunAsked = 0, RunSimulator = 1, RunVerify = 2, RunEmulator = 3 };
+int runnerFor(int asked, const std::string& arch, bool emulateOnly);
+// The line said in front of a tms6747 run, naming the runner: "$ sim6747 --run p.out" or "$ vm6747 p.vm".
+std::string runnerLine(int runner, const std::string& program);
+
+// **Run and Build > Verify, for tms6747 (R5).** A build links <program>.out
+// with asm6x and lnk6x beside RIDE against RTS6x, or TI's runtime named under Tools; sim6747 runs
+// that TI program as TI's simulator does. Why a simulated run cannot happen, or empty when it can.
 std::string simulationMissing(const std::string& program);
 // The .out run on the simulator with a real input, as startProgram runs the emulator.
 bool startSimulated(Process& process, const std::string& program);

@@ -116,6 +116,8 @@ public:
     // says, else the one that defines main, else the first there is. Empty
     // when the project holds no file at all.
     const std::string& openFile() const { return open_; }
+    // "emulateOnly": true in the .pro - a tms6747 build with no .out, its Run the emulator's (D2).
+    bool emulateOnly() const { return emulateOnly_; }
     void setOpenFile(const std::string& relative) { open_ = relative; }
     std::string fileToOpen() const;
     std::string mainFile() const;
@@ -182,6 +184,7 @@ private:
     std::vector<std::string> includes_;
     std::vector<std::string> libraries_;
     std::string open_;
+    bool emulateOnly_ = false;
     // Whether the file names its own indentation; unsaid, the
     // installation's settings.json answers and nothing is written.
     bool indentSaid_ = false;

@@ -78,9 +78,12 @@ struct Toolchain {
     std::vector<std::string> libraries;
     // A CCS project's link, for tms6747; given nowhere else.
     TiLink tiLink;
-    // A single file's tms6747 build links its .out as well - what Run on Simulator and Verify run (5.0).
+    // A single file's tms6747 build links its .out as well - what Run and Verify run (R5).
     // A project's build always does; a single file's Run has no use for it, so only when this asks.
     bool linkSingleFile = false;
+    // No .out, and the build still succeeds: the project's "emulateOnly", or an Emulate on vm6747 (D2, R5).
+    bool emulateOnly = false;
+    bool emulating = false;
 
     Toolchain()
         : kind(ToolAuto), cc1("c90.exe"), cl("cl"), shc("shalimar.exe"),
@@ -109,6 +112,8 @@ std::string emulatorProgram();
 std::string visualStudioVcvars();
 // The C6000 assembler beside the editor (ASM6x's asm6x.exe), or empty when it is not there; $ASM6X names one elsewhere.
 std::string c6xAssembler();
+// Why no asm6x can run - none beside the editor, or $ASM6X naming one that is gone; empty when one can (D2).
+std::string c6xAssemblerMissing();
 // The command that runs a built program: the program itself, or the emulator
 // with it.
 std::string launchCommand(const std::string& program, bool shalimar = false,
@@ -150,6 +155,8 @@ std::string whyNotRun(ToolchainKind kind, const std::string& arch);
 
 struct Recipe {
     std::string command;
+    // A tms6747 group's per-source compiles, run at once on RIDE's pool (P3); command is them joined by &&.
+    std::vector<std::string> commands;
     std::string assemblyPath;
     std::vector<std::string> leftovers;
 };
@@ -166,9 +173,10 @@ Recipe programRecipe(const Toolchain& tool, ToolchainKind kind,
                      const std::string& source, Language lang,
                      const std::string& arch, Configuration config);
 
+// For tms6747 a Run's line ends in sim6747 on the .out (R5); `emulate` ends it in vm6747 on the .s.
 std::string shownProgramCommand(const Toolchain& tool, ToolchainKind kind,
                                 const std::string& source, Language lang,
-                                const std::string& arch, Configuration config);
+                                const std::string& arch, Configuration config, bool emulate = false);
 
 // " -masm=masm" for cpp11 on x86_64-windows when settings name an assembler; " -masm=gnu" for a Debug build with CodeView.
 std::string assemblerFlag(ToolchainKind kind, const std::string& arch, Configuration config);
