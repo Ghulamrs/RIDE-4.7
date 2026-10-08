@@ -217,14 +217,15 @@ It drives that debugger rather than being one - lldb on a Mac, gdb on the Linux
 box, cdb on Windows - all three spoken through `src/debugger.cpp`, which is the
 one place their vocabularies differ.
 
-Which of them applies is a question about the compiler, not about the machine,
-and on Windows the two languages part company. A C file goes to c90 and comes
-out as MASM, which carries no line table, so it can never be stopped on a line
-there and the editor says why. A C++ file goes to cl, which writes CodeView
-into a `.pdb`, and cdb reads it - so C++ is debugged inside this editor with
-nothing of ours in the chain except the editor. `debuggerFor(kind, arch)` asks
-that question; `noDebuggerBecause` gives the answer that applies rather than a
-general one.
+Which of them applies is a question about the compiler, the target and the
+configuration, not about the machine. On Windows a Debug build of c90 or cpp11
+is given `-masm=gnu`: the compiler writes CodeView into the GNU spelling,
+clang's assembler keeps it, Microsoft's `link.exe /DEBUG` writes the `.pdb`,
+and cdb reads it (M10, 5.1) - the same cdb that reads a `cl` build's. A
+Release build is the MASM spelling through RIDE's own `masm` and `link`, which
+carries no line table, and cannot be stopped on a line; the editor says why.
+`debuggerFor(kind, arch)` asks that question; `noDebuggerBecause` gives the
+answer that applies rather than a general one.
 
 cdb comes with the Windows SDK's debugging tools and is not installed by
 default; when it is missing the editor says that too, and names it.
@@ -243,12 +244,13 @@ the program is standing and an outline of one on the frame being looked at, and
 the same words in its Debug tab.
 
 There used to be an awkwardness here worth stating plainly, and it is half
-gone. The window only runs on Windows, and Windows is where none of the three
-debuggers can read what c90 writes - so for C, F8 there still answers "no
-debugger here" and sets breakpoints against the day there is one. **For
-Shalimar it stops.** A Shalimar program carries its own session, needs nothing
-installed, and works on all three targets including this one, so the window
-stops on a line of source on the machine where that had never been possible.
+gone. The window only runs on Windows, and until 5.1 Windows was where none
+of the three debuggers could read what c90 writes - F8 there answered "no
+debugger here" and set breakpoints against the day there was one; since M10 a
+Debug build carries CodeView and cdb stops it. **For Shalimar it stops** on
+every release: a Shalimar program carries its own session, needs nothing
+installed, and works on all four targets including this one, so the window
+stopped on a line of source on the machine where that had never been possible.
 
 Which of the two halves a program goes to is `dbg_stopsItself` and is asked
 **before** `dbg_for`, in the core, by both front ends. That order is the whole
@@ -271,9 +273,10 @@ marker used to know an answer is complete has to be printed in two halves -
 so a marker written whole appears before the answer rather than after it, and
 every reply read that way is the one before the one asked for.
 
-**It shows the assembly for any of the three targets.** Ctrl-T, or the Target
-menu. Two of the three reach `-S` and no further on any given machine, since the
-assembler is the host's - which is exactly what the assembly tab is for. A
+**It shows the assembly for any of the four targets.** Ctrl-T, or the Target
+menu. Two of the three host targets reach `-S` and no further on any given
+machine, since the assembler is the host's - which is exactly what the assembly
+tab is for; `tms6747` builds and runs everywhere, its tools being its own. A
 project that does not name a target gets this machine's, rather than the
 `x86_64-windows` it used to get wherever it was opened.
 
@@ -331,23 +334,19 @@ which rather than pretending they are the same:
 | | debug | release |
 |---|---|---|
 | `cl` | `/Od /D_DEBUG` | `/O2 /DNDEBUG` |
-| `c90`, `x86_64-linux` and `arm64-darwin` | `-g -D_DEBUG=1` | `-DNDEBUG=1` |
-| `c90`, `x86_64-windows` | `-D_DEBUG=1` | `-DNDEBUG=1` |
+| `c90`, `cpp11` on `x86_64-linux`, `arm64-darwin`, `x86_64-windows` | `-g -D_DEBUG=1` | `-O2 -DNDEBUG=1` |
+| `c90`, `cpp11` on `tms6747` | `-D_DEBUG=1` | `-O2 -DNDEBUG=1` |
 
-c90 still has no `-O`, so for it release is the define and nothing else. That is
-not nothing - it is what `assert` and every `#ifdef NDEBUG` in the source are
-looking for - but passing it a `-O` it would refuse would be worse than saying
-so plainly.
-
-Debug is more than the define now. c90 writes DWARF for two of its three
-targets - line tables, types, objects and lexical blocks, read by both `gdb`
-and `lldb` - so a debug build for those asks for `-g` and gets it. The third
-does not: c90 generates MASM for `x86_64-windows`, MASM carries no line table,
-and the assembler there cannot spell the relocations CodeView would need. c90
-does take `-g` for that target in the GNU spelling, which routes the DWARF out
-of the Linux emitter, but the editor asks each target for the assembly its own
-assembler reads. So that target gets the define alone, and no `-g` it would
-refuse.
+The release flags are the compilers' own (`options.h` has the defaults, and
+Project > Compiler Options changes them): cpp11 optimises every target, c90 the
+x86-64 ones. Debug is more than the define: c90 and cpp11 write DWARF for
+`x86_64-linux` and `arm64-darwin` - line tables, types, objects and lexical
+blocks, read by both `gdb` and `lldb` - and CodeView for `x86_64-windows`
+through the GNU spelling and clang's assembler (5.1), read by cdb from the
+`.pdb` that `link.exe /DEBUG` writes. The MASM spelling, which a Release build
+uses through RIDE's own `masm`, carries no line table, which is why the two
+configurations go through different assemblers on that target. `tms6747` has no
+line table and no debugger, so it gets the define alone.
 
 **Line numbers down the left**, in the manner of Shalimar's, with the caret's
 own line picked out. `Ctrl-L` turns them off.
@@ -437,9 +436,9 @@ and cl's own listing is MASM, which the assembly tab already colours.
 
 | Language | Suffix | Compiler | Targets | Debug information |
 | --- | --- | --- | --- | --- |
-| C | `.c` `.h` | c90, or the host's | three | DWARF, on two of them |
-| C++ | `.cpp` `.hpp` … | cpp11, or the host's | three | DWARF, on two of them |
-| Shalimar | `.shl` | shalimar | three | none, by decision |
+| C | `.c` `.h` | c90, or the host's | four | DWARF on two of them, CodeView on Windows, none on tms6747 |
+| C++ | `.cpp` `.hpp` … | cpp11, or the host's | four | DWARF on two of them, CodeView on Windows, none on tms6747 |
+| Shalimar | `.shl` | shalimar | four | none, by decision |
 
 The host's compiler - `cl` on Windows, `clang++` on a Mac, `g++` on the Linux
 box - builds for its own machine only and carries CodeView or DWARF always.
@@ -701,8 +700,8 @@ against. `../Compiler-S/docs/LINKING.md` has it with the linker output and with
 what would have to change. A project that wants Shalimar beside C is a project
 that builds two programs.
 
-**Debug information does not mix.** cl writes CodeView, c90 writes DWARF on two
-targets and nothing on the third, and shalimar writes none anywhere by decision. So
+**Debug information does not mix.** cl writes CodeView, c90 and cpp11 write
+DWARF on two targets and CodeView on Windows, and shalimar writes none anywhere by decision. So
 the debugger is the first one any part has, and the groups it will not be able
 to stop in are named in the console before the build starts rather than
 discovered by pressing F8.
@@ -740,7 +739,7 @@ Three tabs:
 * **Debug** - what the build produced, read back out of its own assembly, and a
   line above it saying what debug information this target actually has. This is
   not a debugger and does not pretend to be: c90 does write DWARF for two of the
-  three targets now, but a debugger needs a program to run and nothing here is
+  four targets now, but a debugger needs a program to run and nothing here is
   assembled, linked or run - the build stops at `-S`. What there always is, is
   the assembly: which functions came out and how much stack each takes, what is
   exported, what is called but not defined, and what strings ended up in the
