@@ -37,12 +37,12 @@ BOX="${ED1_WINDOWS_BOX:-windows}"
 ROOT="${ED1_WINDOWS_ROOT:-C:\\Users\\GRA\\source}"
 DIR="$ROOT\\RIDE-4.7"
 # The three compilers are repositories of their own beside VM6747 since
-# 2026-10-12, laid out on the box as they are here; VM6747 keeps the emulator.
+# 2026-10-12, laid out on the box as they are here; VM6747 is the emulator itself.
 VM_ROOT="$ROOT\\VM6747"
 CC1I_DIR="$ROOT\\Compiler-Ci"
 CXX1_DIR="$ROOT\\C++Optimize"
 SHCI_DIR="$ROOT\\Compiler-Si"
-EMU_DIR="$VM_ROOT\\Emulator"
+EMU_DIR="$VM_ROOT"
 ASM_DIR="$ROOT\\ASM6x"
 MASM_DIR="$ROOT\\MASM"
 LINK_DIR="$ROOT\\LINK"
@@ -78,7 +78,7 @@ tar --no-mac-metadata \
     -czf "$TMP/c90-src.tgz" src lib msvc tests examples Makefile ide README.md ) || exit 2
 ( cd ../C++Optimize && tar --no-mac-metadata --exclude '* 2.*' --exclude 'obj' --exclude '*.exe' --exclude 'out-*' \
     -czf "$TMP/cxx1-src.tgz" src include lib msvc tests Makefile ide README.md ) || exit 2
-( cd ../VM6747/Emulator && tar --no-mac-metadata --exclude '* 2.*' --exclude '*.exe' \
+( cd ../VM6747 && tar --no-mac-metadata --exclude '* 2.*' --exclude '*.exe' \
     -czf "$TMP/vm6747-src.tgz" src msvc tests Makefile vm6747.vcxproj README.md ) || exit 2
 # asm6x: the C6000 assembler, beside this checkout as ../ASM6x, its own repository.
 ( cd ../ASM6x && tar --no-mac-metadata --exclude '* 2.*' --exclude '*.exe' --exclude 'build' \

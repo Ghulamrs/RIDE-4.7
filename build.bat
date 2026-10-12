@@ -106,7 +106,7 @@ rem on PATH only after vcvars64.bat - which the top of this file has already
 rem found. One place knows where Visual Studio is.
 rem
 rem RIDE.sln reaches ..\Compiler-Ci, ..\C++Optimize, ..\Compiler-Si,
-rem ..\VM6747\Emulator and ..\Converter-C2S - the compilers c90, cpp11 and
+rem ..\VM6747 and ..\Converter-C2S - the compilers c90, cpp11 and
 rem shalimar, each its own repository since 2026-10-12, with vm6747 the emulator
 rem that runs the fourth target - so all of them are laid out beside each other
 rem on this machine, as tools/to-windows.sh lays them.

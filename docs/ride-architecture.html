@@ -217,7 +217,7 @@ footer { color: var(--muted); font-size: 12.5px; margin-top: 28px; }
     <div class="box t-c6x">
       <h3>C6747</h3>
       <ul><li><b class="ours">sim6747</b> <span class="mono">SIM6747/src</span>: <b>Run (F5), Run project</b> - runs the linked .out machine code with TI's boot code and the RTS6x the build linked, so asm6x, lnk6x and RTS6x are on every run's path; a build that makes no .out fails, unless the .pro says <code>"emulateOnly"</code></li>
-          <li><b class="ours">vm6747</b> <span class="mono">VM6747/Emulator</span>: <b>Build ▸ Emulate on vm6747</b> - reads the compiler's .s as text and runs it over <em>a C library and an exception-handling runtime of its own</em>, linking no .out; it never sees asm6x's encoding, lnk6x's image or RTS6x. <b>Build ▸ Verify</b> runs both and compares</li>
+          <li><b class="ours">vm6747</b> <span class="mono">VM6747</span>: <b>Build ▸ Emulate on vm6747</b> - reads the compiler's .s as text and runs it over <em>a C library and an exception-handling runtime of its own</em>, linking no .out; it never sees asm6x's encoding, lnk6x's image or RTS6x. <b>Build ▸ Verify</b> runs both and compares</li>
           <li>The TI C6747 board itself - <em>via Code Composer Studio, not RIDE</em>: the .out is the file CCS loads; RIDE has no loader</li></ul>
     </div>
   </div>
@@ -290,8 +290,7 @@ footer { color: var(--muted); font-size: 12.5px; margin-top: 28px; }
 ├─ <span class="k c">Compiler-Ci/</span>         <span class="m">c90</span>
 ├─ <span class="k p">C++Optimize/</span>         <span class="m">cpp11</span>
 ├─ <span class="k s">Compiler-Si/</span>         <span class="m">shalimar</span>
-├─ <span class="k">VM6747/</span>
-│  └─ <span class="k x">Emulator/</span>          <span class="m">vm6747</span>
+├─ <span class="k x">VM6747/</span>              <span class="m">vm6747</span>
 ├─ <span class="k">Converter-C2S/</span>       <span class="m">c2s</span>
 ├─ <span class="k w">MASM/</span>                <span class="m">masm  (x86-64 assembler)</span>
 ├─ <span class="k w">LINK/</span>                <span class="m">link  (Windows PE linker)</span>
@@ -328,7 +327,7 @@ footer { color: var(--muted); font-size: 12.5px; margin-top: 28px; }
     <tr class="lang-cpp"><td class="cell">cpp11</td><td class="mono">C++Optimize</td><td class="mono">cxx1-1.6.dat</td><td class="mono">2891841F</td></tr>
     <tr class="lang-shl"><td class="cell">shalimar</td><td class="mono">Compiler-Si</td><td class="mono">shalimar-1.2.dat</td><td class="mono">5B9B1954</td></tr>
     <tr class="ride"><td class="cell">c2s</td><td class="mono">Converter-C2S</td><td class="mono">c2s-1.2.dat</td><td class="mono">35C8D226</td></tr>
-    <tr class="t-c6x"><td class="cell">vm6747</td><td class="mono">VM6747/Emulator</td><td class="mono">vm6747-1.0.dat</td><td class="mono">7E5B716D</td></tr>
+    <tr class="t-c6x"><td class="cell">vm6747</td><td class="mono">VM6747</td><td class="mono">vm6747-1.0.dat</td><td class="mono">7E5B716D</td></tr>
     <tr class="t-c6x"><td class="cell">asm6x</td><td class="mono">ASM6x</td><td class="mono">asm6x-1.0.dat</td><td class="mono">8044A2EE</td></tr>
     <tr class="t-win"><td class="cell">masm</td><td class="mono">MASM</td><td class="mono">masm-1.0.dat</td><td class="mono">5E4155D7</td></tr>
     <tr class="t-win"><td class="cell">link</td><td class="mono">LINK</td><td class="mono">link-1.0.dat</td><td class="mono">E35FB5A3</td></tr>

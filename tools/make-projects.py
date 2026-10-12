@@ -22,7 +22,7 @@ Three command line tools, built by clang++, from three separate repositories:
 
 Since 2026-10-12 the compilers are repositories of their own beside this one -
 ../Compiler-Ci, ../C++Optimize and ../Compiler-Si, building c90, cpp11 and
-shalimar - and the emulator is ../VM6747/Emulator. The three originals stay sealed and are not opened by
+shalimar - and the emulator is ../VM6747. The three originals stay sealed and are not opened by
 anything written here.
     c2s      the converter       ../Converter-C2S/c2s.xcodeproj
 
@@ -81,10 +81,10 @@ HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SIBLINGS = os.path.dirname(HERE)
 # 3.5: the C and C++ compilers are the VM6747 line - c90 and cpp11, three
 # host targets and the TMS320C6747 - and vm6747, the emulator, is built with
-# them. Each its own repository beside this one (VM6747/ keeps the emulator).
+# them. Each its own repository beside this one (VM6747 is the emulator).
 CC1_REPO = "Compiler-Ci"
 CXX1_REPO = "C++Optimize"
-VM_REPO = os.path.join("VM6747", "Emulator")
+VM_REPO = "VM6747"
 # The C6000 assembler, its own repository beside this one: asm6x turns the
 # tms6747 assembly into TI objects, and lnk6x - CCS's, where Tools names it -
 # links them into a real .out. It travels with the editor as vm6747 does.
@@ -1308,7 +1308,7 @@ CC1_DIR ?= ../Compiler-Ci
 SHC_DIR ?= ../Compiler-Si
 C2S_DIR ?= ../Converter-C2S
 CXX1_DIR ?= ../C++Optimize
-VM_DIR ?= ../VM6747/Emulator
+VM_DIR ?= ../VM6747
 ASM_DIR ?= ../ASM6x
 MASM_DIR ?= ../MASM
 LINK_DIR ?= ../LINK
@@ -1724,7 +1724,7 @@ def main():
 
     entries = [
         # Laid out on the Windows box as it is here: Compiler-Ci,
-        # C++Optimize, Compiler-Si and VM6747\Emulator beside
+        # C++Optimize, Compiler-Si and VM6747 beside
         # this checkout, which is where tools/to-windows.sh puts them.
         ("c90", "../" + CC1_REPO.replace(os.sep, "/") + "/ide/cc1.vcxproj", CC1_GUID, []),
         ("cpp11", "../" + CXX1_REPO.replace(os.sep, "/") + "/ide/cxx1.vcxproj", CXX1_GUID, []),

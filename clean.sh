@@ -85,7 +85,7 @@ fi
 CC1_DIR=${CC1_DIR:-$root/Compiler-Ci}
 CXX1_DIR=${CXX1_DIR:-$root/C++Optimize}
 SHC_DIR=${SHC_DIR:-$root/Compiler-Si}
-VM_DIR=${VM_DIR:-$root/VM6747/Emulator}
+VM_DIR=${VM_DIR:-$root/VM6747}
 C2S_DIR=${C2S_DIR:-$root/Converter-C2S}
 ASM_DIR=${ASM_DIR:-$root/ASM6x}
 MASM_DIR=${MASM_DIR:-$root/MASM}

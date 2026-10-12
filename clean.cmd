@@ -7,7 +7,7 @@ rem   clean.cmd        clean
 rem   clean.cmd -n     say what would go, remove nothing
 rem
 rem Run it from the RIDE directory. The projects are expected beside it -
-rem Compiler-Ci\, C++Optimize\, Compiler-Si\, VM6747\Emulator\, Converter-C2S\,
+rem Compiler-Ci\, C++Optimize\, Compiler-Si\, VM6747\, Converter-C2S\,
 rem ASM6x\, MASM\, LINK\ and LNK6x\ - which is what RIDE.sln's ..\ paths require.
 rem
 rem **Every path here is named, never globbed.** clean.sh can ask git whether a
@@ -64,7 +64,7 @@ rem where the project holds no source of that name - c90's and cpp11's build is 
 call :project "Compiler-Ci" c90.exe keepbuild
 call :project "C++Optimize" cpp11.exe keepbuild
 call :project "Compiler-Si" shalimar.exe
-call :project "VM6747\Emulator" vm6747.exe
+call :project "VM6747" vm6747.exe
 call :project "Converter-C2S" c2s.exe
 call :project "ASM6x" asm6x.exe
 call :project "MASM" masm.exe

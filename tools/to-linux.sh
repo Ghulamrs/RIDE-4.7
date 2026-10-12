@@ -24,7 +24,7 @@
 # emulated-target case would have failed there, not skipped, and the emulator
 # had never been compiled by g++ at all. Now the repositories are laid out on
 # the box exactly as they are here - Compiler-Ci, Compiler-Si, C++Optimize and
-# VM6747/Emulator beside the editor (the compilers out of VM6747 since 2026-10-12),
+# VM6747 beside the editor (the compilers out of VM6747 since 2026-10-12),
 # which is the one assumption workspace.mk makes, and it builds them the way it
 # builds them on the Mac. The converter goes the same way, since ~/converter
 # there is a clone and behind.
@@ -87,7 +87,7 @@ pack() {  # pack <name> <directory> <what...>
 pack c90   ../Compiler-Ci   src lib tools tests examples Makefile README.md
 pack cpp11  ../C++Optimize src include lib tools tests ide Makefile README.md
 pack shalimar   ../Compiler-Si   src runtime tests examples Makefile README.md
-pack vm6747 ../VM6747/Emulator      src tests Makefile README.md
+pack vm6747 ../VM6747      src tests Makefile README.md
 # asm6x's run.sh rechecks the review's probes against the oracle's recorded objects
 # (2026-09-19): the three directories it reads travel, without the review's own outputs.
 pack asm6x  ../ASM6x                src tests Makefile README.md \
@@ -104,7 +104,7 @@ pack masm   ../MASM                 src tests Makefile README.md
 pack lnk6x  ../LNK6x                src tests Makefile README.md
 pack c2s    ../Converter-C2S        src tests Makefile README.md
 
-# Where they land: the shape workspace.mk assumes, the compilers, VM6747/Emulator
+# Where they land: the shape workspace.mk assumes, the compilers, VM6747
 # and ../Converter-C2S beside the editor's directory. A function and not an
 # array, because the Mac's bash is 3.2 and has no associative arrays.
 there() {
@@ -112,7 +112,7 @@ there() {
         c90)   echo 'Compiler-Ci' ;;
         cpp11)  echo 'C++Optimize' ;;
         shalimar)   echo 'Compiler-Si' ;;
-        vm6747) echo 'VM6747/Emulator' ;;
+        vm6747) echo 'VM6747' ;;
         asm6x)  echo 'ASM6x' ;;
         masm)   echo 'MASM' ;;
         link)   echo 'LINK' ;;
