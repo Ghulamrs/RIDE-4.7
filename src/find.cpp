@@ -1,6 +1,7 @@
 #include "find.h"
 #include "path.h"
 
+#include <algorithm>
 #include <cctype>
 #include <cstdio>
 
@@ -130,6 +131,8 @@ void walk(const FindInFiles& q, const std::string& dir, const std::vector<std::s
     bool ok = false;
     std::vector<path::Entry> all = path::entries(dir, &ok);
     if (!ok) return;
+    // By name: NTFS and APFS list a folder sorted and Linux does not, and the hits should read alike everywhere.
+    std::sort(all.begin(), all.end(), [](const path::Entry& a, const path::Entry& b) { return a.name < b.name; });
     for (size_t i = 0; i < all.size() && !cut; ++i) {
         if (q.stop && q.stop->load()) { cut = true; return; }
         const std::string full = path::join(dir, all[i].name);
