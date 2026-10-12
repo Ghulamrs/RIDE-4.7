@@ -4,23 +4,22 @@ rem git is the source of record, so nothing of a working tree reaches a release;
 rem
 rem   release.cmd [version]   -> %RELEASE_DIR%\<stamp>\RIDE-<ver>\dist\RIDE-<ver>.msi and RELEASE.txt beside it
 rem
-rem What is final is each repository's default branch on GitHub (main or master), never a
-rem side branch: VM6747's Compiler-Cppi is taken at the head of its own default branch, and that head must be
-rem the commit VM6747 pins - refused otherwise unless ALLOW_UNPINNED=1 (D16); a rehearsal warns.
+rem What is final is each repository's default branch on GitHub (main or master), never a side branch.
+rem The three compilers are repositories of their own beside VM6747 since 2026-10-12, so each is taken
+rem at its own head like the rest; there is no submodule pin left to agree with (D16).
 rem RELEASE_DIR (default %USERPROFILE%\ride-release).
-rem RELEASE_BRANCHES, for a rehearsal only: "repo:branch ..." by GitHub name (Compiler-Cpp-Optimize for the
-rem submodule), e.g. "SIM6747:rename-sim6747 RIDE-4.7:rename-sim6747". A rehearsal is not a release: the seals
+rem RELEASE_BRANCHES, for a rehearsal only: "repo:branch ..." by GitHub name (Compiler-Cpp-Optimize for
+rem cpp11), e.g. "SIM6747:rename-sim6747 RIDE-4.7:rename-sim6747". A rehearsal is not a release: the seals
 rem of a side branch are reported and do not stop it.
-rem RELEASE_DRYRUN=1 stops after the checks that come before the build - the pin, the seals - and, with
-rem RELEASE_BIN naming a bin\ already built, runs build.bat confirm over it; RELEASE_PIN stands in for
-rem VM6747's pin there, so the refusal can be rehearsed. Neither is for a release.
+rem RELEASE_DRYRUN=1 stops after the checks that come before the build - the seals - and, with
+rem RELEASE_BIN naming a bin\ already built, runs build.bat confirm over it. Neither is for a release.
 setlocal enabledelayedexpansion
 set "VER=%~1"
 if "%VER%"=="" set "VER=5.1"
 if "%RELEASE_DIR%"=="" set "RELEASE_DIR=%USERPROFILE%\ride-release"
 for /f %%t in ('powershell -NoProfile -Command "Get-Date -Format yyyyMMdd-HHmmss"') do set "STAMP=%%t"
 set "W=%RELEASE_DIR%\%STAMP%"
-rem The submodule is named by an ssh URL; https needs no key, and every repository is public.
+rem https needs no key, and every repository is public.
 set "GIT=git -c url.https://github.com/.insteadOf=git@github.com: -c advice.detachedHead=false -c core.autocrlf=false"
 
 mkdir "%W%" || exit /b 1
@@ -28,6 +27,9 @@ echo RIDE %VER% release in %W%
 echo [1/3] Fresh checkouts from github.com/Ghulamrs
 call :clone RIDE-%VER% RIDE-4.7 || exit /b 1
 call :clone VM6747 VM6747 || exit /b 1
+call :clone Compiler-Ci Compiler-Ci || exit /b 1
+call :clone Compiler-Si Compiler-Si || exit /b 1
+call :clone C++Optimize Compiler-Cpp-Optimize || exit /b 1
 call :clone ASM6x ASM6x || exit /b 1
 call :clone LNK6x LNK6X || exit /b 1
 call :clone LINK LINK || exit /b 1
@@ -35,20 +37,6 @@ call :clone MASM MASM || exit /b 1
 call :clone Converter-C2S Converter-C2S || exit /b 1
 call :clone SIM6747 SIM6747 || exit /b 1
 call :clone RTS6x RTS6x || exit /b 1
-rem The submodule at the head of its default branch, which .gitmodules names, with the pin recorded beside it.
-for /f "tokens=3" %%h in ('git -C "%W%\VM6747" ls-tree HEAD Compiler-Cppi') do set "PIN=%%h"
-if not "%RELEASE_PIN%"=="" if "%RELEASE_DRYRUN%"=="1" set "PIN=%RELEASE_PIN%"
-%GIT% -C "%W%\VM6747" submodule -q update --init --remote Compiler-Cppi || exit /b 1
-call :branchof Compiler-Cpp-Optimize
-if not "%BRANCH%"=="" (%GIT% -C "%W%\VM6747\Compiler-Cppi" fetch -q origin "%BRANCH%" && %GIT% -C "%W%\VM6747\Compiler-Cppi" checkout -q FETCH_HEAD) || exit /b 1
-for /f %%h in ('git -C "%W%\VM6747\Compiler-Cppi" rev-parse HEAD') do (set "CPPI=%%h"& echo   VM6747/Compiler-Cppi  %%h  default branch, VM6747 pins !PIN!& echo VM6747/Compiler-Cppi  %%h  default branch of Compiler-Cpp-Optimize; VM6747 pins !PIN!>> "%W%\RELEASE.txt.repos")
-rem The compiler shipped is the one VM6747 pins, or the release says it is not (D16).
-if not "%CPPI%"=="%PIN%" (
-  echo   cpp11's default branch is at %CPPI%
-  echo   VM6747 pins Compiler-Cppi at   %PIN%
-  if not "%ALLOW_UNPINNED%"=="1" if "%RELEASE_BRANCHES%"=="" (echo release.cmd: VM6747's pin is not the head of cpp11's default branch - repin VM6747, or set ALLOW_UNPINNED=1 & exit /b 1)
-  echo   WARNING: this release ships a cpp11 VM6747 does not pin
-)
 (echo RIDE %VER%, built %DATE% %TIME% on %COMPUTERNAME% ^(Windows^) from fresh checkouts& type "%W%\RELEASE.txt.repos") > "%W%\RELEASE.txt"
 del "%W%\RELEASE.txt.repos"
 

@@ -22,10 +22,10 @@
 # host targets and the TMS320C6747, shalimar with its three - and vm6747, the
 # emulator that runs the fourth, is built with them. Compiler-C, C++ and
 # Compiler-S stay sealed beside.
-CC1_DIR ?= ../VM6747/Compiler-Ci
-SHC_DIR ?= ../VM6747/Compiler-Si
+CC1_DIR ?= ../Compiler-Ci
+SHC_DIR ?= ../Compiler-Si
 C2S_DIR ?= ../Converter-C2S
-CXX1_DIR ?= ../VM6747/Compiler-Cppi
+CXX1_DIR ?= ../C++Optimize
 VM_DIR ?= ../VM6747/Emulator
 ASM_DIR ?= ../ASM6x
 MASM_DIR ?= ../MASM

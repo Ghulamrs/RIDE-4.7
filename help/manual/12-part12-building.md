@@ -11,7 +11,7 @@ RIDE is one repository; the compilers are their own repositories beside it:
 
     RIDE            the editor, the workspace build, the packaging
     Compiler-C  (cc1)  the C compiler        (i-line: Compiler-Ci → c90)
-    C++         (cpp11) the C++ compiler      (i-line: Compiler-Cppi → cpp11)
+    C++         (cpp11) the C++ compiler      (i-line: C++Optimize → cpp11)
     Compiler-S  (shc)  the Shalimar compiler (i-line: Compiler-Si → shalimar)
     Converter-C2S (c2s) the converter
     Emulator    (vm6747) the C6000 emulator (i-line only)

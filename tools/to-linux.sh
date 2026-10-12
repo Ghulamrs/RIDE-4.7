@@ -16,14 +16,15 @@
 # A tarball rather than that box's own clones, which is a deliberate choice
 # and not an oversight. A clone can only ever have what has been pushed, and
 # this script exists to check what is in the working tree *before* it is
-# committed; and the VM6747 line has no remote at all, by its own rules.
+# committed.
 #
 # 3.5: the compilers are the VM6747 line, and they travel with the editor.
 # Before this the script handed the suites ~/build-ws/cc1.exe, a three-target
 # cc1 from 2026-08-26 that refuses `-arch tms6747` - so the session suite's
 # emulated-target case would have failed there, not skipped, and the emulator
-# had never been compiled by g++ at all. Now the four repositories are laid out
-# on the box exactly as they are here, ../VM6747/<name> beside the editor,
+# had never been compiled by g++ at all. Now the repositories are laid out on
+# the box exactly as they are here - Compiler-Ci, Compiler-Si, C++Optimize and
+# VM6747/Emulator beside the editor (the compilers out of VM6747 since 2026-10-12),
 # which is the one assumption workspace.mk makes, and it builds them the way it
 # builds them on the Mac. The converter goes the same way, since ~/converter
 # there is a clone and behind.
@@ -83,9 +84,9 @@ pack() {  # pack <name> <directory> <what...>
         --exclude 'DerivedData' --exclude 'build' \
         -czf "$TMP/$name-src.tgz" "$@" ) || exit 2
 }
-pack c90   ../VM6747/Compiler-Ci   src lib tools tests examples Makefile README.md
-pack cpp11  ../VM6747/Compiler-Cppi src include lib tools tests ide Makefile README.md
-pack shalimar   ../VM6747/Compiler-Si   src runtime tests examples Makefile README.md
+pack c90   ../Compiler-Ci   src lib tools tests examples Makefile README.md
+pack cpp11  ../C++Optimize src include lib tools tests ide Makefile README.md
+pack shalimar   ../Compiler-Si   src runtime tests examples Makefile README.md
 pack vm6747 ../VM6747/Emulator      src tests Makefile README.md
 # asm6x's run.sh rechecks the review's probes against the oracle's recorded objects
 # (2026-09-19): the three directories it reads travel, without the review's own outputs.
@@ -103,14 +104,14 @@ pack masm   ../MASM                 src tests Makefile README.md
 pack lnk6x  ../LNK6x                src tests Makefile README.md
 pack c2s    ../Converter-C2S        src tests Makefile README.md
 
-# Where they land: the shape workspace.mk assumes, ../VM6747/<name> and
-# ../Converter-C2S beside the editor's directory. A function and not an
+# Where they land: the shape workspace.mk assumes, the compilers, VM6747/Emulator
+# and ../Converter-C2S beside the editor's directory. A function and not an
 # array, because the Mac's bash is 3.2 and has no associative arrays.
 there() {
     case "$1" in
-        c90)   echo 'VM6747/Compiler-Ci' ;;
-        cpp11)  echo 'VM6747/Compiler-Cppi' ;;
-        shalimar)   echo 'VM6747/Compiler-Si' ;;
+        c90)   echo 'Compiler-Ci' ;;
+        cpp11)  echo 'C++Optimize' ;;
+        shalimar)   echo 'Compiler-Si' ;;
         vm6747) echo 'VM6747/Emulator' ;;
         asm6x)  echo 'ASM6x' ;;
         masm)   echo 'MASM' ;;

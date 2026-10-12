@@ -82,9 +82,9 @@ fi
 # The projects RIDE 4.7 builds, named the way workspace.mk names them and overridable the same way, so a
 # machine that keeps them elsewhere is reached by naming them: a cleaner that silently cleaned nothing because
 # it looked for a name that machine does not use would be worse than no cleaner.
-CC1_DIR=${CC1_DIR:-$root/VM6747/Compiler-Ci}
-CXX1_DIR=${CXX1_DIR:-$root/VM6747/Compiler-Cppi}
-SHC_DIR=${SHC_DIR:-$root/VM6747/Compiler-Si}
+CC1_DIR=${CC1_DIR:-$root/Compiler-Ci}
+CXX1_DIR=${CXX1_DIR:-$root/C++Optimize}
+SHC_DIR=${SHC_DIR:-$root/Compiler-Si}
 VM_DIR=${VM_DIR:-$root/VM6747/Emulator}
 C2S_DIR=${C2S_DIR:-$root/Converter-C2S}
 ASM_DIR=${ASM_DIR:-$root/ASM6x}

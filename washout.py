@@ -47,9 +47,9 @@ RIDE_PLAN = (os.path.basename(ROOT), ["Editor.xcodeproj", "RIDE.xcworkspace", "h
               "packaging/windows/Installer.vdproj", "packaging/windows/Installer.sln",
               "packaging/windows/make-setup.ps1"])
 WORKSPACE = [
-    ("../VM6747/Compiler-Ci", ["ide", "lib", "msvc/compat"], ["src"], ["Makefile"]),
-    ("../VM6747/Compiler-Cppi", ["ide", "lib", "include", "msvc/compat"], ["src"], ["Makefile"]),
-    ("../VM6747/Compiler-Si", ["ide"], ["src", "runtime"], ["Makefile"]),
+    ("../Compiler-Ci", ["ide", "lib", "msvc/compat"], ["src"], ["Makefile"]),
+    ("../C++Optimize", ["ide", "lib", "include", "msvc/compat"], ["src"], ["Makefile"]),
+    ("../Compiler-Si", ["ide"], ["src", "runtime"], ["Makefile"]),
     ("../VM6747/Emulator", ["vm6747.xcodeproj"], ["src"], ["vm6747.vcxproj", "Makefile"]),
     ("../SIM6747", ["sim6747.xcodeproj"], ["src"], ["sim6747.vcxproj", "Makefile"]),
     ("../Converter-C2S", ["c2s.xcodeproj"], ["src"], ["c2s.vcxproj", "Makefile"]),

@@ -4,9 +4,9 @@
 #
 #   packaging/release.sh [version]    -> <RELEASE_DIR>/<stamp>/RIDE-<ver>/dist/ and RELEASE.txt beside it
 #
-# What is final is each repository's default branch on GitHub (main or master), never a
-# side branch: VM6747's Compiler-Cppi is taken at the head of its own default branch, and that head must be
-# the commit VM6747 pins - a release refuses otherwise unless ALLOW_UNPINNED=1 (D16).
+# What is final is each repository's default branch on GitHub (main or master), never a side branch.
+# The three compilers are repositories of their own beside VM6747 since 2026-10-12, so each is taken
+# at its own head like the rest; there is no submodule pin left to agree with (D16).
 # RELEASE_DIR (default ~/ride-release, outside iCloud's ~/Documents), JOBS (8 on a Mac, 2 on Linux).
 set -eu
 
@@ -23,6 +23,9 @@ say() { printf '%s\n' "$*"; }
 # directory  repository - the siblings RIDE.sln and workspace.mk expect.
 REPOS="RIDE-$VER:RIDE-4.7
 VM6747:VM6747
+Compiler-Ci:Compiler-Ci
+Compiler-Si:Compiler-Si
+C++Optimize:Compiler-Cpp-Optimize
 ASM6x:ASM6x
 LNK6x:LNK6X
 LINK:LINK
@@ -34,35 +37,19 @@ RTS6x:RTS6x"
 mkdir -p "$W"
 say "RIDE $VER release in $W"
 say "[1/3] Fresh checkouts from github.com/Ghulamrs"
-# The submodule is named by an ssh URL; https needs no key, and every repository is public.
+# https needs no key, and every repository is public.
 GIT="git -c url.https://github.com/.insteadOf=git@github.com: -c advice.detachedHead=false"
 branch() { git -C "$1" rev-parse --abbrev-ref HEAD; }
 echo "$REPOS" | while IFS=: read -r dir repo; do
     $GIT clone -q "https://github.com/Ghulamrs/$repo.git" "$W/$dir"
     say "  $dir  $(git -C "$W/$dir" rev-parse --short HEAD)  $(branch "$W/$dir")"
 done
-# The submodule at the head of its default branch, which .gitmodules names, and the pin said beside it if it differs.
-PIN=$(git -C "$W/VM6747" ls-tree HEAD Compiler-Cppi | awk '{print $3}')
-$GIT -C "$W/VM6747" submodule -q update --init --remote Compiler-Cppi
-CPPI=$(git -C "$W/VM6747/Compiler-Cppi" rev-parse HEAD)
-say "  VM6747/Compiler-Cppi  $(echo "$CPPI" | cut -c1-7)  default branch$( [ "$CPPI" = "$PIN" ] || echo ", VM6747 pins $(echo "$PIN" | cut -c1-7)")"
-# The compiler shipped is the one VM6747 pins, or the release says it is not (D16).
-if [ "$CPPI" != "$PIN" ]; then
-    say "  cpp11's default branch is at $CPPI"
-    say "  VM6747 pins Compiler-Cppi at   $PIN"
-    if [ "${ALLOW_UNPINNED:-}" != 1 ]; then
-        say "release.sh: VM6747's pin is not the head of cpp11's default branch - repin VM6747 (sync, commit, push), or set ALLOW_UNPINNED=1"
-        exit 1
-    fi
-    say "  WARNING: ALLOW_UNPINNED=1 - this release ships a cpp11 VM6747 does not pin"
-fi
 
 {
     say "RIDE $VER, built $(date '+%d-%m-%Y %H:%M:%S') PKT on $(hostname) ($HOST) from fresh checkouts"
     echo "$REPOS" | while IFS=: read -r dir repo; do
         say "$dir  $(git -C "$W/$dir" rev-parse HEAD)  $(branch "$W/$dir")  github.com/Ghulamrs/$repo"
     done
-    say "VM6747/Compiler-Cppi  $CPPI  default branch of Compiler-Cpp-Optimize; VM6747 pins $PIN"
 } > "$W/RELEASE.txt"
 
 # The sources as sealed, before a line is compiled: a release of code that does not match its seal is refused (T1).

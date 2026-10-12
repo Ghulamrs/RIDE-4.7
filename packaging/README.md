@@ -35,10 +35,6 @@ in your tree.
 `packaging/release.sh` (Mac, Linux) and `packaging/windows/release.cmd` build a release from fresh
 checkouts of every repository's default branch. Before a line is compiled they refuse:
 
-- **an unpinned cpp11** (D16): VM6747 pins `Compiler-Cppi` at a commit, and the release takes cpp11's
-  default branch; when the two differ both are printed and the release stops, unless `ALLOW_UNPINNED=1`.
-  The fix is to sync VM6747's submodule to cpp11's head, commit and push. A `RELEASE_BRANCHES` rehearsal
-  on Windows warns instead.
 - **sources that do not match their seals** - `verify_seals.py`, from `MASTER.SEAL` down.
 
 After the build, `confirm` stops a release whose `bin/` is MISSING anything RIDE drives - the six

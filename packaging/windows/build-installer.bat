@@ -10,7 +10,7 @@ rem
 rem  Usage:   build-installer.bat [5.1]
 rem  Env overrides (all optional):
 rem     CPP    the C++ compiler clone that carries include\ and lib\ headers
-rem            (default: <repo>\..\VM6747\Compiler-Cppi, else <repo>\..\Compiler-Cpp)
+rem            (default: <repo>\..\C++Optimize, else <repo>\..\Compiler-Cpp)
 rem     CC     the C compiler clone whose lib\ holds c90's headers
 rem            (default: <CPP>\..\Compiler-Ci)
 rem     OUT    output directory for the stage tree and the .msi
@@ -35,7 +35,7 @@ if not "%VER%"=="5.1" (echo build-installer.bat: this tree builds 5.1 only & exi
 set "NV=%VER:.=%"
 set "HERE=%~dp0"
 for %%I in ("%HERE%..\..") do set "ROOT=%%~fI"
-if "%CPP%"=="" if exist "%ROOT%\..\VM6747\Compiler-Cppi\include" set "CPP=%ROOT%\..\VM6747\Compiler-Cppi"
+if "%CPP%"=="" if exist "%ROOT%\..\C++Optimize\include" set "CPP=%ROOT%\..\C++Optimize"
 if "%CPP%"=="" set "CPP=%ROOT%\..\Compiler-Cpp"
 if "%CC%"=="" set "CC=%CPP%\..\Compiler-Ci"
 if "%OUT%"=="" set "OUT=%ROOT%\dist"

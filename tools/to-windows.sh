@@ -6,8 +6,8 @@
 # as it is now: reached as `ssh windows`, its ssh shell is cmd.exe, and the
 # projects are siblings under C:\Users\GRA\source - RIDE (4.0's own
 # directory, so the sealed 3.5 tree in RIDE is left alone), VM6747,
-# ASM6x, MASM, LINK, LNK6x, Converter-C2S - which is the shape RIDE.sln assumes when
-# it names ..\VM6747\Compiler-Ci\ide\cc1.vcxproj and the rest.
+# Compiler-Ci, Compiler-Si, C++Optimize, ASM6x, MASM, LINK, LNK6x, Converter-C2S - which is the shape RIDE.sln assumes when
+# it names ..\Compiler-Ci\ide\cc1.vcxproj and the rest.
 #
 # Three rules that each cost an hour before they were written down:
 #
@@ -21,7 +21,7 @@
 #     file on that side is a stale build with a green suite in front of it.
 #
 # cxx1 travels with the editor since 3.0. RIDE.sln builds it from
-# ..\VM6747\Compiler-Cppi\ide\cxx1.vcxproj (the root copies moved to ide/ on 2026-09-30), written at
+# ..\C++Optimize\ide\cxx1.vcxproj (the root copies moved to ide/ on 2026-09-30), written at
 # the root of the C++ checkout here; the sources, headers, msvc\compat and
 # that project go over together, laid over the tree there - never wiping it,
 # since that directory also holds hand-run experiments that are not ours.
@@ -36,14 +36,12 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 BOX="${ED1_WINDOWS_BOX:-windows}"
 ROOT="${ED1_WINDOWS_ROOT:-C:\\Users\\GRA\\source}"
 DIR="$ROOT\\RIDE-4.7"
-# 3.5: the four VM6747 repositories travel with the editor - they have no
-# remote, by that line's rules - laid out on the box as they are here.
-# Compiler-Si joined when shalimar was docked; the Compiler-S beside it on the
-# box is the sealed original and is no longer what the solution builds.
+# The three compilers are repositories of their own beside VM6747 since
+# 2026-10-12, laid out on the box as they are here; VM6747 keeps the emulator.
 VM_ROOT="$ROOT\\VM6747"
-CC1I_DIR="$VM_ROOT\\Compiler-Ci"
-CXX1_DIR="$VM_ROOT\\Compiler-Cppi"
-SHCI_DIR="$VM_ROOT\\Compiler-Si"
+CC1I_DIR="$ROOT\\Compiler-Ci"
+CXX1_DIR="$ROOT\\C++Optimize"
+SHCI_DIR="$ROOT\\Compiler-Si"
 EMU_DIR="$VM_ROOT\\Emulator"
 ASM_DIR="$ROOT\\ASM6x"
 MASM_DIR="$ROOT\\MASM"
@@ -76,9 +74,9 @@ tar --no-mac-metadata \
 # ---- cxx1 ------------------------------------------------------------------
 # The parts its Visual Studio project compiles and includes, and nothing of
 # its own build tree.
-( cd ../VM6747/Compiler-Ci && tar --no-mac-metadata --exclude '* 2.*' --exclude 'obj' --exclude '*.exe' --exclude 'out-*' \
+( cd ../Compiler-Ci && tar --no-mac-metadata --exclude '* 2.*' --exclude 'obj' --exclude '*.exe' --exclude 'out-*' \
     -czf "$TMP/c90-src.tgz" src lib msvc tests examples Makefile ide README.md ) || exit 2
-( cd ../VM6747/Compiler-Cppi && tar --no-mac-metadata --exclude '* 2.*' --exclude 'obj' --exclude '*.exe' --exclude 'out-*' \
+( cd ../C++Optimize && tar --no-mac-metadata --exclude '* 2.*' --exclude 'obj' --exclude '*.exe' --exclude 'out-*' \
     -czf "$TMP/cxx1-src.tgz" src include lib msvc tests Makefile ide README.md ) || exit 2
 ( cd ../VM6747/Emulator && tar --no-mac-metadata --exclude '* 2.*' --exclude '*.exe' \
     -czf "$TMP/vm6747-src.tgz" src msvc tests Makefile vm6747.vcxproj README.md ) || exit 2
@@ -108,10 +106,10 @@ tar --no-mac-metadata \
     -czf "$TMP/c2s-src.tgz" src tests c2s.vcxproj Makefile README.md ) || exit 2
 # shalimar: what ide/shc.vcxproj compiles - src and the runtime it builds beside the
 # binary - and nothing built here; lib/ holds this machine's archives.
-( cd ../VM6747/Compiler-Si && tar --no-mac-metadata --exclude '* 2.*' --exclude '*.exe' --exclude 'lib' --exclude 'out-*' \
+( cd ../Compiler-Si && tar --no-mac-metadata --exclude '* 2.*' --exclude '*.exe' --exclude 'lib' --exclude 'out-*' \
     -czf "$TMP/shalimar-src.tgz" src runtime tests examples Makefile build.bat ide README.md ) || exit 2
 
-say "copying to $BOX:$DIR and $VM_ROOT"
+say "copying to $BOX:$ROOT"
 # One directory per call: in cmd, `if not exist X mkdir X & if ...` makes the
 # second `if` part of the first one's body, so it runs only when X was missing.
 for d in "$DIR" "$CC1I_DIR" "$CXX1_DIR" "$SHCI_DIR" "$EMU_DIR" "$ASM_DIR" "$MASM_DIR" "$LINK_DIR" "$LNK6X_DIR" "$C2S_DIR" "$SIM_DIR" "$RTS_DIR"; do
