@@ -287,10 +287,8 @@ xcodeproj:
 # PRODUCT_DIR names it, so a different one can be asked for without editing this.
 PRODUCT_DIR ?= $(HOME)/$(PRODUCT_LOWER)
 # Where cxx1's headers are copied from for the product. The binary comes from
-# BINDIR like the others; the headers stay in the checkout - C++ beside this
-# one, Compiler-Cpp on GitHub and the Windows box, ~/cxx1 on the Linux box.
-# Since 3.5 the binary is cpp11 from the VM6747 line, so its headers come
-# from there too.
+# BINDIR like the others; the headers stay in the checkout,
+# Compilers/C++Optimize on every machine.
 CXX1_DIR ?= ../Compilers/C++Optimize
 CC1_DIR ?= ../Compilers/Compiler-Ci
 

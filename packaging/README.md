@@ -9,26 +9,13 @@ is not much good without them. `MASTER.SEAL` lists the twelve, and
 
 | | | built and installed |
 | --- | --- | --- |
-| Linux | [`ride-editor.spec`](ride-editor.spec) | RPM, into `/opt/ride` |
-| macOS | [`ride-editor.rb`](ride-editor.rb) | Homebrew formula |
+| macOS | [`macos/build-pkg.sh`](macos/build-pkg.sh) | `RIDE-<ver>-macos.pkg`, into `/Applications/RIDE <ver>.app` |
+| Windows | [`windows/build-installer.bat`](windows/build-installer.bat) | `RIDE-<ver>.msi`, into `C:\Program Files\RIDE <ver>` |
+| Linux | [`linux/build-run.sh`](linux/build-run.sh) | `RIDE-<ver>-linux-x86_64.run`, into `/opt/ride-<ver>` |
 
-**Named `ride-editor`, not `ride`.** "RIDE" is also a widely packaged
-IDE for R, and a package by that name installing something else would be a trap
-for whoever typed it. The programs keep their own names — `RIDE.exe`,
-`c90.exe`, `cpp11.exe`, `shalimar.exe` and the rest.
-
-## Building them
-
-```
-rpmbuild -ba packaging/ride-editor.spec --define "_sourcedir $PWD/.."
-brew install --build-from-source --HEAD <tap>/ride-editor
-```
-
-The RPM builds from three checkouts sitting side by side, which is what this
-project actually is. The formula cannot: Homebrew builds in a temporary
-directory, so the three compilers are **resources** fetched from their own
-repositories — which means the formula installs what is *pushed*, not what is
-in your tree.
+The programs keep their own names - `RIDE.exe`, `c90.exe`, `cpp11.exe`,
+`shalimar.exe` and the rest - and each install is versioned, so several
+releases sit side by side.
 
 ## The release scripts, and what they refuse
 
@@ -67,18 +54,9 @@ It also tries `../lib` now — `<prefix>/bin` holding the compiler and
 `CC1_INCLUDE_DIR`, and `INCDIR` is a plain `=` in its Makefile, so both
 packages set it at build time to where the headers will actually live.
 
-## Both check the compilers, not the files
+## The installer checks the compilers, not the files
 
 A package that installs a compiler which cannot compile is the failure worth
-catching, and it is not caught by checking that a file exists. `%check` and the
-formula's `test do` each compile and run a C program and a Shalimar one, and
-compare what they printed.
-
-Two things that cost a build each, written down so they do not cost another:
-
-- **rpmbuild runs a scriptlet under `set -e`**, so a probe that deliberately
-  exits 42 kills the script before anything can read the status. Compare
-  output, not exit codes.
-- **Shalimar's `?` leaves a trailing space**, so its probe prints `"42 "`. The
-  checks trim; the exact spacing is the language's business and
-  `Compiler-S/tests/cases` is where it is pinned down.
+catching, and it is not caught by checking that a file exists. The Linux
+installer compiles and runs a program with the cpp11 it has just put down, and
+says so; the release scripts' `confirm` and the seals cover the rest.

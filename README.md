@@ -1078,15 +1078,12 @@ before the build knew about it; now `SRC` is `CORE_SRC` plus `TERMINAL_SRC`,
 and `--check` refuses to run at all if `SRC` is made of variables this script
 has not been taught - which is how the second of those two drifts happened.
 
-The five repositories are expected side by side. That is the only assumption
-any of this makes, and `workspace.mk` takes `CC1_DIR`, `CXX1_DIR`, `SHC_DIR`
-and `C2S_DIR` for the machine where they are not called that. cpp11's is the
-one whose name differs by machine: `C++` beside this checkout on the Mac,
-`Compiler-Cpp` - the repository's name - on the Windows box, which is what
-`RIDE.sln` says, and `~/cxx1` on the Linux box. Its two project files here,
-`cxx1.xcodeproj` and `cxx1.vcxproj` at its root, are the workspace's and are
-written by the generator; the ones in its `ide/` are its own, and its release
-seal covers neither of the generated pair.
+The repositories are expected in the grouped layout beside this checkout -
+`Compilers/`, `TI/` and `Windows/` - on every machine. That is the only
+assumption any of this makes, and `workspace.mk` takes `CC1_DIR`, `CXX1_DIR`,
+`SHC_DIR` and `C2S_DIR` for a machine where they are elsewhere. cpp11 is built
+from `Compilers/C++Optimize`; its project files are its own, in its `ide/`,
+and `RIDE.sln` and the workspace name them there.
 
 ### The other two machines
 

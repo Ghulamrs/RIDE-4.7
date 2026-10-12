@@ -26,12 +26,9 @@ shalimar - and the emulator is ../TI/VM6747. The three originals stay sealed and
 anything written here.
     c2s      the converter       ../Compilers/Converter-C2S/c2s.xcodeproj
 
-cxx1 joined in 3.0. Its checkout is called C++ here and Compiler-Cpp on
-GitHub and on the Windows box, which is the one place the name matters: the
-solution names ..\Compiler-Cpp, and the Makefile's CXX1_DIR is overridable
-for the Linux box, where it is ~/cxx1. cxx1 keeps its own IDE projects in
-ide/ for its own use; the two written here at its root are the workspace's,
-as shc's and c2s's are, and its release seal covers neither.
+cxx1 joined in 3.0; since 3.5 it is cpp11, built from Compilers/C++Optimize
+on every machine. Its IDE projects are its own, in its ide/, and the
+solution and the workspace name them there.
 
 c2s is the odd one of the four: the editor runs it but does not compile with
 it. It converts C89 to Shalimar and back, and the editor's Language menu has

@@ -428,5 +428,5 @@ lnk6x.exe -mv6740 --abi=eabi -i ~/c6747-lib C6747-ddr.cmd shm.ti.obj shmrt/*.obj
 "C:\Program Files\RIDE 4.7\bin\link.exe" /nologo /subsystem:console /stack:8388608 /out:cpp.exe cpp.masm.obj libcmt.lib libcpmt.lib libucrt.lib libvcruntime.lib kernel32.lib legacy_stdio_definitions.lib
 # Windows box: TI simulator, one session per image
 dss.bat runca.js c6747ca-windows.ccxml <image>.out <image>.stdout 0 300000
-C:\ti\ccsv5\tools\compiler\c6000_7.4.4\bin\lnk6x -mv6740 --abi=eabi --heap_size=0x800 --stack_size=0x800 -iC:\cxx1\c6747-lib --rom_model C6747.cmd cpp.ti.obj -lrts6740_elf_eh.lib -o cpp.ti744.out
+C:\ti\ccsv5\tools\compiler\c6000_7.4.4\bin\lnk6x -mv6740 --abi=eabi --heap_size=0x800 --stack_size=0x800 -iC:\ti\c6747-lib --rom_model C6747.cmd cpp.ti.obj -lrts6740_elf_eh.lib -o cpp.ti744.out
 ```

@@ -37,20 +37,20 @@ group, so it built nothing the moment its tools were beside it (it had only ever
 `tests/session`'s tms6747 cases expected the 4.x "a .out needs TI's linker" line and
 `shmrt/Runtime.obj`, both stale since RTS6x became the default in 5.1.
 
-## Gate numbers (Windows box, `C:\cxx1\rtsdiv\ws-g`, RIDE 5.1's installed tools copied into its `bin\`)
+## Gate numbers (Windows box, a scratch folder, RIDE 5.1's installed tools copied into its `bin\`)
 
 - `build.bat check` with `RIDE_TEST_FLAGS=--require-tools`, `CC1/CXX1/SHC/C2S` and
-  `C6747_EHLIB=C:\cxx1\c6747-lib`: **tests/test 1419 checks, 0 failed, 0 skipped**; tests/session
+  `C6747_EHLIB=C:\ti\c6747-lib`: **tests/test 1419 checks, 0 failed, 0 skipped**; tests/session
   **364 checks, 0 failed**; `RIDE.exe --version` starts. (WS-B's run was 1232/0 and 200/0 with
   nothing beside the editor - every tool case now runs.)
 - `tests/toolchain-check` (win.sh with `RIDE_BIN` = this bin): **9 of 9 programs agree** on every
   chain, now including c6000-run (RIDE's Run: RTS6x, sim6747) beside c6000-vm (Emulate);
   `tests/toolchain-check/RESULTS-2026-10-08.md`.
-- GUI, Windows (`C:\cxx1\gui\wsg-r5.ps1` → `wsg-qual.ps1`, schtasks /IT, this branch's `RIDE.exe`):
+- GUI, Windows (scratch scripts `wsg-r5.ps1` → `wsg-qual.ps1`, schtasks /IT, this branch's `RIDE.exe`):
   c-demo and cpp-shapes as tms6747 projects - Build project links `<program>.out` against rts6x.lib;
   **Run project prints `$ sim6747 --run <program>.out` and the program's output**; **Emulate on
   vm6747 prints `[no .out: Emulate on vm6747 runs the assembly]` and `$ vm6747 <program>.vm`** with
-  the same output; Verify: "the two agree, line for line". Results in `C:\cxx1\gui\wsg-r5.jsonl`.
+  the same output; Verify: "the two agree, line for line". Results in `wsg-r5.jsonl` beside them.
 - GUI, macOS (this branch's app, built from `macos/` into the scratchpad, inside a copy of the
   installed RIDE 5.1.app): cpp-shapes as tms6747 - Build ▸ Run Project ran `$ sim6747 --run
   cpp-shapes.out` and printed the four lines; Build ▸ Emulate on vm6747 ran `$ vm6747
