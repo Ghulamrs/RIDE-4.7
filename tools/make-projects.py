@@ -1237,7 +1237,7 @@ def installer_xcodeproj_text():
     with dist/RIDE-5.11-macos.pkg.
     """
     i = lambda *parts: ident("Installer", *parts)
-    script = 'cd \\"$PROJECT_DIR/../..\\" && sh packaging/macos/build-pkg.sh 5.1\\n'
+    script = 'cd \\"$PROJECT_DIR/../..\\" && sh packaging/macos/build-pkg.sh 5.11\\n'
     return ("// !$*UTF8*$!\n{\n\tarchiveVersion = 1;\n\tclasses = {\n\t};\n\tobjectVersion = 56;\n\tobjects = {\n\n"
             "\t\t%s = {\n\t\t\tisa = PBXAggregateTarget;\n\t\t\tbuildConfigurationList = %s;\n"
             "\t\t\tbuildPhases = (\n\t\t\t\t%s,\n\t\t\t);\n\t\t\tdependencies = (\n\t\t\t);\n"
