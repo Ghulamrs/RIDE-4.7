@@ -19,3 +19,93 @@ rts6x     040CE785 0D069FBC    378  ../TI/RTS6x/rts6x-1.2.dat
 ------------------------------------------------------------------------
 Master seal 146ACCE4
 Sealed on 13-10-2026
+========================================================================
+Shipped artefacts: the SHA-256 of what one release packaged, from master seal 146ACCE4
+RIDE 5.12, RIDE-5.12-macos.pkg, built 13-10-2026 00:38:54 PKT on Gs-MacBook-Pro.local
+25 files, 15006961 bytes; the source seal above is unchanged by this table
+------------------------------------------------------------------------
+82968feecbc15c9d38abfede3d634ad8fad4204315c71403cfe03a70ebb4d9d1    1199624  RIDE.exe
+a5bead8332897c5e02ea6d6306978910422cdb87a88a1d8d63595615a586864f     255880  asm6x.exe
+1bd1dbecc90dfa3b24a8b596af3447396e46723742ad703628c15f3952c964fa     722008  c2s.exe
+eb4270647ea2984f9596855a22de566999153502bb7989ab96948a0e6a3c126e     837992  c90.exe
+11285a9be728668febe878c569d5e115f1e3251d052b9d37c6f694e2124c0942    3748920  cpp11.exe
+640e1702505f61b5b88a9eedab1912a1c1c8b5cc36c43d3ca105d08fc9f73007     195304  link.exe
+6bffae46c64a390930839df2a15680fe27180dd5950eea1d538ab311c837b991     258952  lnk6x.exe
+6cf6e72773f1f4d498a7d296257d3ba571f0e2e3254c404a95d41b962e086e51     177704  masm.exe
+f2bd158398d12033b3f4281dd89f8af20cc6a5cb52533cfde36c3544890f83c1     453664  shalimar.exe
+50259437cc201dbb74c18969372769eb28b3f9d8681f323bf9f6bc9df9e4329c     475224  sim6747.exe
+f8db494bb5fc32ea0782e865ab5aa2bdcad5113130847752a2c0e610d58e8ffe     265352  vm6747.exe
+d3db15b9e1ad54a54dcd02ec3396b7e23705ac6f188c19a26763b5eea5ac8e0e      50784  lib/shmrt-arm64-darwin-debug.a
+58dcb8c64222bf5641fb90391dd19540576101ee6131462a403cead938cd5697      44520  lib/shmrt-arm64-darwin.a
+a2933cca2be61d6e742a8b6ecb0fc25c06009d1c8ab94c2445eae39814959155     111424  lib/rts6x-tms6747/printf6x.lib
+739d3a6c80de1342e125a8361afc40f14fb17365e6d9e5a5bd1d73ae0e555492     172520  lib/rts6x-tms6747/printf6xd.lib
+1d28d02f02d0f3bc178722ef5a850a683f9845fed30bd46ec903e107e658d910     921202  lib/rts6x-tms6747/rts6x.lib
+4d550d109184ca643a34059aa8bf51aa133cc3e9937cf2794de6732b069afbc1    1369902  lib/rts6x-tms6747/rts6xd.lib
+84bca9f67f4cf266cb4d4fbb8deaaa19144ed75035636c05c5eb83e4fd75836d     101118  lib/rts6x-tms6747/shmrt6x.lib
+1736c6a03e1c0c17fca20bef621d5e7a8a359e4017d11701361435a22eedff83     170386  lib/rts6x-tms6747/shmrt6xd.lib
+edd294b0b9b77888b3c7a58dd429edfd4b8cd04b10b34b88929ea76a3ff3eb7c      65192  obj/rts6x-bin/ar6x.exe
+a2933cca2be61d6e742a8b6ecb0fc25c06009d1c8ab94c2445eae39814959155     111424  obj/rts6x-bin/printf6x.lib
+739d3a6c80de1342e125a8361afc40f14fb17365e6d9e5a5bd1d73ae0e555492     172520  obj/rts6x-bin/printf6xd.lib
+1d28d02f02d0f3bc178722ef5a850a683f9845fed30bd46ec903e107e658d910     921202  obj/rts6x-bin/rts6x.lib
+4d550d109184ca643a34059aa8bf51aa133cc3e9937cf2794de6732b069afbc1    1369902  obj/rts6x-bin/rts6xd.lib
+f234da4e69cfac5f57d9e4ec0c9686866d5945a0aab24fe166c44c26b29dee2e     834241  obj/rts6x-bin/ar6x.exe.dSYM/Contents/Resources/DWARF/ar6x.exe
+------------------------------------------------------------------------
+41bd3bd2050109f8c13eb94711aa2d08fef408f6b9d5fabf2e6e2715d57f2fca   10972954  installer RIDE-5.12-macos.pkg
+========================================================================
+Shipped artefacts: the SHA-256 of what one release packaged, from master seal 146ACCE4
+RIDE 5.12, RIDE-5.12.msi, built Tue 10/13/2026  0:40:50.46 on DESKTOP-0HN6OC7
+20 files, 21450990 bytes; the source seal above is unchanged by this table
+------------------------------------------------------------------------
+97bf789aee3b0d06a76632618d0a99c3c0d2055792fe449cfa3bed53ed586beb    1583616  RIDE.exe
+d571b76c8335334e914cdbff0c37f23da9b87dfdefd236c70bd1dbc99cbd5a25    1966080  RIDEConsole.exe
+a5c89a19ce0d146f6e5b22e3c2c03b31ee496e0497047edc8562796c79003baf     555520  asm6x.exe
+90907e0a36a0570f16da7af9605fc6e2cf105e1f2ab106f86a5ba2e19cefd3bb    1171456  c2s.exe
+9876cd7f6d7e00b7f497709097865b051e105bc7b3ccdc3ddb2d3f5d9abea257    2478592  c90.exe
+1d6d3af144678b453013738079a62dba1afc0c4c181413c046fac72ebdf6390c    4959232  cpp11.exe
+2a06ae67d1273f2f6010acb9f07ff6989b785c1ab01ebc274787f76eeec4338e     477696  link.exe
+415ccd4fcc591788bd4805cec84495d056ada6c2a78e83cc91f243263bc0e3ab     580608  lnk6x.exe
+36026e438c83593b4e127bbdbe0b9b20059d09ccef4130d8d5f1118bc3889e23     477696  masm.exe
+bcb8a6f5b570573df30a691e6deea7129487f53b5f366a60346617cba6cf778d    1981952  shalimar.exe
+335d2b88152000f34fcf2f3d47e49213c90ad2fcdbe80dce78a6807e9f0443f1     867840  sim6747.exe
+be4f5b5f9d7a2f17dda2c22ff5468d771d731200e7ba591624dcf8296cf01722     588800  vm6747.exe
+418573d61a51cc0b274dabb21d856eb2540c2a9e0c191c2849b8de9f5749e6cc     465588  lib/shmrt-x86_64-windows-debug.lib
+d2ea112e591ed2fd850f9941295dc3030f2e6ef01b0d5fbefd03c10ea8483250     449762  lib/shmrt-x86_64-windows.lib
+a2933cca2be61d6e742a8b6ecb0fc25c06009d1c8ab94c2445eae39814959155     111424  lib/rts6x-tms6747/printf6x.lib
+739d3a6c80de1342e125a8361afc40f14fb17365e6d9e5a5bd1d73ae0e555492     172520  lib/rts6x-tms6747/printf6xd.lib
+f3bd65ff32063c1454501e5dab0d926b3b4a0f3479e86be15eb47e36ca28682c     921202  lib/rts6x-tms6747/rts6x.lib
+0e35dfa18cec75bcb6a351c0a735ebffb8e290da42a9c34a817d4111841597a5    1369902  lib/rts6x-tms6747/rts6xd.lib
+84bca9f67f4cf266cb4d4fbb8deaaa19144ed75035636c05c5eb83e4fd75836d     101118  lib/rts6x-tms6747/shmrt6x.lib
+1736c6a03e1c0c17fca20bef621d5e7a8a359e4017d11701361435a22eedff83     170386  lib/rts6x-tms6747/shmrt6xd.lib
+------------------------------------------------------------------------
+db963dce167d742f5f68a6742543d1cea34fa4458fed292e7f959a94282c0d11    8228352  installer RIDE-5.12.msi
+========================================================================
+Shipped artefacts: the SHA-256 of what one release packaged, from master seal 146ACCE4
+RIDE 5.12, RIDE-5.12-linux-x86_64.run, built 13-10-2026 00:51:12 PKT on ip-172-31-19-75.ec2.internal
+24 files, 152463790 bytes; the source seal above is unchanged by this table
+------------------------------------------------------------------------
+6667f720eeef3abeb79e47f2b505416735813ee950ec04da6482414c28c478ae    1298112  RIDE.exe
+bf7d4b7a2e50897316f37b171fec9675250e6667c5c1349c33c16f3f2c944b08    4060936  asm6x.exe
+45d5662863f08b2a1a099ae71aff3f3269eba303a2dc5187329d67db66f586a3   16526448  c2s.exe
+2767281b3fddf93fd1c0eaf00df1a2211f75753d835676902adc4b900fac86f4   15022168  c90.exe
+3cc646e8f27cc946cd9e0eac1121620721df4dd805684ad0c894038c3dbc478f   82883424  cpp11.exe
+3a9109c30fd50d9891bd74c1f10dc31478039ca5ae4fe42c0364be508e33d668    3971608  link.exe
+74da60ca5409d381f3c3d6bb3b2736508fac92029933ae3dd526a58124aaf5d3    5957808  lnk6x.exe
+d5092726fd35c6d11047237ce9bfc8697e50daaeaad74cc1e6a24a961fe97088    2658920  masm.exe
+48c5c625c9bded221ace469757ca9d6a69d89f687778f2f169ec53f288489ec1     629200  shalimar.exe
+c0a4a3bfff19b5b053e3890a6a212473c7dacd80bdcdac451117d60cf565788e    8048992  sim6747.exe
+14cf5f8b7cc5d70a4577a17db6f39365f01225bfecad398d0041b184c6081575    4804264  vm6747.exe
+41428c6f8c121697e559599b5095383a5bb9b25684f57b08cf0b5428224298e7      61214  lib/shmrt-x86_64-linux-debug.a
+8918b96d7d1a79a66555cd2501238ad3212711f0c7012c83439b404e4e0f993b      53120  lib/shmrt-x86_64-linux.a
+a2933cca2be61d6e742a8b6ecb0fc25c06009d1c8ab94c2445eae39814959155     111424  lib/rts6x-tms6747/printf6x.lib
+739d3a6c80de1342e125a8361afc40f14fb17365e6d9e5a5bd1d73ae0e555492     172520  lib/rts6x-tms6747/printf6xd.lib
+1d28d02f02d0f3bc178722ef5a850a683f9845fed30bd46ec903e107e658d910     921202  lib/rts6x-tms6747/rts6x.lib
+4d550d109184ca643a34059aa8bf51aa133cc3e9937cf2794de6732b069afbc1    1369902  lib/rts6x-tms6747/rts6xd.lib
+84bca9f67f4cf266cb4d4fbb8deaaa19144ed75035636c05c5eb83e4fd75836d     101118  lib/rts6x-tms6747/shmrt6x.lib
+1736c6a03e1c0c17fca20bef621d5e7a8a359e4017d11701361435a22eedff83     170386  lib/rts6x-tms6747/shmrt6xd.lib
+a952fa71b792e2b0d6235649cf09f61b8c565a6d8e49d5c9f7d72f55f65064c0    1065976  obj/rts6x-bin/ar6x.exe
+a2933cca2be61d6e742a8b6ecb0fc25c06009d1c8ab94c2445eae39814959155     111424  obj/rts6x-bin/printf6x.lib
+739d3a6c80de1342e125a8361afc40f14fb17365e6d9e5a5bd1d73ae0e555492     172520  obj/rts6x-bin/printf6xd.lib
+1d28d02f02d0f3bc178722ef5a850a683f9845fed30bd46ec903e107e658d910     921202  obj/rts6x-bin/rts6x.lib
+4d550d109184ca643a34059aa8bf51aa133cc3e9937cf2794de6732b069afbc1    1369902  obj/rts6x-bin/rts6xd.lib
+------------------------------------------------------------------------
+3618957517520a95fd63f992d9cb00f3ec8e5e117c51325a48ff080140e99a6f    5122573  installer RIDE-5.12-linux-x86_64.run
