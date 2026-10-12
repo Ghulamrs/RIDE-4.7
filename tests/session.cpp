@@ -1130,7 +1130,7 @@ void compilingCpp(const std::string& ride, const std::string& cxx1) {
     Screen ok = drive(ride, arguments, ctrl('b') + ctrl('q'), dir);
     check(onScreen(ok, "lines of"), "C++ goes to cxx1 on its own, and it builds");
     check(onScreen(ok, "cpp11*"), "with a star, because the file chose it");
-    check(wasShown(ok, "ISO C++"), "and cxx1's banner is in the console, as it printed it");
+    check(wasShown(ok, "C++11"), "and cxx1's banner is in the console, as it printed it");
 
     file::path bad = dir / "src" / "bad.cpp";
     writeFile(bad, "int main()\n{\n    int x = ;\n    return 0;\n}\n");

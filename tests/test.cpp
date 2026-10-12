@@ -4108,7 +4108,7 @@ void theFourthCompiler() {
     // said, banner included - cxx1's own behaviour, not edited here (decided 2026-09-11, after -nologo
     // had been passed for a day). What matters is that the banner is not read as a diagnostic, since it sits where an error would.
     check(!made.diag.present, "with nothing read as a diagnostic - its banner is not one");
-    check(made.output.find("ISO C++") != std::string::npos,
+    check(made.output.find("C++11") != std::string::npos,
           "and the banner is in the console, as cxx1 wrote it");
     check(editor::assemblyRecipe(tool, editor::ToolCxx1, source, editor::LangCpp, host,
                                  editor::ConfigDebug).command.find("nologo") == std::string::npos,
