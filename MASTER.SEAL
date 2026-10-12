@@ -5,17 +5,17 @@ Written by tools/master-seal; check it with `tools/master-seal check`.
 ------------------------------------------------------------------------
 program   seal     file CRC  files  seal file
 RIDE      1D71E38D 48B87A4B     80  ride-5.11.dat
-c90       8D82BAA5 1458A8D0     54  ../Compiler-Ci/c90-1.2.dat
-cpp11     7F653204 EBD6FF3B    155  ../C++Optimize/cxx1-1.6.dat
-shalimar  5B9B1954 8A94E383     52  ../Compiler-Si/shalimar-1.2.dat
-c2s       4BA1604B D72D192D     46  ../Converter-C2S/c2s-1.2.dat
-vm6747    1E73EFB0 AE3C7D1D     10  ../VM6747/vm6747-1.0.dat
-asm6x     8044A2EE 3BC0920E     10  ../ASM6x/asm6x-1.0.dat
-masm      5E4155D7 4FB584F1     11  ../MASM/masm-1.0.dat
-link      DB133712 64B8CFD7      6  ../LINK/link-1.1.dat
-lnk6x     1D45D6CE 52EC032F      8  ../LNK6x/lnk6x-1.1.dat
-sim6747   2D1A3C81 305A2906     27  ../SIM6747/sim6747-1.2.dat
-rts6x     040CE785 0D069FBC    378  ../RTS6x/rts6x-1.2.dat
+c90       8D82BAA5 1458A8D0     54  ../Compilers/Compiler-Ci/c90-1.2.dat
+cpp11     7F653204 EBD6FF3B    155  ../Compilers/C++Optimize/cxx1-1.6.dat
+shalimar  5B9B1954 8A94E383     52  ../Compilers/Compiler-Si/shalimar-1.2.dat
+c2s       4BA1604B D72D192D     46  ../Compilers/Converter-C2S/c2s-1.2.dat
+vm6747    1E73EFB0 AE3C7D1D     10  ../TI/VM6747/vm6747-1.0.dat
+asm6x     8044A2EE 3BC0920E     10  ../TI/ASM6x/asm6x-1.0.dat
+masm      5E4155D7 4FB584F1     11  ../Windows/MASM/masm-1.0.dat
+link      DB133712 64B8CFD7      6  ../Windows/LINK/link-1.1.dat
+lnk6x     1D45D6CE 52EC032F      8  ../TI/LNK6x/lnk6x-1.1.dat
+sim6747   2D1A3C81 305A2906     27  ../TI/SIM6747/sim6747-1.2.dat
+rts6x     040CE785 0D069FBC    378  ../TI/RTS6x/rts6x-1.2.dat
 ------------------------------------------------------------------------
 Master seal F8F3BAD9
 Sealed on 13-10-2026

@@ -61,15 +61,15 @@ echo.
 rem ---- the projects RIDE drives, as workspace.mk and RIDE.sln name them -------
 rem Each: the x64\ and obj\ trees MSVC leaves, bin\, its program, and what its suites wrote. build\ only
 rem where the project holds no source of that name - c90's and cpp11's build is a tracked file.
-call :project "Compiler-Ci" c90.exe keepbuild
-call :project "C++Optimize" cpp11.exe keepbuild
-call :project "Compiler-Si" shalimar.exe
-call :project "VM6747" vm6747.exe
-call :project "Converter-C2S" c2s.exe
-call :project "ASM6x" asm6x.exe
-call :project "MASM" masm.exe
-call :project "LINK" link.exe
-call :project "LNK6x" lnk6x.exe
+call :project "Compilers\Compiler-Ci" c90.exe keepbuild
+call :project "Compilers\C++Optimize" cpp11.exe keepbuild
+call :project "Compilers\Compiler-Si" shalimar.exe
+call :project "TI\VM6747" vm6747.exe
+call :project "Compilers\Converter-C2S" c2s.exe
+call :project "TI\ASM6x" asm6x.exe
+call :project "Windows\MASM" masm.exe
+call :project "Windows\LINK" link.exe
+call :project "TI\LNK6x" lnk6x.exe
 
 if "%DRY%"=="1" (echo %COUNT% would be removed.) else (echo %COUNT% removed.)
 exit /b 0

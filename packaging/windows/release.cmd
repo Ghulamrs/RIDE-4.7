@@ -26,17 +26,17 @@ mkdir "%W%" || exit /b 1
 echo RIDE %VER% release in %W%
 echo [1/3] Fresh checkouts from github.com/Ghulamrs
 call :clone RIDE-%VER% RIDE-4.7 || exit /b 1
-call :clone VM6747 VM6747 || exit /b 1
-call :clone Compiler-Ci Compiler-Ci || exit /b 1
-call :clone Compiler-Si Compiler-Si || exit /b 1
-call :clone C++Optimize Compiler-Cpp-Optimize || exit /b 1
-call :clone ASM6x ASM6x || exit /b 1
-call :clone LNK6x LNK6X || exit /b 1
-call :clone LINK LINK || exit /b 1
-call :clone MASM MASM || exit /b 1
-call :clone Converter-C2S Converter-C2S || exit /b 1
-call :clone SIM6747 SIM6747 || exit /b 1
-call :clone RTS6x RTS6x || exit /b 1
+call :clone TI\VM6747 VM6747 || exit /b 1
+call :clone Compilers\Compiler-Ci Compiler-Ci || exit /b 1
+call :clone Compilers\Compiler-Si Compiler-Si || exit /b 1
+call :clone Compilers\C++Optimize Compiler-Cpp-Optimize || exit /b 1
+call :clone TI\ASM6x ASM6x || exit /b 1
+call :clone TI\LNK6x LNK6X || exit /b 1
+call :clone Windows\LINK LINK || exit /b 1
+call :clone Windows\MASM MASM || exit /b 1
+call :clone Compilers\Converter-C2S Converter-C2S || exit /b 1
+call :clone TI\SIM6747 SIM6747 || exit /b 1
+call :clone TI\RTS6x RTS6x || exit /b 1
 (echo RIDE %VER%, built %DATE% %TIME% on %COMPUTERNAME% ^(Windows^) from fresh checkouts& type "%W%\RELEASE.txt.repos") > "%W%\RELEASE.txt"
 del "%W%\RELEASE.txt.repos"
 

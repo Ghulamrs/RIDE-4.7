@@ -7,7 +7,7 @@
 # projects are siblings under C:\Users\GRA\source - RIDE (4.0's own
 # directory, so the sealed 3.5 tree in RIDE is left alone), VM6747,
 # Compiler-Ci, Compiler-Si, C++Optimize, ASM6x, MASM, LINK, LNK6x, Converter-C2S - which is the shape RIDE.sln assumes when
-# it names ..\Compiler-Ci\ide\cc1.vcxproj and the rest.
+# it names ..\Compilers\Compiler-Ci\ide\cc1.vcxproj and the rest.
 #
 # Three rules that each cost an hour before they were written down:
 #
@@ -21,7 +21,7 @@
 #     file on that side is a stale build with a green suite in front of it.
 #
 # cxx1 travels with the editor since 3.0. RIDE.sln builds it from
-# ..\C++Optimize\ide\cxx1.vcxproj (the root copies moved to ide/ on 2026-09-30), written at
+# ..\Compilers\C++Optimize\ide\cxx1.vcxproj (the root copies moved to ide/ on 2026-09-30), written at
 # the root of the C++ checkout here; the sources, headers, msvc\compat and
 # that project go over together, laid over the tree there - never wiping it,
 # since that directory also holds hand-run experiments that are not ours.
@@ -38,18 +38,18 @@ ROOT="${ED1_WINDOWS_ROOT:-C:\\Users\\GRA\\source}"
 DIR="$ROOT\\RIDE-4.7"
 # The three compilers are repositories of their own beside VM6747 since
 # 2026-10-12, laid out on the box as they are here; VM6747 is the emulator itself.
-VM_ROOT="$ROOT\\VM6747"
-CC1I_DIR="$ROOT\\Compiler-Ci"
-CXX1_DIR="$ROOT\\C++Optimize"
-SHCI_DIR="$ROOT\\Compiler-Si"
+VM_ROOT="$ROOT\\TI\\VM6747"
+CC1I_DIR="$ROOT\\Compilers\\Compiler-Ci"
+CXX1_DIR="$ROOT\\Compilers\\C++Optimize"
+SHCI_DIR="$ROOT\\Compilers\\Compiler-Si"
 EMU_DIR="$VM_ROOT"
-ASM_DIR="$ROOT\\ASM6x"
-MASM_DIR="$ROOT\\MASM"
-LINK_DIR="$ROOT\\LINK"
-LNK6X_DIR="$ROOT\\LNK6x"
-C2S_DIR="$ROOT\\Converter-C2S"
-SIM_DIR="$ROOT\\SIM6747"
-RTS_DIR="$ROOT\\RTS6x"
+ASM_DIR="$ROOT\\TI\\ASM6x"
+MASM_DIR="$ROOT\\Windows\\MASM"
+LINK_DIR="$ROOT\\Windows\\LINK"
+LNK6X_DIR="$ROOT\\TI\\LNK6x"
+C2S_DIR="$ROOT\\Compilers\\Converter-C2S"
+SIM_DIR="$ROOT\\TI\\SIM6747"
+RTS_DIR="$ROOT\\TI\\RTS6x"
 WHAT="${1:-check}"
 # A directory of its own: to-windows.sh and to-linux.sh name their archives
 # alike, and run at once they overwrote each other's (a truncated tar).
@@ -74,39 +74,39 @@ tar --no-mac-metadata \
 # ---- cxx1 ------------------------------------------------------------------
 # The parts its Visual Studio project compiles and includes, and nothing of
 # its own build tree.
-( cd ../Compiler-Ci && tar --no-mac-metadata --exclude '* 2.*' --exclude 'obj' --exclude '*.exe' --exclude 'out-*' \
+( cd ../Compilers/Compiler-Ci && tar --no-mac-metadata --exclude '* 2.*' --exclude 'obj' --exclude '*.exe' --exclude 'out-*' \
     -czf "$TMP/c90-src.tgz" src lib msvc tests examples Makefile ide README.md ) || exit 2
-( cd ../C++Optimize && tar --no-mac-metadata --exclude '* 2.*' --exclude 'obj' --exclude '*.exe' --exclude 'out-*' \
+( cd ../Compilers/C++Optimize && tar --no-mac-metadata --exclude '* 2.*' --exclude 'obj' --exclude '*.exe' --exclude 'out-*' \
     -czf "$TMP/cxx1-src.tgz" src include lib msvc tests Makefile ide README.md ) || exit 2
-( cd ../VM6747 && tar --no-mac-metadata --exclude '* 2.*' --exclude '*.exe' \
+( cd ../TI/VM6747 && tar --no-mac-metadata --exclude '* 2.*' --exclude '*.exe' \
     -czf "$TMP/vm6747-src.tgz" src msvc tests Makefile vm6747.vcxproj README.md ) || exit 2
-# asm6x: the C6000 assembler, beside this checkout as ../ASM6x, its own repository.
-( cd ../ASM6x && tar --no-mac-metadata --exclude '* 2.*' --exclude '*.exe' --exclude 'build' \
+# asm6x: the C6000 assembler, beside this checkout as ../TI/ASM6x, its own repository.
+( cd ../TI/ASM6x && tar --no-mac-metadata --exclude '* 2.*' --exclude '*.exe' --exclude 'build' \
     -czf "$TMP/asm6x-src.tgz" src tests Makefile asm6x.vcxproj README.md ) || exit 2
-# masm: the x86-64 assembler, beside this checkout as ../MASM, its own repository.
-( cd ../MASM && tar --no-mac-metadata --exclude '* 2.*' --exclude '*.exe' --exclude 'build' \
+# masm: the x86-64 assembler, beside this checkout as ../Windows/MASM, its own repository.
+( cd ../Windows/MASM && tar --no-mac-metadata --exclude '* 2.*' --exclude '*.exe' --exclude 'build' \
     -czf "$TMP/masm-src.tgz" src tests Makefile masm.vcxproj README.md ) || exit 2
-# link: the x86-64 linker, beside this checkout as ../LINK, its own repository.
+# link: the x86-64 linker, beside this checkout as ../Windows/LINK, its own repository.
 # Not '*.exe' here: tests/ref holds the images link.exe made, which its bed is
 # held to, and they are .exe files. build/ is where its own product would be.
-( cd ../LINK && tar --no-mac-metadata --exclude '* 2.*' --exclude 'build' --exclude 'x64' \
+( cd ../Windows/LINK && tar --no-mac-metadata --exclude '* 2.*' --exclude 'build' --exclude 'x64' \
     -czf "$TMP/link-src.tgz" src tests Makefile link.vcxproj README.md ) || exit 2
-# lnk6x: the C6000 linker, beside this checkout as ../LNK6x, its own repository;
+# lnk6x: the C6000 linker, beside this checkout as ../TI/LNK6x, its own repository;
 # tests/ref holds the .out images TI's lnk6x made, which its bed is held to.
-( cd ../LNK6x && tar --no-mac-metadata --exclude '* 2.*' --exclude 'build' --exclude 'x64' \
+( cd ../TI/LNK6x && tar --no-mac-metadata --exclude '* 2.*' --exclude 'build' --exclude 'x64' \
     -czf "$TMP/lnk6x-src.tgz" src tests Makefile lnk6x.vcxproj README.md ) || exit 2
-# sim6747: the C6747 simulator (5.0), beside this checkout as ../SIM6747; RIDE.sln builds it.
-( cd ../SIM6747 && tar --no-mac-metadata --exclude '* 2.*' --exclude '*.exe' --exclude 'build' --exclude 'oracle/ship' \
+# sim6747: the C6747 simulator (5.0), beside this checkout as ../TI/SIM6747; RIDE.sln builds it.
+( cd ../TI/SIM6747 && tar --no-mac-metadata --exclude '* 2.*' --exclude '*.exe' --exclude 'build' --exclude 'oracle/ship' \
     -czf "$TMP/sim6747-src.tgz" src tests msvc sim6747.vcxproj Makefile README.md ) || exit 2
-# rts6x: the C6747 runtime (5.1), beside this checkout as ../RTS6x; RIDE.sln builds it with build.cmd.
-( cd ../RTS6x && tar --no-mac-metadata --exclude '* 2.*' --exclude 'build' \
+# rts6x: the C6747 runtime (5.1), beside this checkout as ../TI/RTS6x; RIDE.sln builds it with build.cmd.
+( cd ../TI/RTS6x && tar --no-mac-metadata --exclude '* 2.*' --exclude 'build' \
     -czf "$TMP/rts6x-src.tgz" src tests tools docs Makefile build.cmd printf6x.members rts6x.vcxproj README.md ) || exit 2
-# c2s: the converter, beside this checkout as ../Converter-C2S; RIDE.sln builds it, so a fresh root needs it.
-( cd ../Converter-C2S && tar --no-mac-metadata --exclude '* 2.*' --exclude '*.exe' --exclude 'obj' \
+# c2s: the converter, beside this checkout as ../Compilers/Converter-C2S; RIDE.sln builds it, so a fresh root needs it.
+( cd ../Compilers/Converter-C2S && tar --no-mac-metadata --exclude '* 2.*' --exclude '*.exe' --exclude 'obj' \
     -czf "$TMP/c2s-src.tgz" src tests c2s.vcxproj Makefile README.md ) || exit 2
 # shalimar: what ide/shc.vcxproj compiles - src and the runtime it builds beside the
 # binary - and nothing built here; lib/ holds this machine's archives.
-( cd ../Compiler-Si && tar --no-mac-metadata --exclude '* 2.*' --exclude '*.exe' --exclude 'lib' --exclude 'out-*' \
+( cd ../Compilers/Compiler-Si && tar --no-mac-metadata --exclude '* 2.*' --exclude '*.exe' --exclude 'lib' --exclude 'out-*' \
     -czf "$TMP/shalimar-src.tgz" src runtime tests examples Makefile build.bat ide README.md ) || exit 2
 
 say "copying to $BOX:$ROOT"

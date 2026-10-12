@@ -287,17 +287,20 @@ footer { color: var(--muted); font-size: 12.5px; margin-top: 28px; }
 <pre class="tree"><span class="m">~/Developer/Claude/                      source workspace, one git repo each</span>
 ├─ <span class="k r">RIDE-4.7/</span>            <span class="m">IDE (RIDE 5.11 - the folder keeps an older release's name), MASTER.SEAL, release scripts</span>
 │  ├─ src/ winforms/ macos/ packaging/ tools/
-├─ <span class="k c">Compiler-Ci/</span>         <span class="m">c90</span>
-├─ <span class="k p">C++Optimize/</span>         <span class="m">cpp11</span>
-├─ <span class="k s">Compiler-Si/</span>         <span class="m">shalimar</span>
-├─ <span class="k x">VM6747/</span>              <span class="m">vm6747</span>
-├─ <span class="k">Converter-C2S/</span>       <span class="m">c2s</span>
-├─ <span class="k w">MASM/</span>                <span class="m">masm  (x86-64 assembler)</span>
-├─ <span class="k w">LINK/</span>                <span class="m">link  (Windows PE linker)</span>
-├─ <span class="k x">ASM6x/</span>               <span class="m">asm6x (C6000 assembler)</span>
-├─ <span class="k x">LNK6x/</span>               <span class="m">lnk6x (C6000 linker)</span>
-├─ <span class="k x">SIM6747/</span>             <span class="m">sim6747 (C6747 simulator)</span>
-└─ <span class="k x">RTS6x/</span>               <span class="m">rts6x, printf6x (C6747 runtime, compiled by cpp11)</span>
+├─ <span class="k">Compilers/</span>
+│  ├─ <span class="k c">Compiler-Ci/</span>       <span class="m">c90</span>
+│  ├─ <span class="k p">C++Optimize/</span>       <span class="m">cpp11</span>
+│  ├─ <span class="k s">Compiler-Si/</span>       <span class="m">shalimar</span>
+│  └─ <span class="k">Converter-C2S/</span>     <span class="m">c2s</span>
+├─ <span class="k">TI/</span>
+│  ├─ <span class="k x">VM6747/</span>            <span class="m">vm6747</span>
+│  ├─ <span class="k x">SIM6747/</span>           <span class="m">sim6747 (C6747 simulator)</span>
+│  ├─ <span class="k x">ASM6x/</span>             <span class="m">asm6x (C6000 assembler)</span>
+│  ├─ <span class="k x">LNK6x/</span>             <span class="m">lnk6x (C6000 linker)</span>
+│  └─ <span class="k x">RTS6x/</span>             <span class="m">rts6x, printf6x (C6747 runtime, compiled by cpp11)</span>
+└─ <span class="k">Windows/</span>
+   ├─ <span class="k w">MASM/</span>              <span class="m">masm  (x86-64 assembler)</span>
+   └─ <span class="k w">LINK/</span>              <span class="m">link  (Windows PE linker)</span>
 </pre>
 <pre class="tree"><span class="m">C:\Program Files\RIDE 5.11\              installed (Windows)</span>
 ├─ <span class="k r">RIDE.exe</span>
@@ -323,17 +326,17 @@ footer { color: var(--muted); font-size: 12.5px; margin-top: 28px; }
   <table>
     <tr><th>program</th><th>source</th><th>seal file</th><th>seal</th></tr>
     <tr class="ride"><td class="cell">RIDE</td><td class="mono">RIDE-4.7</td><td class="mono">ride-5.11.dat</td><td class="mono">1D71E38D</td></tr>
-    <tr class="lang-c"><td class="cell">c90</td><td class="mono">Compiler-Ci</td><td class="mono">c90-1.2.dat</td><td class="mono">8D82BAA5</td></tr>
-    <tr class="lang-cpp"><td class="cell">cpp11</td><td class="mono">C++Optimize</td><td class="mono">cxx1-1.6.dat</td><td class="mono">7F653204</td></tr>
-    <tr class="lang-shl"><td class="cell">shalimar</td><td class="mono">Compiler-Si</td><td class="mono">shalimar-1.2.dat</td><td class="mono">5B9B1954</td></tr>
-    <tr class="ride"><td class="cell">c2s</td><td class="mono">Converter-C2S</td><td class="mono">c2s-1.2.dat</td><td class="mono">4BA1604B</td></tr>
-    <tr class="t-c6x"><td class="cell">vm6747</td><td class="mono">VM6747</td><td class="mono">vm6747-1.0.dat</td><td class="mono">1E73EFB0</td></tr>
-    <tr class="t-c6x"><td class="cell">asm6x</td><td class="mono">ASM6x</td><td class="mono">asm6x-1.0.dat</td><td class="mono">8044A2EE</td></tr>
-    <tr class="t-win"><td class="cell">masm</td><td class="mono">MASM</td><td class="mono">masm-1.0.dat</td><td class="mono">5E4155D7</td></tr>
-    <tr class="t-win"><td class="cell">link</td><td class="mono">LINK</td><td class="mono">link-1.1.dat</td><td class="mono">DB133712</td></tr>
-    <tr class="t-c6x"><td class="cell">lnk6x</td><td class="mono">LNK6x</td><td class="mono">lnk6x-1.1.dat</td><td class="mono">1D45D6CE</td></tr>
-    <tr class="t-c6x"><td class="cell">sim6747</td><td class="mono">SIM6747</td><td class="mono">sim6747-1.2.dat</td><td class="mono">2D1A3C81</td></tr>
-    <tr class="t-c6x"><td class="cell">rts6x</td><td class="mono">RTS6x</td><td class="mono">rts6x-1.2.dat</td><td class="mono">040CE785</td></tr>
+    <tr class="lang-c"><td class="cell">c90</td><td class="mono">Compilers/Compiler-Ci</td><td class="mono">c90-1.2.dat</td><td class="mono">8D82BAA5</td></tr>
+    <tr class="lang-cpp"><td class="cell">cpp11</td><td class="mono">Compilers/C++Optimize</td><td class="mono">cxx1-1.6.dat</td><td class="mono">7F653204</td></tr>
+    <tr class="lang-shl"><td class="cell">shalimar</td><td class="mono">Compilers/Compiler-Si</td><td class="mono">shalimar-1.2.dat</td><td class="mono">5B9B1954</td></tr>
+    <tr class="ride"><td class="cell">c2s</td><td class="mono">Compilers/Converter-C2S</td><td class="mono">c2s-1.2.dat</td><td class="mono">4BA1604B</td></tr>
+    <tr class="t-c6x"><td class="cell">vm6747</td><td class="mono">TI/VM6747</td><td class="mono">vm6747-1.0.dat</td><td class="mono">1E73EFB0</td></tr>
+    <tr class="t-c6x"><td class="cell">asm6x</td><td class="mono">TI/ASM6x</td><td class="mono">asm6x-1.0.dat</td><td class="mono">8044A2EE</td></tr>
+    <tr class="t-win"><td class="cell">masm</td><td class="mono">Windows/MASM</td><td class="mono">masm-1.0.dat</td><td class="mono">5E4155D7</td></tr>
+    <tr class="t-win"><td class="cell">link</td><td class="mono">Windows/LINK</td><td class="mono">link-1.1.dat</td><td class="mono">DB133712</td></tr>
+    <tr class="t-c6x"><td class="cell">lnk6x</td><td class="mono">TI/LNK6x</td><td class="mono">lnk6x-1.1.dat</td><td class="mono">1D45D6CE</td></tr>
+    <tr class="t-c6x"><td class="cell">sim6747</td><td class="mono">TI/SIM6747</td><td class="mono">sim6747-1.2.dat</td><td class="mono">2D1A3C81</td></tr>
+    <tr class="t-c6x"><td class="cell">rts6x</td><td class="mono">TI/RTS6x</td><td class="mono">rts6x-1.2.dat</td><td class="mono">040CE785</td></tr>
   </table>
   <!-- end seals -->
   </div>

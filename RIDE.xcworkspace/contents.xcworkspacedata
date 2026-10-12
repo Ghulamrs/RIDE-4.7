@@ -5,34 +5,34 @@
       location = "group:Editor.xcodeproj">
    </FileRef>
    <FileRef
-      location = "group:../Compiler-Ci/ide/cc1.xcodeproj">
+      location = "group:../Compilers/Compiler-Ci/ide/cc1.xcodeproj">
    </FileRef>
    <FileRef
-      location = "group:../Compiler-Si/ide/shc.xcodeproj">
+      location = "group:../Compilers/Compiler-Si/ide/shc.xcodeproj">
    </FileRef>
    <FileRef
-      location = "group:../C++Optimize/ide/cxx1.xcodeproj">
+      location = "group:../Compilers/C++Optimize/ide/cxx1.xcodeproj">
    </FileRef>
    <FileRef
-      location = "group:../VM6747/vm6747.xcodeproj">
+      location = "group:../TI/VM6747/vm6747.xcodeproj">
    </FileRef>
    <FileRef
-      location = "group:../ASM6x/asm6x.xcodeproj">
+      location = "group:../TI/ASM6x/asm6x.xcodeproj">
    </FileRef>
    <FileRef
-      location = "group:../MASM/masm.xcodeproj">
+      location = "group:../Windows/MASM/masm.xcodeproj">
    </FileRef>
    <FileRef
-      location = "group:../LINK/link.xcodeproj">
+      location = "group:../Windows/LINK/link.xcodeproj">
    </FileRef>
    <FileRef
-      location = "group:../SIM6747/sim6747.xcodeproj">
+      location = "group:../TI/SIM6747/sim6747.xcodeproj">
    </FileRef>
    <FileRef
-      location = "group:../LNK6x/lnk6x.xcodeproj">
+      location = "group:../TI/LNK6x/lnk6x.xcodeproj">
    </FileRef>
    <FileRef
-      location = "group:../Converter-C2S/c2s.xcodeproj">
+      location = "group:../Compilers/Converter-C2S/c2s.xcodeproj">
    </FileRef>
    <FileRef
       location = "group:packaging/macos/Installer.xcodeproj">

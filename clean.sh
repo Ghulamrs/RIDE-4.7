@@ -82,15 +82,15 @@ fi
 # The projects RIDE 4.7 builds, named the way workspace.mk names them and overridable the same way, so a
 # machine that keeps them elsewhere is reached by naming them: a cleaner that silently cleaned nothing because
 # it looked for a name that machine does not use would be worse than no cleaner.
-CC1_DIR=${CC1_DIR:-$root/Compiler-Ci}
-CXX1_DIR=${CXX1_DIR:-$root/C++Optimize}
-SHC_DIR=${SHC_DIR:-$root/Compiler-Si}
-VM_DIR=${VM_DIR:-$root/VM6747}
-C2S_DIR=${C2S_DIR:-$root/Converter-C2S}
-ASM_DIR=${ASM_DIR:-$root/ASM6x}
-MASM_DIR=${MASM_DIR:-$root/MASM}
-LINK_DIR=${LINK_DIR:-$root/LINK}
-LNK6X_DIR=${LNK6X_DIR:-$root/LNK6x}
+CC1_DIR=${CC1_DIR:-$root/Compilers/Compiler-Ci}
+CXX1_DIR=${CXX1_DIR:-$root/Compilers/C++Optimize}
+SHC_DIR=${SHC_DIR:-$root/Compilers/Compiler-Si}
+VM_DIR=${VM_DIR:-$root/TI/VM6747}
+C2S_DIR=${C2S_DIR:-$root/Compilers/Converter-C2S}
+ASM_DIR=${ASM_DIR:-$root/TI/ASM6x}
+MASM_DIR=${MASM_DIR:-$root/Windows/MASM}
+LINK_DIR=${LINK_DIR:-$root/Windows/LINK}
+LNK6X_DIR=${LNK6X_DIR:-$root/TI/LNK6x}
 ED_DIR=${ED_DIR:-$here}
 
 for repo in "$CC1_DIR" "$CXX1_DIR" "$SHC_DIR" "$VM_DIR" "$C2S_DIR" "$ASM_DIR" "$MASM_DIR" "$LINK_DIR" "$LNK6X_DIR" "$ED_DIR"; do

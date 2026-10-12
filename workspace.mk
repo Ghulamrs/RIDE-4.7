@@ -22,19 +22,19 @@
 # host targets and the TMS320C6747, shalimar with its three - and vm6747, the
 # emulator that runs the fourth, is built with them. Compiler-C, C++ and
 # Compiler-S stay sealed beside.
-CC1_DIR ?= ../Compiler-Ci
-SHC_DIR ?= ../Compiler-Si
-C2S_DIR ?= ../Converter-C2S
-CXX1_DIR ?= ../C++Optimize
-VM_DIR ?= ../VM6747
-ASM_DIR ?= ../ASM6x
-MASM_DIR ?= ../MASM
-LINK_DIR ?= ../LINK
-LNK6X_DIR ?= ../LNK6x
+CC1_DIR ?= ../Compilers/Compiler-Ci
+SHC_DIR ?= ../Compilers/Compiler-Si
+C2S_DIR ?= ../Compilers/Converter-C2S
+CXX1_DIR ?= ../Compilers/C++Optimize
+VM_DIR ?= ../TI/VM6747
+ASM_DIR ?= ../TI/ASM6x
+MASM_DIR ?= ../Windows/MASM
+LINK_DIR ?= ../Windows/LINK
+LNK6X_DIR ?= ../TI/LNK6x
 # 5.0: the C6747 simulator, which runs a linked .out as TI's does, beside the emulator.
-SIM_DIR ?= ../SIM6747
+SIM_DIR ?= ../TI/SIM6747
 # 5.1: RTS6x, the project's own C6747 runtime, which a TI program links against instead of TI's.
-RTS_DIR ?= ../RTS6x
+RTS_DIR ?= ../TI/RTS6x
 
 # ---- one directory, named once and given to all four ------------------------
 #

@@ -16,15 +16,15 @@ Was make-xcodeproj.py while Xcode was all it wrote.
 Three command line tools, built by clang++, from three separate repositories:
 
     RIDE  this editor         RIDE/Editor.xcodeproj
-    cc1      the C compiler      ../Compiler-Ci/ide/cc1.xcodeproj    (its own)
-    cxx1     the C++ compiler    ../C++Optimize/ide/cxx1.xcodeproj (its own)
-    shc      the Shalimar one    ../Compiler-Si/ide/shc.xcodeproj    (its own)
+    cc1      the C compiler      ../Compilers/Compiler-Ci/ide/cc1.xcodeproj    (its own)
+    cxx1     the C++ compiler    ../Compilers/C++Optimize/ide/cxx1.xcodeproj (its own)
+    shc      the Shalimar one    ../Compilers/Compiler-Si/ide/shc.xcodeproj    (its own)
 
 Since 2026-10-12 the compilers are repositories of their own beside this one -
-../Compiler-Ci, ../C++Optimize and ../Compiler-Si, building c90, cpp11 and
-shalimar - and the emulator is ../VM6747. The three originals stay sealed and are not opened by
+../Compilers/Compiler-Ci, ../Compilers/C++Optimize and ../Compilers/Compiler-Si, building c90, cpp11 and
+shalimar - and the emulator is ../TI/VM6747. The three originals stay sealed and are not opened by
 anything written here.
-    c2s      the converter       ../Converter-C2S/c2s.xcodeproj
+    c2s      the converter       ../Compilers/Converter-C2S/c2s.xcodeproj
 
 cxx1 joined in 3.0. Its checkout is called C++ here and Compiler-Cpp on
 GitHub and on the Windows box, which is the one place the name matters: the
@@ -82,36 +82,36 @@ SIBLINGS = os.path.dirname(HERE)
 # 3.5: the C and C++ compilers are the VM6747 line - c90 and cpp11, three
 # host targets and the TMS320C6747 - and vm6747, the emulator, is built with
 # them. Each its own repository beside this one (VM6747 is the emulator).
-CC1_REPO = "Compiler-Ci"
-CXX1_REPO = "C++Optimize"
-VM_REPO = "VM6747"
+CC1_REPO = "Compilers/Compiler-Ci"
+CXX1_REPO = "Compilers/C++Optimize"
+VM_REPO = "TI/VM6747"
 # The C6000 assembler, its own repository beside this one: asm6x turns the
 # tms6747 assembly into TI objects, and lnk6x - CCS's, where Tools names it -
 # links them into a real .out. It travels with the editor as vm6747 does.
-ASM_REPO = "ASM6x"
+ASM_REPO = "TI/ASM6x"
 # The x86-64 assembler, its own repository beside this one too: masm reads
 # the MASM the three compilers write for x86_64-windows and writes the COFF
 # that link.exe takes, in place of ml64 - which is what settings.json names
 # it as, in an installation. Docked since 4.0.
-MASM_REPO = "MASM"
+MASM_REPO = "Windows/MASM"
 # The x86-64 linker, its own repository beside this one as well: link reads
 # the COFF masm (and ml64, and cl) write and produces the PE32+ image, held to
 # link.exe byte for byte on its probe bed. Docked since 4.0; settings.json
 # names it as the linker only when it can take the editor's whole link line.
-LINK_REPO = "LINK"
+LINK_REPO = "Windows/LINK"
 # And the C6000 linker, LINK's sibling as ASM6x is MASM's: lnk6x reads the TI
 # ELF asm6x (and cl6x) write, places it as a linker command file says and
 # writes the .out TI's lnk6x would, held to it byte for byte on its probe bed.
 # Docked since 4.0; named as the tms6747 linker under Tools, not by default.
-LNK6X_REPO = "LNK6x"
-SHC_REPO = "Compiler-Si"
+LNK6X_REPO = "TI/LNK6x"
+SHC_REPO = "Compilers/Compiler-Si"
 # The C6747 simulator, its own repository beside this one since 5.0: SIM6747 runs
 # a linked .out the way TI's simulator does - machine code, TI's boot and rts - where
 # vm6747 runs assembly. Its product is sim6747.exe so the two can sit side by side.
-SIM_REPO = "SIM6747"
+SIM_REPO = "TI/SIM6747"
 # RTS6x, the project's own C6747 runtime (5.1): its rts6x.lib is what a TI program links against
 # unless Tools names TI's compiler directory. Built from cpp11's and asm6x's output by its build.cmd.
-RTS_REPO = "RTS6x"
+RTS_REPO = "TI/RTS6x"
 
 
 def ident(product, *parts):
@@ -237,7 +237,7 @@ def projects():
                         ("lnk6x.exe", "../" + LNK6X_REPO + "/lnk6x.xcodeproj"),
                         ("sim6747.exe", "../" + SIM_REPO + "/sim6747.xcodeproj"),
                         ("shalimar.exe", "../" + SHC_REPO + "/ide/shc.xcodeproj"),
-                        ("c2s.exe", "../Converter-C2S/c2s.xcodeproj")],
+                        ("c2s.exe", "../Compilers/Converter-C2S/c2s.xcodeproj")],
         },
         {
             "product": "c90.exe",
@@ -280,7 +280,7 @@ def projects():
             # the ordering workspace.mk states as `make ... all tms6747
             # CXX1=$(OUT)/cpp11.exe` and RIDE.sln as a project dependency.
             # The path is from *this* project's directory, not the editor's:
-            # "../C++Optimize" from here would be Compiler-Si/C++Optimize,
+            # "../Compilers/C++Optimize" from here would be Compiler-Si/C++Optimize,
             # and Xcode drops a reference it cannot follow without a word -
             # the dependency graph then says "shalimar.exe (no dependencies)".
             "depends": [("cpp11.exe",
@@ -381,16 +381,16 @@ def projects():
         },
         {
             "product": "c2s.exe",
-            "root": os.path.join(SIBLINGS, "Converter-C2S"),
-            "out": os.path.join(SIBLINGS, "Converter-C2S", "c2s.xcodeproj"),
+            "root": os.path.join(SIBLINGS, "Compilers", "Converter-C2S"),
+            "out": os.path.join(SIBLINGS, "Compilers", "Converter-C2S", "c2s.xcodeproj"),
             # Its Makefile is five wildcards over five directories, so the
             # directories are the list - the same shape as cc1's. src/s/vendor
             # is Compiler-S's front end, copied rather than linked, and it is
             # compiled here like everything else.
-            "sources": by_glob(os.path.join(SIBLINGS, "Converter-C2S"),
+            "sources": by_glob(os.path.join(SIBLINGS, "Compilers", "Converter-C2S"),
                                ("src", "src/c", "src/s", "src/s/vendor",
                                 "src/convert")),
-            "headers": headers_under(os.path.join(SIBLINGS, "Converter-C2S"),
+            "headers": headers_under(os.path.join(SIBLINGS, "Compilers", "Converter-C2S"),
                                      ("src",)),
             "include": "$(SRCROOT)/src",
         },
@@ -1304,19 +1304,19 @@ def workspace_mk_text():
 # host targets and the TMS320C6747, shalimar with its three - and vm6747, the
 # emulator that runs the fourth, is built with them. Compiler-C, C++ and
 # Compiler-S stay sealed beside.
-CC1_DIR ?= ../Compiler-Ci
-SHC_DIR ?= ../Compiler-Si
-C2S_DIR ?= ../Converter-C2S
-CXX1_DIR ?= ../C++Optimize
-VM_DIR ?= ../VM6747
-ASM_DIR ?= ../ASM6x
-MASM_DIR ?= ../MASM
-LINK_DIR ?= ../LINK
-LNK6X_DIR ?= ../LNK6x
+CC1_DIR ?= ../Compilers/Compiler-Ci
+SHC_DIR ?= ../Compilers/Compiler-Si
+C2S_DIR ?= ../Compilers/Converter-C2S
+CXX1_DIR ?= ../Compilers/C++Optimize
+VM_DIR ?= ../TI/VM6747
+ASM_DIR ?= ../TI/ASM6x
+MASM_DIR ?= ../Windows/MASM
+LINK_DIR ?= ../Windows/LINK
+LNK6X_DIR ?= ../TI/LNK6x
 # 5.0: the C6747 simulator, which runs a linked .out as TI's does, beside the emulator.
-SIM_DIR ?= ../SIM6747
+SIM_DIR ?= ../TI/SIM6747
 # 5.1: RTS6x, the project's own C6747 runtime, which a TI program links against instead of TI's.
-RTS_DIR ?= ../RTS6x
+RTS_DIR ?= ../TI/RTS6x
 
 # ---- one directory, named once and given to all four ------------------------
 #
@@ -1672,7 +1672,7 @@ def main():
     # milestone 0 and which was never written. It is generated here rather
     # than by hand for the same reason the others are: its Makefile is five
     # wildcards, and a hand-kept list of twenty-two files drifts.
-    wanted.append((os.path.join(SIBLINGS, "Converter-C2S", "c2s.vcxproj"),
+    wanted.append((os.path.join(SIBLINGS, "Compilers", "Converter-C2S", "c2s.vcxproj"),
                    vcxproj_text("c2s", spec_of["c2s.exe"]["sources"],
                                 ["_CRT_SECURE_NO_WARNINGS"]),
                    "c2s.vcxproj"))
@@ -1742,7 +1742,7 @@ def main():
         # c2s is built with them and not by them: the editor runs it over the
         # open file from the Language menu, and finds it beside itself the
         # same way it finds the compilers.
-        ("c2s", "../Converter-C2S/c2s.vcxproj", guid("c2s"), []),
+        ("c2s", "../Compilers/Converter-C2S/c2s.vcxproj", guid("c2s"), []),
         # the editor after both, which is the dependency this whole thing is
         # for - said in a .sln the way the workspace says it in a .xcodeproj.
         ("RIDEConsole", "RIDEConsole.vcxproj", guid("RIDEConsole"), [CC1_GUID, CXX1_GUID, guid("vm6747"), guid("asm6x"), guid("masm"), guid("link"), guid("lnk6x"), guid("sim6747"), guid("rts6x"), guid("shalimar"), guid("c2s")]),

@@ -15,8 +15,8 @@ set -eu
 VER=${1:-5.11}
 HERE=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$HERE/../.." && pwd)
-CPP=${CPP:-$ROOT/../C++Optimize}
-CC=${CC:-$ROOT/../Compiler-Ci}
+CPP=${CPP:-$ROOT/../Compilers/C++Optimize}
+CC=${CC:-$ROOT/../Compilers/Compiler-Ci}
 OUT=${OUT:-$ROOT/dist}
 BIN=${BIN:-$ROOT/bin}   # workspace.mk's installer target passes the BINDIR it built into
 STAGE=$(mktemp -d "${TMPDIR:-/tmp}/ride-run.XXXXXX")

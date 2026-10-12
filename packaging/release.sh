@@ -22,17 +22,17 @@ say() { printf '%s\n' "$*"; }
 
 # directory  repository - the siblings RIDE.sln and workspace.mk expect.
 REPOS="RIDE-$VER:RIDE-4.7
-VM6747:VM6747
-Compiler-Ci:Compiler-Ci
-Compiler-Si:Compiler-Si
-C++Optimize:Compiler-Cpp-Optimize
-ASM6x:ASM6x
-LNK6x:LNK6X
-LINK:LINK
-MASM:MASM
-Converter-C2S:Converter-C2S
-SIM6747:SIM6747
-RTS6x:RTS6x"
+TI/VM6747:VM6747
+Compilers/Compiler-Ci:Compiler-Ci
+Compilers/Compiler-Si:Compiler-Si
+Compilers/C++Optimize:Compiler-Cpp-Optimize
+TI/ASM6x:ASM6x
+TI/LNK6x:LNK6X
+Windows/LINK:LINK
+Windows/MASM:MASM
+Compilers/Converter-C2S:Converter-C2S
+TI/SIM6747:SIM6747
+TI/RTS6x:RTS6x"
 
 mkdir -p "$W"
 say "RIDE $VER release in $W"
