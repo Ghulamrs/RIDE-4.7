@@ -1,7 +1,7 @@
 ©2026 G. R. Akhtar - RIDE 5.1, the editor
 Release seal, version 5.1, sealed 12-10-2026
 Written by tools/seal; check it with `tools/seal check`.
-CRC32  size  file - 80 files, seal 929F84CF
+CRC32  size  file - 80 files, seal D4740EC2
 ------------------------------------------------------------------
 1DBB2FBC      2412  macos/CodeView.h
 02B3F91E     14632  macos/CodeView.mm
@@ -32,7 +32,7 @@ E5744BBB       644  src/convert.h
 DA6DC095       811  src/demangle_win.cpp
 BFB82E2E    154014  src/editor.cpp
 6CAD7851     11707  src/editor.h
-8AB1EB8F      8102  src/find.cpp
+CDF07192      8352  src/find.cpp
 54991F96      1560  src/find.h
 05B21AAD      2728  src/help.cpp
 909782C5       314  src/help.h
