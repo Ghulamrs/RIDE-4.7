@@ -12,7 +12,7 @@
 # install-header.sh, checks the machine, installs and links the commands.
 set -eu
 
-VER=${1:-5.1}
+VER=${1:-5.11}
 HERE=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$HERE/../.." && pwd)
 CPP=${CPP:-$ROOT/../C++Optimize}
