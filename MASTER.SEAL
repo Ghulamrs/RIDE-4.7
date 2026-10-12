@@ -1,21 +1,21 @@
 ©2026 G. R. Akhtar - RIDE 5.1 and the programs it drives
 Master seal: each project's seal, listed and combined into one
 Written by tools/master-seal; check it with `tools/master-seal check`.
-12 projects, 837 files, master seal DC1EF907
+12 projects, 837 files, master seal 85C6DB1C
 ------------------------------------------------------------------------
 program   seal     file CRC  files  seal file
-RIDE      0A46C214 7C7A329F     80  ride-5.1.dat
+RIDE      929F84CF 6488A69D     80  ride-5.1.dat
 c90       8D82BAA5 BE0B7E1B     54  ../Compiler-Ci/c90-1.2.dat
-cpp11     2891841F 211F0CDC    155  ../C++Optimize/cxx1-1.6.dat
+cpp11     7F653204 04149405    155  ../C++Optimize/cxx1-1.6.dat
 shalimar  5B9B1954 8BA9549D     52  ../Compiler-Si/shalimar-1.2.dat
 c2s       35C8D226 E8FBE556     46  ../Converter-C2S/c2s-1.2.dat
 vm6747    7E5B716D EBDA7F4D     10  ../VM6747/vm6747-1.0.dat
 asm6x     8044A2EE 120B5509     10  ../ASM6x/asm6x-1.0.dat
 masm      5E4155D7 162F02E2     11  ../MASM/masm-1.0.dat
-link      E35FB5A3 3513B069      6  ../LINK/link-1.0.dat
+link      DB133712 C280149C      6  ../LINK/link-1.1.dat
 lnk6x     1D45D6CE 33294E86      8  ../LNK6x/lnk6x-1.1.dat
 sim6747   2D1A3C81 BDDF2DDE     27  ../SIM6747/sim6747-1.2.dat
 rts6x     040CE785 CE842B0E    378  ../RTS6x/rts6x-1.2.dat
 ------------------------------------------------------------------------
-Master seal DC1EF907
-Sealed on 08-10-2026
+Master seal 85C6DB1C
+Sealed on 12-10-2026
