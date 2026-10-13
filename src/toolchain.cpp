@@ -399,6 +399,11 @@ bool emitsDebugInfo(ToolchainKind kind, const std::string& arch) {
 
     if (kind == ToolCxx) return true;
 
+    // shalimar since D1 (2026-10-13, Compiler-Si's CLAUDE.md "Debug information for the debuggers RIDE
+    // drives"): DWARF on the two GNU targets - the lines and the frames; Windows and the C6000 are rungs
+    // D4 and D5, not landed, and there a Shalimar program still stops itself.
+    if (kind == ToolShc) return arch == "x86_64-linux" || arch == "arm64-darwin";
+
     // cc1 and cxx1 alike: DWARF on the two GNU targets, CodeView on x86_64-windows (M10). For the
     // C6000, cxx1 -g writes cl6x's .dwpsn source positions, which vm6747 --debug stops on; cc1 does not yet.
     if (kind != ToolCc1 && kind != ToolCxx1) return false;
@@ -448,6 +453,12 @@ std::vector<std::string> debugNote(ToolchainKind kind, const std::string& arch) 
                        " - line tables, types and");
         said.push_back("objects - which link.exe /DEBUG makes a .pdb of and cdb reads. What");
         said.push_back("is below is the assembly the build produced, read back out of itself.");
+    } else if (kind == ToolShc && emitsDebugInfo(kind, arch)) {
+        said.push_back("shalimar writes DWARF for " + arch + " since D1 (2026-10-13) - a line");
+        said.push_back("table and each function's frame - so lldb or gdb stops a Shalimar");
+        said.push_back("program on a line, steps it and walks its stack; shm_line is still");
+        said.push_back("there, and still names the line of a runtime error. This editor is not");
+        said.push_back("that debugger: it builds to assembly and stops, and this is what is in it.");
     } else if (emitsDebugInfo(kind, arch)) {
         said.push_back(std::string(toolchainName(kind)) + " writes DWARF for " + arch +
                        " - line tables, types, objects and");
@@ -456,13 +467,13 @@ std::vector<std::string> debugNote(ToolchainKind kind, const std::string& arch) 
         said.push_back("nothing has been assembled, linked or run. What the build did leave");
         said.push_back("behind is the assembly, and this is what is in it.");
     } else if (kind == ToolShc) {
-        said.push_back("shalimar writes no debug information for any target, and that is a");
-        said.push_back("decision rather than a gap: a Shalimar program carries its own");
-        said.push_back("position instead - shm_line before every statement, in every");
-        said.push_back("build - which is what names the line of a runtime error and what");
-        said.push_back("F8 stops on. So there is a debugger here and no debug format. What");
-        said.push_back("it cannot do is read a variable. This is the assembly the build");
-        said.push_back("produced, read back out of itself.");
+        said.push_back("shalimar writes no debug information for " + arch + " yet - that is");
+        said.push_back("rung D4 (x86_64-windows) or D5 (tms6747) of Compiler-Si's debugger work,");
+        said.push_back("not landed. Here a Shalimar program carries its own position instead -");
+        said.push_back("shm_line before every statement, in every build - which is what names");
+        said.push_back("the line of a runtime error and what F8 stops on. What it cannot do is");
+        said.push_back("read a variable. This is the assembly the build produced, read back");
+        said.push_back("out of itself.");
     } else if (kind == ToolCxx1 && isEmulated(arch)) {
         said.push_back("cpp11 writes cl6x's .dwpsn before each statement for " + arch + " - the");
         said.push_back("source position and nothing else, no types and no variables - and");

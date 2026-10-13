@@ -44,7 +44,8 @@ line comes back to the stop.
 | c90 or cpp11 on `tms6747` | **no** — no line table, and the emulator and the simulator are not debuggers |
 | `cl` | cdb, reading CodeView from the `.pdb` |
 | `clang++`, `g++` | lldb or gdb |
-| `shalimar` | the program stops **itself** — no debugger at all |
+| `shalimar` on `arm64-darwin`, `x86_64-linux` | lldb or gdb, reading the DWARF a Debug build carries — since Compiler-Si's rung D1 (2026-10-13): a breakpoint on a line, stepping, the stack |
+| `shalimar` on `x86_64-windows`, `tms6747` | the program stops **itself** — no debugger at all, until rungs D4 and D5 |
 
 **Debug information does not mix.** A program linked from two compilers has a
 debugger that can see part of it. The editor starts the first debugger any part
@@ -65,6 +66,13 @@ one difference: the editor keeps no position for a closing brace, so a step
 does not stop on `}` where cl's build would.
 
 ## Shalimar is different, and it is not a lesser version
+
+**On a Mac and on Linux that is no longer the whole story.** Since Compiler-Si's
+rung D1 (2026-10-13) `shalimar -g` writes DWARF for `arm64-darwin` and
+`x86_64-linux` — the line table and each function's frame — and a Debug build
+asks for it, so there lldb or gdb drives a Shalimar program exactly as it drives
+a c90 one: `F9`, `F8`, `F7`, `F6` and the stack. The rest of this section is
+`x86_64-windows` and `tms6747`, where nothing has landed yet.
 
 A Shalimar program **stops itself**. The compiler already emits
 `shm_line(unit, line)` before every statement so a runtime error can name where

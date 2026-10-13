@@ -4585,31 +4585,36 @@ void theThirdLanguage() {
     check(editor::usesArch(editor::ToolShc),
           "shc generates for the same three architectures cc1 does");
 
-    // No debug information, for any target, by decision.
-    for (int i = 0; i < 3; ++i)
-        check(!editor::emitsDebugInfo(editor::ToolShc, editor::kArches[i]),
-              std::string("no debug information for ") + editor::kArches[i]);
-    // But a debug build is still a real thing, and this used to say it was not. shc emits no debug
-    // information and never will; what --debug changes is which runtime archive is linked, and only
-    // the debug one has any code in it for stopping the program. The assembly is identical either way.
+    // DWARF on the two GNU targets since D1 (2026-10-13); x86_64-windows is rung D4, not landed.
+    check(editor::emitsDebugInfo(editor::ToolShc, "x86_64-linux") &&
+              editor::emitsDebugInfo(editor::ToolShc, "arm64-darwin"),
+          "shalimar writes DWARF for the two GNU targets (D1)");
+    check(!editor::emitsDebugInfo(editor::ToolShc, "x86_64-windows"),
+          "and nothing for x86_64-windows until D4");
+    // A debug build links the runtime that can stop the program AND carries -g: --debug chooses the
+    // archive, and only the debug one has any code in it for stopping the program; -g adds the sections
+    // lldb and gdb read and changes no instruction.
     checkEqual(editor::configFlags(editor::ToolShc, editor::ConfigDebug, "arm64-darwin"),
-               " --debug",
-               "and a debug build links the runtime that can stop it, having no -g to ask for");
+               " --debug -g",
+               "and a debug build links the runtime that can stop it, and asks for -g");
     checkEqual(editor::configFlags(editor::ToolShc, editor::ConfigRelease, "arm64-darwin"),
                "", "while release asks for nothing and cannot be stopped at all");
     checkEqual(editor::configFlags(editor::ToolShc, editor::ConfigRelease, "arm64-darwin"),
                "", "nor a release one - Shalimar has no preprocessor to define into");
 
-    // What the Debug panel says. It has to say there is none rather than say
-    // nothing: a blank panel reads as a panel that is broken.
+    // What the Debug panel says: DWARF on the two GNU targets since D1, and for the other two that
+    // there is none yet - rather than nothing, since a blank panel reads as a panel that is broken.
     {
         std::vector<std::string> said = editor::debugNote(editor::ToolShc, "arm64-darwin");
         std::string all;
         for (size_t i = 0; i < said.size(); ++i) all += said[i] + " ";
-        check(all.find("no debug information") != std::string::npos,
-              "the Debug panel says shc writes none");
-        check(all.find("decision rather than a gap") != std::string::npos,
-              "and that it is a decision rather than a gap");
+        check(all.find("writes DWARF") != std::string::npos && all.find("since D1") != std::string::npos,
+              "the Debug panel says shc writes DWARF for arm64-darwin, since D1");
+        said = editor::debugNote(editor::ToolShc, "x86_64-windows");
+        all.clear();
+        for (size_t i = 0; i < said.size(); ++i) all += said[i] + " ";
+        check(all.find("no debug information") != std::string::npos && all.find("D4") != std::string::npos,
+              "and that it writes none for x86_64-windows yet, naming the rung");
     }
 
     // The command, and the one place it differs from cc1's.
@@ -4858,22 +4863,25 @@ void steppingShalimar() {
 void theWindowStoppingShalimar() {
     std::printf("the window stopping a Shalimar program\n");
 
-    // The order the window has to ask in. dbg_for answers "none" for shc and
-    // is right to; a front end that reads that as a refusal refuses the one
-    // language that needs nothing installed.
+    // The order the window has to ask in. A Shalimar program can stop itself, and does so where no
+    // debugger reads it - x86_64-windows and tms6747 until rungs D4 and D5; on the two GNU targets
+    // dbg_for answers lldb or gdb since D1 (2026-10-13), and the program is driven as a C one is.
     check(ride_debugger_stops_itself(editor::ToolShc) != 0,
           "a Shalimar program is known to stop itself");
     check(ride_debugger_stops_itself(editor::ToolCc1) == 0 &&
               ride_debugger_stops_itself(editor::ToolMsvc) == 0 &&
               ride_debugger_stops_itself(editor::ToolCxx) == 0,
           "and nothing else is - the other three need a debugger");
-    check(ride_debugger_for(editor::ToolShc, editor::hostArch()) == 0,
-          "there is no gdb, lldb or cdb in it at all");
+    check(ride_debugger_for(editor::ToolShc, editor::hostArch()) ==
+              static_cast<int>(editor::dbg_for(editor::ToolCc1, editor::hostArch())),
+          "and on this host the debugger that reads c90's DWARF reads shalimar's too (D1)");
+    check(ride_debugger_for(editor::ToolShc, "x86_64-windows") == 0,
+          "while for x86_64-windows there is no gdb, lldb or cdb in it yet");
 
     // And when something does ask in the wrong order, what it is told names
     // shc rather than the compiler that has nothing to do with it. This used
     // to answer with cc1's MASM, which is a sentence about another language.
-    check(std::string(ride_no_debugger_because(editor::ToolShc, editor::hostArch()))
+    check(std::string(ride_no_debugger_because(editor::ToolShc, "x86_64-windows"))
               .find("stops itself") != std::string::npos,
           "and asking why there is no debugger says so, naming no other compiler");
 
@@ -4885,9 +4893,12 @@ void theWindowStoppingShalimar() {
     check(std::string(ride_release_cannot_stop(editor::ToolCc1)).find("-g") !=
               std::string::npos,
           "where a C build says what was left out of it");
-    check(std::string(ride_why_it_did_not_start(editor::ToolShc, editor::hostArch()))
+    check(std::string(ride_why_it_did_not_start(editor::ToolShc, "x86_64-windows"))
               .find("did not arm") != std::string::npos,
           "and a start that failed is a program that did not arm, not a debugger to install");
+    check(std::string(ride_why_it_did_not_start(editor::ToolShc, editor::hostArch()))
+              .find("could not be started") != std::string::npos,
+          "where on this host it is the debugger that could not be started (D1)");
 
     // Nothing is running yet, so nothing is refused yet: the window may put a
     // watch down before it starts, as the terminal may.
@@ -4944,13 +4955,17 @@ void theWindowStoppingShalimar() {
         return;
     }
 
+    // **Since D1 the host's own debugger drives it**, reading the DWARF -g wrote: the program is
+    // not armed, lldb or gdb is started on it, and the stack has a name in it rather than a depth.
+    // The session half - no variables, the refusals in its own voice - is the x86_64-windows and
+    // tms6747 story until D4 and D5, and shalimar::Session's own cases above still hold it.
     RIDEDebugger* debugger = ride_debugger_new();
     check(ride_debugger_start(debugger, editor::ToolShc, editor::hostArch(),
                              ride_program_path(built)) != 0,
-          "the program starts with its session armed");
+          "the program starts under the host's debugger");
     check(ride_debugger_running(debugger) != 0,
           "and the window is told something is running, as it is for the other three");
-    check(ride_debugging_shalimar(debugger) != 0, "and which of the two halves it is");
+    check(ride_debugging_shalimar(debugger) == 0, "and which of the two halves it is: not the session");
 
     check(ride_debugger_break(debugger, source.c_str(), 8) != 0,
           "a breakpoint is set by file and line");
@@ -4960,39 +4975,31 @@ void theWindowStoppingShalimar() {
     check(std::string(editor::path::filename(ride_stop_file(debugger))) == "steps.shl",
           "in the file it was set in");
 
-    // The three things this cannot do, each said rather than left blank. An
-    // empty variable list would read as "this line has none".
-    check(ride_locals_count(debugger) == 0, "there are no variables to read");
-    check(std::string(ride_locals_none_because(debugger)).find("not what is in it") !=
-              std::string::npos,
-          "and the tab is given the reason there are none, not an empty list");
-    check(std::string(ride_cannot_watch(debugger)).find("nothing to watch with") !=
-              std::string::npos,
-          "watching is refused in the same voice");
-    check(std::string(ride_cannot_walk_stack(debugger)).find("how deep it is") !=
-              std::string::npos,
-          "and so is walking the stack");
-
-    check(ride_stack_count(debugger) == 1, "one frame: where it is standing");
-    check(std::string(ride_stack_function(debugger, 0)).find("1 call") != std::string::npos,
-          "which says how deep it is rather than inventing a name for it");
+    check(ride_stack_count(debugger) >= 1, "the stack has the frame it is standing in");
+    check(std::string(ride_stack_function(debugger, 0)).find("main") != std::string::npos,
+          "named as the program names it");
 
     ride_debugger_step_into(debugger);
     check(ride_stop_stopped(debugger) != 0 && ride_stop_line(debugger) == 2,
           "stepping into the call reaches its first line");
+    check(std::string(ride_stack_function(debugger, 0)).find("twice") != std::string::npos,
+          "and the frame is the callee's, by name");
     ride_debugger_step_out(debugger);
-    check(ride_stop_stopped(debugger) != 0 && ride_stop_line(debugger) == 9,
-          "and stepping out comes back to the statement after the call");
+    check(ride_stop_stopped(debugger) != 0 && ride_stop_line(debugger) == 8,
+          "and stepping out comes back to the statement that called");
 
     ride_debugger_step_over(debugger);
+    check(ride_stop_stopped(debugger) != 0 && ride_stop_line(debugger) == 9,
+          "stepping over reaches the next statement");
+    ride_debugger_resume(debugger);
     check(ride_stop_exited(debugger) != 0, "carrying on from the last statement ends it");
+    if (ride_stop_status(debugger) != 0)
+        std::printf("   it ended with status %d, saying: %s\n", ride_stop_status(debugger), ride_stop_said(debugger));
+    check(ride_stop_status(debugger) == 0, "with the status main returned");
 
-    // The last thing it printed comes back with the stop that says it ended -
-    // and unfiltered, which is what ownsTheStop is for. Running has gone false
-    // by now, the channel having closed with the program.
-    check(std::string(ride_stop_output(debugger)).find("2") != std::string::npos,
-          "and what it printed on the way out reaches the console");
-    check(ride_debugger_running(debugger) == 0, "with nothing running afterwards");
+    // The debugger outlives the program, as it does for a C one: it is stopped when told to.
+    ride_debugger_stop(debugger);
+    check(ride_debugger_running(debugger) == 0, "and nothing is running once it is stopped");
 
     ride_debugger_stop(debugger);
     ride_debugger_free(debugger);
@@ -5465,7 +5472,7 @@ static void compilerOptions() {
     checkEqual(options::flags(store, ToolCc1, ConfigDebug, "x86_64-linux"), " -g -D_DEBUG=1", "c90 debug defaults");
     checkEqual(options::flags(store, ToolCc1, ConfigDebug, "tms6747"), " -D_DEBUG=1", "no -g where there is no line table (c90 on the C6000)");
     checkEqual(options::flags(store, ToolCxx1, ConfigDebug, "tms6747"), " -g -D_DEBUG=1", "and -g where there is one (cpp11 on the C6000: .dwpsn)");
-    checkEqual(options::flags(store, ToolShc, ConfigDebug, "x86_64-linux"), " --debug", "shalimar debug runtime");
+    checkEqual(options::flags(store, ToolShc, ConfigDebug, "x86_64-linux"), " --debug -g", "shalimar debug runtime, and -g since D1");
     checkEqual(options::flags(store, ToolShc, ConfigDebug, "tms6747"), "", "no debug runtime on the emulator");
     checkEqual(options::flags(store, ToolShc, ConfigRelease, "x86_64-linux"), "", "shalimar release defaults");
     store.set(ConfigRelease, "cpp11.opt", "-O1");
@@ -5476,7 +5483,7 @@ static void compilerOptions() {
                " -O1 -DNDEBUG=1 -DTRACE -nologo -j4", "cpp11 options set");
     store.set(ConfigDebug, "shc.search", "0");
     checkEqual(options::flags(store, ToolShc, ConfigDebug, "x86_64-linux"),
-               " --debug --no-search", "shalimar options set");
+               " --debug -g --no-search", "shalimar options set");
     store.set(ConfigDebug, "cpp11.compress", "0");
     checkEqual(options::flags(store, ToolCxx1, ConfigDebug, "tms6747"), " -g --no_compress -D_DEBUG=1",
                "cpp11 without compact instructions on the C6000");

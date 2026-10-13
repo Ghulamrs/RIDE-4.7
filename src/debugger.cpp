@@ -392,7 +392,10 @@ DebugPlan dbg_planFor(const Toolchain& tool, const std::vector<Part>& parts,
         if (plan.engine == DebuggerNone) { plan.engine = theirs; plan.kind = each; }
     }
 
-    plan.stopsItself = dbg_stopsItself(toolchainOf(tool, parts[0]));
+    // **A Shalimar program stops itself only where no debugger can read it** - since D1 (2026-10-13)
+    // lldb and gdb read the DWARF a Debug build of shalimar carries on the two GNU targets, and there
+    // the program is driven as a c90 or cpp11 one is; the session remains for the other two targets.
+    plan.stopsItself = dbg_stopsItself(toolchainOf(tool, parts[0])) && plan.engine == DebuggerNone;
     if (plan.stopsItself) {
         plan.kind = ToolShc;
 
