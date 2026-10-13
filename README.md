@@ -89,7 +89,15 @@ it there. A breakpoint belongs to the file rather than to the tab, so it
 survives the file being closed and opened again, and follows the file when it is
 renamed. F8 builds with `-g`, starts the debugger, sets every breakpoint it has
 been given and runs; when the program stops, the caret goes to the line, a `>`
-marks it, and the Debug tab says where it is and what is in scope:
+marks it, and the Debug tab says where it is and what is in scope. **On tms6747
+the debugger is the emulator** (since 2026-10-13): cpp11 `-g` writes cl6x's `.dwpsn`
+source positions and `vm6747 --debug` speaks gdb's words over them, so F8, F6, F7,
+the stack and the registers (`$A4` in a watch) work as they do under gdb, and the
+locals pane stays empty - the assembly carries no variables. `RIDE_DEBUG_SIM6747=1`
+asks for `sim6747 --run --debug` on the linked `.out` beside the `.s` instead, which
+stops on a line only where the image carries a `.debug_line` (cl6x's do; ASM6x and
+LNK6x do not write one yet). c90 writes no positions for tms6747 yet, so a C project
+there still has nothing to stop in.
 
 ```
 stopped at stepped.c:11 in main

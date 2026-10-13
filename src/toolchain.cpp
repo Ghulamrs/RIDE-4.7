@@ -399,9 +399,10 @@ bool emitsDebugInfo(ToolchainKind kind, const std::string& arch) {
 
     if (kind == ToolCxx) return true;
 
-    // cc1 and cxx1 alike: DWARF on the two GNU targets, CodeView on x86_64-windows (M10),
-    // and nothing for the C6000 - the emulator runs it, no debugger reads it.
+    // cc1 and cxx1 alike: DWARF on the two GNU targets, CodeView on x86_64-windows (M10). For the
+    // C6000, cxx1 -g writes cl6x's .dwpsn source positions, which vm6747 --debug stops on; cc1 does not yet.
     if (kind != ToolCc1 && kind != ToolCxx1) return false;
+    if (isEmulated(arch)) return kind == ToolCxx1;
     return arch == "x86_64-linux" || arch == "arm64-darwin" || arch == "x86_64-windows";
 }
 
@@ -462,12 +463,16 @@ std::vector<std::string> debugNote(ToolchainKind kind, const std::string& arch) 
         said.push_back("F8 stops on. So there is a debugger here and no debug format. What");
         said.push_back("it cannot do is read a variable. This is the assembly the build");
         said.push_back("produced, read back out of itself.");
-    } else if ((kind == ToolCc1 || kind == ToolCxx1) && isEmulated(arch)) {
-        said.push_back(std::string(toolchainName(kind)) + "i writes no debug information for " +
-                       arch + ": what it emits runs on");
-        said.push_back("vm6747, the VM6747 emulator, which is not a debugger - it can trace");
-        said.push_back("every instruction (-t) but stops nowhere. This is what the build");
-        said.push_back("produced, read back out of its own assembly.");
+    } else if (kind == ToolCxx1 && isEmulated(arch)) {
+        said.push_back("cpp11 writes cl6x's .dwpsn before each statement for " + arch + " - the");
+        said.push_back("source position and nothing else, no types and no variables - and");
+        said.push_back("vm6747 --debug stops on them (F8). This is what the build produced,");
+        said.push_back("read back out of its own assembly.");
+    } else if (kind == ToolCc1 && isEmulated(arch)) {
+        said.push_back("c90 writes no debug information for " + arch + " yet: what it emits runs");
+        said.push_back("on vm6747, which stops on a line only where the assembly carries a");
+        said.push_back(".dwpsn, as cpp11 -g writes. This is what the build produced, read");
+        said.push_back("back out of its own assembly.");
     } else if (kind == ToolCc1 || kind == ToolCxx1) {
         said.push_back(std::string(toolchainName(kind)) + " writes no debug information for " +
                        arch + ": it generates MASM");
