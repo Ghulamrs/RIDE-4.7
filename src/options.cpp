@@ -26,6 +26,7 @@ static const Def kDefs[] = {
     { "cpp11.compress", "C++ (cpp11)", "Compact 16-bit instructions (off: --no_compress)", Check, "", "tms6747 only; the C674x runs them natively, and TI's cl6x writes them by default" },
     { "shc.opt", "Shalimar", "Optimization", Choice, "-O0|-O1|-O2", "x86_64 targets only; -O2 is -O1 today" },
     { "shc.debugrt", "Shalimar", "Debug runtime (--debug)", Check, "", "" },
+    { "shc.g", "Shalimar", "Debug information (-g)", Check, "", "DWARF on x86_64-linux and arm64-darwin, CodeView on x86_64-windows, .dwpsn on tms6747 (D1 to D5)" },
     { "shc.search", "Shalimar", "Compile sibling .shl and .shm files", Check, "", "off passes --no-search" },
 };
 static const char* const kTabs[] = { "General", "C (c90)", "C++ (cpp11)", "Shalimar" };
@@ -43,7 +44,7 @@ std::string defaultValue(Configuration config, const std::string& id) {
     const bool release = config == ConfigRelease;
     if (id == "c90.opt" || id == "cpp11.opt") return release ? "-O2" : "-O0";
     if (id == "shc.opt") return "-O0";
-    if (id == "c90.g" || id == "cpp11.g" || id == "shc.debugrt") return release ? "0" : "1";
+    if (id == "c90.g" || id == "cpp11.g" || id == "shc.debugrt" || id == "shc.g") return release ? "0" : "1";
     if (id == "c90.defines" || id == "cpp11.defines") return release ? "NDEBUG=1" : "_DEBUG=1";
     if (id == "shc.search" || id == "cpp11.compress") return "1";
     const Def* def = find(id);
@@ -95,8 +96,8 @@ void Store::fromJson(const Json& json) {
 
 bool available(const std::string& id, const std::string& arch, std::string& why) {
     why.clear();
-    if (id == "c90.g" || id == "cpp11.g") {
-        if (emitsDebugInfo(id == "c90.g" ? ToolCc1 : ToolCxx1, arch)) return true;
+    if (id == "c90.g" || id == "cpp11.g" || id == "shc.g") {
+        if (emitsDebugInfo(id == "c90.g" ? ToolCc1 : id == "cpp11.g" ? ToolCxx1 : ToolShc, arch)) return true;
         why = "no line table for " + arch + " (x86_64-linux and arm64-darwin have one)";
         return false;
     }
@@ -140,6 +141,7 @@ std::string flags(const Store& store, ToolchainKind kind, Configuration config, 
     if (opt != "-O0") out += " " + opt;
     if (kind == ToolShc) {
         if (store.value(config, "shc.debugrt") == "1" && available("shc.debugrt", arch, why)) out += " --debug";
+        if (store.value(config, "shc.g") == "1" && available("shc.g", arch, why)) out += " -g";
         if (store.value(config, "shc.search") == "0") out += " --no-search";
         if (store.value(config, "general.nologo") == "1") out += " -nologo";
         return out;

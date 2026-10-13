@@ -40,6 +40,8 @@ const char* dbg_program(DebuggerKind kind);
 DebuggerKind dbg_for(ToolchainKind kind, const std::string& arch);
 
 bool dbg_stopsItself(ToolchainKind kind);
+// The Shalimar runtime directory to put beside a Shalimar .s on vm6747 --debug (" dir", quoted), else "".
+std::string dbg_shalimarRuntime(const std::string& assembly);
 
 struct DebugPlan {
     ToolchainKind kind;

@@ -1,5 +1,7 @@
 #include "debugger.h"
 
+#include <fstream>
+
 #include <cctype>
 #include <cstdlib>
 #include <cstdio>
@@ -444,6 +446,21 @@ const char* dbg_program(DebuggerKind kind) {
     return found->c_str();
 }
 
+// **A Shalimar program on the emulator needs its runtime beside it** - the directory of C6000 text
+// cpp11 wrote from runtime/, as a run on vm6747 is given it (toolchain.cpp). The assembly says what
+// it is: shc opens it with `; <source>.shl` (or .shm), and nothing else does.
+std::string dbg_shalimarRuntime(const std::string& assembly) {
+    std::ifstream in(assembly.c_str());
+    std::string first;
+    if (!in || !std::getline(in, first)) return std::string();
+    while (!first.empty() && (first[first.size() - 1] == '\r' || first[first.size() - 1] == ' ')) first.erase(first.size() - 1);
+    if (first.size() < 6 || first.compare(0, 2, "; ") != 0) return std::string();
+    const std::string ext = first.substr(first.size() - 4);
+    if (ext != ".shl" && ext != ".shm") return std::string();
+    const std::string runtime = shalimarRuntimeDir(ConfigDebug);
+    return runtime.empty() ? std::string() : " " + quoted(runtime);
+}
+
 DebuggerKind dbg_for(ToolchainKind kind, const std::string& arch) {
 
     if (!emitsDebugInfo(kind, arch)) return DebuggerNone;
@@ -483,7 +500,10 @@ DebugPlan dbg_planFor(const Toolchain& tool, const std::vector<Part>& parts,
         if (plan.engine == DebuggerNone) { plan.engine = theirs; plan.kind = each; }
     }
 
-    plan.stopsItself = dbg_stopsItself(toolchainOf(tool, parts[0]));
+    // **A Shalimar program stops itself only where no debugger can read it** - since D1 (2026-10-13)
+    // lldb and gdb read the DWARF a Debug build of shalimar carries on the two GNU targets, and there
+    // the program is driven as a c90 or cpp11 one is; the session remains for the other two targets.
+    plan.stopsItself = dbg_stopsItself(toolchainOf(tool, parts[0])) && plan.engine == DebuggerNone;
     if (plan.stopsItself) {
         plan.kind = ToolShc;
 
@@ -954,7 +974,7 @@ bool Debugger::start(DebuggerKind kind, const std::string& executable,
         // the emulator on the assembly (dbg_c6xBackend). Either speaks gdb's words from here on.
         backend_ = dbg_c6xBackend(executable, &backendWhy_);
         if (backend_ == "sim6747") command = quoted(simulatorProgram()) + " --run --debug " + quoted(tiProgramOf(executable));
-        else command = quoted(run) + " --debug " + quoted(executable);
+        else command = quoted(run) + " --debug " + quoted(executable) + dbg_shalimarRuntime(executable);
     } else backend_ = dbg_name(kind_);
     if (kind_ == DebuggerCdb) {
 

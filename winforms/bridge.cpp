@@ -1246,7 +1246,8 @@ const char* ride_release_cannot_stop(int kind) {
 }
 
 const char* ride_why_it_did_not_start(int kind, const char* arch) {
-    if (editor::dbg_stopsItself(static_cast<editor::ToolchainKind>(kind))) {
+    if (editor::dbg_stopsItself(static_cast<editor::ToolchainKind>(kind)) &&
+        editor::dbg_for(static_cast<editor::ToolchainKind>(kind), arch ? arch : "") == editor::DebuggerNone) {
 
         scratch() = shalimar::didNotArm();
         return scratch().c_str();
@@ -1271,7 +1272,8 @@ int ride_debugger_start(RIDEDebugger* debugger, int kind, const char* arch,
 
     const editor::ToolchainKind tool = static_cast<editor::ToolchainKind>(kind);
 
-    if (editor::dbg_stopsItself(tool))
+    // The session only where no debugger reads the program (D1: lldb and gdb read shalimar's DWARF).
+    if (editor::dbg_stopsItself(tool) && editor::dbg_for(tool, arch ? arch : "") == editor::DebuggerNone)
         return debugger->shm.start(program ? program : "", editor::sessionCommand(program ? program : "")) ? 1 : 0;
 
     return debugger->debugger.start(editor::dbg_for(tool, arch ? arch : ""),

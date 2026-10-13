@@ -399,6 +399,15 @@ bool emitsDebugInfo(ToolchainKind kind, const std::string& arch) {
 
     if (kind == ToolCxx) return true;
 
+    // shalimar since D1 to D5 (2026-10-13, Compiler-Si's CLAUDE.md "Debug information for the debuggers
+    // RIDE drives"): DWARF on the two GNU targets, CodeView on x86_64-windows through clang's assembler
+    // and link.exe /DEBUG, as c90's and cpp11's, and cl6x's .dwpsn for the C6000 as cpp11 writes it -
+    // which vm6747 --debug stops on, and sim6747 --run --debug through the .debug_line asm6x and lnk6x
+    // make of it.
+    if (kind == ToolShc)
+        return arch == "x86_64-linux" || arch == "arm64-darwin" || arch == "x86_64-windows" ||
+               isEmulated(arch);
+
     // cc1 and cxx1 alike: DWARF on the two GNU targets, CodeView on x86_64-windows (M10). For the
     // C6000, cxx1 -g writes cl6x's .dwpsn source positions, which vm6747 --debug stops on; cc1 does not yet.
     if (kind != ToolCc1 && kind != ToolCxx1) return false;
@@ -408,7 +417,7 @@ bool emitsDebugInfo(ToolchainKind kind, const std::string& arch) {
 
 bool debugsWithCodeView(ToolchainKind kind, const std::string& arch, Configuration config) {
     return config == ConfigDebug && arch == "x86_64-windows" &&
-           (kind == ToolCc1 || kind == ToolCxx1) && emitsDebugInfo(kind, arch);
+           (kind == ToolCc1 || kind == ToolCxx1 || kind == ToolShc) && emitsDebugInfo(kind, arch);
 }
 
 std::string configFlags(ToolchainKind kind, Configuration config,
@@ -448,6 +457,20 @@ std::vector<std::string> debugNote(ToolchainKind kind, const std::string& arch) 
                        " - line tables, types and");
         said.push_back("objects - which link.exe /DEBUG makes a .pdb of and cdb reads. What");
         said.push_back("is below is the assembly the build produced, read back out of itself.");
+    } else if (kind == ToolShc && isEmulated(arch)) {
+        said.push_back("shalimar writes cl6x's .dwpsn before each statement for " + arch + " since D5");
+        said.push_back("(2026-10-13) - the source position and nothing else, no types and no");
+        said.push_back("variables, which is what the C6747 path carries - and vm6747 --debug stops");
+        said.push_back("on them (F8), as does sim6747 --run --debug on the image, through the");
+        said.push_back(".debug_line asm6x and lnk6x make of them. This is what the build produced,");
+        said.push_back("read back out of its own assembly.");
+    } else if (kind == ToolShc && emitsDebugInfo(kind, arch)) {
+        said.push_back("shalimar writes DWARF for " + arch + " since D1 (2026-10-13) - the line");
+        said.push_back("table, each function's frame, its parameters, locals and the globals by");
+        said.push_back("name and type (D2), and the blocks a name hides inside (D3) - so lldb or");
+        said.push_back("gdb stops a Shalimar program on a line, steps it, walks its stack and");
+        said.push_back("reads or sets a variable; an array is the runtime's {count, element,");
+        said.push_back("data}. shm_line is still there, and still names a runtime error's line.");
     } else if (emitsDebugInfo(kind, arch)) {
         said.push_back(std::string(toolchainName(kind)) + " writes DWARF for " + arch +
                        " - line tables, types, objects and");
@@ -456,13 +479,13 @@ std::vector<std::string> debugNote(ToolchainKind kind, const std::string& arch) 
         said.push_back("nothing has been assembled, linked or run. What the build did leave");
         said.push_back("behind is the assembly, and this is what is in it.");
     } else if (kind == ToolShc) {
-        said.push_back("shalimar writes no debug information for any target, and that is a");
-        said.push_back("decision rather than a gap: a Shalimar program carries its own");
-        said.push_back("position instead - shm_line before every statement, in every");
-        said.push_back("build - which is what names the line of a runtime error and what");
-        said.push_back("F8 stops on. So there is a debugger here and no debug format. What");
-        said.push_back("it cannot do is read a variable. This is the assembly the build");
-        said.push_back("produced, read back out of itself.");
+        said.push_back("shalimar writes no debug information for " + arch + " yet - that is");
+        said.push_back("rung D5 (tms6747) of Compiler-Si's debugger work, not landed. Here a");
+        said.push_back("Shalimar program carries its own position instead -");
+        said.push_back("shm_line before every statement, in every build - which is what names");
+        said.push_back("the line of a runtime error and what F8 stops on. What it cannot do is");
+        said.push_back("read a variable. This is the assembly the build produced, read back");
+        said.push_back("out of itself.");
     } else if (kind == ToolCxx1 && isEmulated(arch)) {
         said.push_back("cpp11 writes cl6x's .dwpsn before each statement for " + arch + " - the");
         said.push_back("source position and nothing else, no types and no variables - and");
@@ -958,7 +981,8 @@ bool nativeToolsAvailable(const std::string& arch) {
 std::string assemblerFlag(ToolchainKind kind, const std::string& arch, Configuration config) {
     // **A Debug build's CodeView goes through clang's assembler**, whatever assembler is named:
     // the project's masm carries no CodeView (M10, RIDE docs/M10-ANALYSIS.md).
-    if (debugsWithCodeView(kind, arch, config)) return " -masm=gnu";
+    // shalimar has no -masm: its -g alone chooses the GNU spelling and clang on this target (D4).
+    if (debugsWithCodeView(kind, arch, config) && kind != ToolShc) return " -masm=gnu";
     if (kind == ToolCxx1 && arch == "x86_64-windows" && !settings::assembler().empty())
         return " -masm=masm";
     return std::string();
