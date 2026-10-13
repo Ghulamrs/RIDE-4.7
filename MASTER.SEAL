@@ -1,13 +1,13 @@
-©2026 G. R. Akhtar - RIDE 5.15 and the programs it drives
+©2026 G. R. Akhtar - RIDE 5.16 and the programs it drives
 Master seal: each project's seal, listed and combined into one
 Written by tools/master-seal; check it with `tools/master-seal check`.
-12 projects, 853 files, master seal A30DCC78
+12 projects, 862 files, master seal C4742670
 ------------------------------------------------------------------------
 program   seal     file CRC  files  seal file
-RIDE      E9B695E8 C96FBB56     80  ride-5.15.dat
+RIDE      DE1892D0 E2754954     80  ride-5.16.dat
 c90       10812ECC E07D3944     54  ../Compilers/Compiler-Ci/c90-1.3.dat
 cpp11     4B4CB0B6 07C3D671    160  ../Compilers/C++Optimize/cxx1-1.8.dat
-shalimar  5B9B1954 8A94E383     52  ../Compilers/Compiler-Si/shalimar-1.2.dat
+shalimar  2F87A180 21CB5539     61  ../Compilers/Compiler-Si/shalimar-1.3.dat
 c2s       4BA1604B D72D192D     46  ../Compilers/Converter-C2S/c2s-1.2.dat
 vm6747    C33FD5EC 85239ACD     14  ../TI/VM6747/vm6747-1.1.dat
 asm6x     71F68573 391AC04A     11  ../TI/ASM6x/asm6x-1.3.dat
@@ -17,7 +17,7 @@ lnk6x     F1F52AED 247A041C      8  ../TI/LNK6x/lnk6x-1.2.dat
 sim6747   688C37C8 F0BD0FAC     33  ../TI/SIM6747/sim6747-1.3.dat
 rts6x     040CE785 0D069FBC    378  ../TI/RTS6x/rts6x-1.2.dat
 ------------------------------------------------------------------------
-Master seal A30DCC78
+Master seal C4742670
 Sealed on 13-10-2026
 ========================================================================
 Shipped artefacts: the SHA-256 of what one release packaged, from master seal 146ACCE4

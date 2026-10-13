@@ -1,7 +1,7 @@
-©2026 G. R. Akhtar - RIDE 5.15, the editor
-Release seal, version 5.15, sealed 13-10-2026
+©2026 G. R. Akhtar - RIDE 5.16, the editor
+Release seal, version 5.16, sealed 13-10-2026
 Written by tools/seal; check it with `tools/seal check`.
-CRC32  size  file - 80 files, seal E9B695E8
+CRC32  size  file - 80 files, seal DE1892D0
 ------------------------------------------------------------------
 1DBB2FBC      2412  macos/CodeView.h
 02B3F91E     14632  macos/CodeView.mm
@@ -9,9 +9,9 @@ CRC32  size  file - 80 files, seal E9B695E8
 A7F98CCC      5957  macos/LineNumbers.mm
 7E2C43FD      2767  macos/Text.h
 AEF649AE      1693  macos/WindowController.h
-0149A31A    201879  macos/WindowController.mm
+5D5989AF    201879  macos/WindowController.mm
 18F9EFDC      4599  macos/main.mm
-52A2458F     15888  src/about.cpp
+EC3C82DC     15888  src/about.cpp
 ABC4FB50      1108  src/about.h
 634B7DB9      8502  src/buffer.cpp
 985593C8      2268  src/buffer.h
@@ -27,8 +27,8 @@ CD9B18DF     54576  src/compile.cpp
 0561618E      7269  src/compile.h
 30128498      3193  src/convert.cpp
 E5744BBB       644  src/convert.h
-7B3787F0     47872  src/debugger.cpp
-81CA0638      6482  src/debugger.h
+7F5E6E63     49274  src/debugger.cpp
+6C6F1D7E      6651  src/debugger.h
 DA6DC095       811  src/demangle_win.cpp
 A3B4D494    154597  src/editor.cpp
 6CAD7851     11707  src/editor.h
@@ -43,16 +43,16 @@ D12A8855      1365  src/json.h
 26D512E4     15813  src/main.cpp
 1B4A2F2B     12890  src/menu.cpp
 3E91FDA1      4285  src/menu.h
-44F7AB27      8851  src/options.cpp
+45DCF238      9175  src/options.cpp
 26E451F0      3026  src/options.h
 2E842011     13389  src/path.cpp
 623BE189      1421  src/path.h
 AA505B11     36918  src/process.cpp
 AAB34DCA      1876  src/process.h
-7EC70372      1371  src/product.h
+BE17605B      1371  src/product.h
 35B50FB6     43117  src/project.cpp
 8E08B320      8561  src/project.h
-806EAB96     27483  src/settings.cpp
+DB8C237E     27489  src/settings.cpp
 3E0AC86E      6626  src/settings.h
 4B7E8748      9069  src/shalimar/channel.cpp
 22E40405       577  src/shalimar/channel.h
@@ -66,7 +66,7 @@ D5878BEA      1652  src/terminal.cpp
 DFE9AF58      2608  src/terminal.h
 581ADD3D      5822  src/terminal_common.cpp
 57E6C881      5770  src/terminal_win.cpp
-DF94A6F7     41727  src/toolchain.cpp
+AA8C011F     43706  src/toolchain.cpp
 8E5F8604      9479  src/toolchain.h
 36906883      3898  src/tree.cpp
 3DB0E288      1196  src/tree.h
@@ -76,11 +76,11 @@ D93038C5       572  src/utf8.h
 F35C52A2      2086  src/workspace.h
 6C3EEE85     11320  winforms/DebugView.h
 1FF1F4DF      5110  winforms/ErrorList.h
-FABB673C    270892  winforms/MainForm.h
+C3E81633    270892  winforms/MainForm.h
 6BA8DA64      2289  winforms/Marshal.h
 3D89F3C4      6415  winforms/Program.cpp
 B2EA0EE1      4860  winforms/TextFile.h
-1001F210     92639  winforms/bridge.cpp
+D2C57D6D     92919  winforms/bridge.cpp
 958845B6     29746  winforms/bridge.h
 BBD2FAFE      2198  winforms/children.h
 ------------------------------------------------------------------

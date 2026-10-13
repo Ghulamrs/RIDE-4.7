@@ -15,7 +15,7 @@ rem RELEASE_DRYRUN=1 stops after the checks that come before the build - the sea
 rem RELEASE_BIN naming a bin\ already built, runs build.bat confirm over it. Neither is for a release.
 setlocal enabledelayedexpansion
 set "VER=%~1"
-if "%VER%"=="" set "VER=5.15"
+if "%VER%"=="" set "VER=5.16"
 if "%RELEASE_DIR%"=="" set "RELEASE_DIR=%USERPROFILE%\ride-release"
 for /f %%t in ('powershell -NoProfile -Command "Get-Date -Format yyyyMMdd-HHmmss"') do set "STAMP=%%t"
 set "W=%RELEASE_DIR%\%STAMP%"

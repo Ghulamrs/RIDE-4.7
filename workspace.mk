@@ -212,7 +212,7 @@ endif
 # confirmed, the platform's packager makes it from them - dist/RIDE-$(VER)-linux-x86_64.run
 # on Linux, dist/RIDE-$(VER)-macos.pkg on a Mac. NOINSTALLER=1 skips it: the packagers
 # pass it when they build the workspace themselves, so neither builds the other.
-VER ?= 5.15
+VER ?= 5.16
 installer: confirm
 ifneq ($(NOINSTALLER),)
 	@echo "installer: skipped (NOINSTALLER)"

@@ -28,7 +28,7 @@
 # Mac asks the user to open it from Finder's context menu the first time.
 set -eu
 
-VER=${1:-5.15}
+VER=${1:-5.16}
 HERE=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$HERE/../.." && pwd)
 CPP=${CPP:-$ROOT/../Compilers/C++Optimize}
