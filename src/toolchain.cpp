@@ -399,12 +399,14 @@ bool emitsDebugInfo(ToolchainKind kind, const std::string& arch) {
 
     if (kind == ToolCxx) return true;
 
-    // shalimar since D1 to D4 (2026-10-13, Compiler-Si's CLAUDE.md "Debug information for the debuggers
+    // shalimar since D1 to D5 (2026-10-13, Compiler-Si's CLAUDE.md "Debug information for the debuggers
     // RIDE drives"): DWARF on the two GNU targets, CodeView on x86_64-windows through clang's assembler
-    // and link.exe /DEBUG, as c90's and cpp11's; the C6000 is rung D5, and there a Shalimar program
-    // still stops itself.
+    // and link.exe /DEBUG, as c90's and cpp11's, and cl6x's .dwpsn for the C6000 as cpp11 writes it -
+    // which vm6747 --debug stops on, and sim6747 --run --debug through the .debug_line asm6x and lnk6x
+    // make of it.
     if (kind == ToolShc)
-        return arch == "x86_64-linux" || arch == "arm64-darwin" || arch == "x86_64-windows";
+        return arch == "x86_64-linux" || arch == "arm64-darwin" || arch == "x86_64-windows" ||
+               isEmulated(arch);
 
     // cc1 and cxx1 alike: DWARF on the two GNU targets, CodeView on x86_64-windows (M10). For the
     // C6000, cxx1 -g writes cl6x's .dwpsn source positions, which vm6747 --debug stops on; cc1 does not yet.
@@ -455,6 +457,13 @@ std::vector<std::string> debugNote(ToolchainKind kind, const std::string& arch) 
                        " - line tables, types and");
         said.push_back("objects - which link.exe /DEBUG makes a .pdb of and cdb reads. What");
         said.push_back("is below is the assembly the build produced, read back out of itself.");
+    } else if (kind == ToolShc && isEmulated(arch)) {
+        said.push_back("shalimar writes cl6x's .dwpsn before each statement for " + arch + " since D5");
+        said.push_back("(2026-10-13) - the source position and nothing else, no types and no");
+        said.push_back("variables, which is what the C6747 path carries - and vm6747 --debug stops");
+        said.push_back("on them (F8), as does sim6747 --run --debug on the image, through the");
+        said.push_back(".debug_line asm6x and lnk6x make of them. This is what the build produced,");
+        said.push_back("read back out of its own assembly.");
     } else if (kind == ToolShc && emitsDebugInfo(kind, arch)) {
         said.push_back("shalimar writes DWARF for " + arch + " since D1 (2026-10-13) - the line");
         said.push_back("table, each function's frame, its parameters, locals and the globals by");

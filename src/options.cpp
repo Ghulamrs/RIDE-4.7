@@ -26,7 +26,7 @@ static const Def kDefs[] = {
     { "cpp11.compress", "C++ (cpp11)", "Compact 16-bit instructions (off: --no_compress)", Check, "", "tms6747 only; the C674x runs them natively, and TI's cl6x writes them by default" },
     { "shc.opt", "Shalimar", "Optimization", Choice, "-O0|-O1|-O2", "x86_64 targets only; -O2 is -O1 today" },
     { "shc.debugrt", "Shalimar", "Debug runtime (--debug)", Check, "", "" },
-    { "shc.g", "Shalimar", "Debug information (-g)", Check, "", "DWARF on x86_64-linux and arm64-darwin, CodeView on x86_64-windows (D1 to D4)" },
+    { "shc.g", "Shalimar", "Debug information (-g)", Check, "", "DWARF on x86_64-linux and arm64-darwin, CodeView on x86_64-windows, .dwpsn on tms6747 (D1 to D5)" },
     { "shc.search", "Shalimar", "Compile sibling .shl and .shm files", Check, "", "off passes --no-search" },
 };
 static const char* const kTabs[] = { "General", "C (c90)", "C++ (cpp11)", "Shalimar" };
