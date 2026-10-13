@@ -1210,9 +1210,9 @@ void emulatedTarget(const std::string& ride, const std::string& cc1,
     check(message(ran).find("tms6747") != std::string::npos || onScreen(ran, "tms6747"),
           "and the target is named");
 
-    // Debug is refused, with the emulator named as the reason.
+    // Debug of a C program is refused, c90 writing no line table for the C6000 (cpp11 does, below).
     Screen debug = drive(ride, withCc1, kF8 + ctrl('q'), dir);
-    check(wasShown(debug, "not a debugger"), "F8 is turned away: vm6747 is not a debugger yet");
+    check(wasShown(debug, "writes no line table"), "F8 on C is turned away: c90 writes no line table for tms6747 yet");
 
     if (!cxx1.empty()) {
         file::path cpp = dir / "src" / "throws.cpp";
@@ -1226,6 +1226,25 @@ void emulatedTarget(const std::string& ride, const std::string& cc1,
         check(wasShown(threw, "caught 3"), ti ? "C++ with an exception runs on sim6747, against RTS6x's unwinder"
                                              : "C++ with an exception runs on the emulator too");
         check(wasShown(threw, "[program returned 5]"), "and returns what it returned");
+        // F8 on a C++ project: cpp11 -g's .dwpsn make a line table, and the Debug session starts a C6747
+        // backend - the simulator on the linked image where asm6x, lnk6x and RTS6x are beside the editor
+        // (the image then carries the lines), the emulator on the assembly otherwise (dbg_c6xBackend). A
+        // project of its own, since F8 with a project loaded debugs the project, and this directory's is C.
+        file::path cppDir = dir / "cppproject";
+        file::create_directories(cppDir / "src");
+        writeFile(cppDir / "src" / "throws.cpp", readFile(cpp));
+        writeFile(cppDir / "project.pro",
+                  "{\n  \"name\": \"throws\",\n  \"arch\": \"tms6747\",\n  \"groups\": { \"Sources\": [\"src/throws.cpp\"] },\n"
+                  "  \"build\": { \"target\": \"throws\", \"groups\": [\"Sources\"] }\n}\n");
+        Screen debugged = drive(ride, "\"" + (cppDir / "src" / "throws.cpp").string() + "\" --project \"" + cppDir.string() +
+                                          "\" --cpp11 \"" + cxx1 + "\"",
+                                 kF8 + kF10 + times(kRight, 5) + times(kDown, 2) + kEnter + ctrl('w') + ctrl('w') + "\x1b[F" + ctrl('q'), cppDir);
+        // The start line is the console's last; after the stop the Debug tab is in front, so View > Console
+        // (the sixth menu, its third item) brings it back, Ctrl-W twice puts the focus in the panel (text, tree,
+        // panel), and End shows the end.
+        check(wasShown(debugged, ti ? "started sim6747" : "started vm6747"),
+              ti ? "F8 on a C++ project starts sim6747 on the linked image, which carries the program's lines"
+                 : "F8 on a C++ project starts vm6747 on the assembly, there being no image to carry lines");
     }
 
     // A project of two sources: built into a directory of assembly, then run.

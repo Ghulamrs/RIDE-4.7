@@ -2,7 +2,9 @@
 
 #include <cctype>
 #include <cstdlib>
+#include <cstdio>
 #include <cstring>
+#include <sys/stat.h>
 
 #include "path.h"
 #include "product.h"
@@ -319,6 +321,95 @@ const char* dbg_name(DebuggerKind kind) {
 }
 
 bool dbg_gdbLike(DebuggerKind kind) { return kind == DebuggerGdb || kind == DebuggerC6x; }
+
+namespace {
+unsigned long u32At(const std::string& d, size_t at) {
+    if (at + 4 > d.size()) return 0;
+    return (unsigned char)d[at] | ((unsigned char)d[at + 1] << 8) | ((unsigned char)d[at + 2] << 16) |
+           ((unsigned long)(unsigned char)d[at + 3] << 24);
+}
+unsigned u16At(const std::string& d, size_t at) {
+    if (at + 2 > d.size()) return 0;
+    return (unsigned char)d[at] | ((unsigned char)d[at + 1] << 8);
+}
+bool envSet(const char* name) {
+    const char* v = std::getenv(name);
+    return v && *v && *v != '0';
+}
+bool modifiedAt(const std::string& path, long long* when) {
+    struct stat st;
+    if (stat(path.c_str(), &st) != 0) return false;
+    *when = (long long)st.st_mtime;
+    return true;
+}
+}
+
+// A 32-bit little-endian ELF read for two things: the executable sections' ranges and the .debug_line's
+// units, each unit's program read to its first DW_LNE_set_address (what LNK6x and lnk6x open a sequence
+// with). The runtime's own units, had the image any, would not place a row in the program's code.
+bool dbg_imageHasLines(const std::string& out, std::string* why) {
+    if (why) why->clear();
+    std::FILE* f = std::fopen(out.c_str(), "rb");
+    if (!f) { if (why) *why = "the image is not there"; return false; }
+    std::string d;
+    char buf[65536];
+    for (size_t n; (n = std::fread(buf, 1, sizeof buf, f)) > 0;) d.append(buf, n);
+    std::fclose(f);
+    if (d.size() < 52 || d.compare(0, 4, "\x7f" "ELF") != 0 || (unsigned char)d[4] != 1) { if (why) *why = "the image is not a 32-bit ELF"; return false; }
+    size_t shoff = u32At(d, 32); unsigned shentsize = u16At(d, 46), shnum = u16At(d, 48), shstrndx = u16At(d, 50);
+    if (shentsize < 40 || shoff + (size_t)shnum * shentsize > d.size() || shstrndx >= shnum) { if (why) *why = "the image's section table is not readable"; return false; }
+    size_t strOff = u32At(d, shoff + (size_t)shstrndx * shentsize + 16);
+    std::vector<std::pair<unsigned long, unsigned long> > code;
+    size_t lineOff = 0, lineSize = 0;
+    for (unsigned i = 0; i < shnum; i++) {
+        size_t h = shoff + (size_t)i * shentsize;
+        size_t name = strOff + u32At(d, h);
+        std::string n = name < d.size() ? std::string(d.c_str() + name) : std::string();
+        unsigned long flags = u32At(d, h + 8), addr = u32At(d, h + 12), off = u32At(d, h + 16), size = u32At(d, h + 20);
+        if (flags & 4) code.push_back(std::make_pair(addr, addr + size));
+        if (n == ".debug_line" && size) { lineOff = off; lineSize = size; }
+    }
+    if (!lineSize) { if (why) *why = "the image carries no .debug_line"; return false; }
+    if (lineOff + lineSize > d.size()) { if (why) *why = "the image's .debug_line runs past its end"; return false; }
+    for (size_t at = lineOff; at + 10 <= lineOff + lineSize;) {
+        unsigned long unitLen = u32At(d, at);
+        if (unitLen == 0xffffffffUL || unitLen < 6) break;
+        size_t unitEnd = at + 4 + unitLen;
+        size_t prog = at + 10 + u32At(d, at + 6);
+        // the program's first opcode: an extended set_address is 00 <len> 02 <address>
+        if (prog + 7 <= unitEnd && prog + 7 <= d.size() && d[prog] == 0 && (unsigned char)d[prog + 2] == 2) {
+            unsigned long a = u32At(d, prog + 3);
+            for (size_t k = 0; k < code.size(); k++)
+                if (a >= code[k].first && a < code[k].second) return true;
+        }
+        if (unitEnd <= at) break;
+        at = unitEnd;
+    }
+    if (why) *why = "the image's .debug_line has no row in the program's code";
+    return false;
+}
+
+std::string dbg_c6xBackend(const std::string& executable, std::string* why) {
+    if (why) why->clear();
+    const std::string out = tiProgramOf(executable), sim = simulatorProgram();
+    if (envSet("RIDE_DEBUG_VM6747")) { if (why) *why = "RIDE_DEBUG_VM6747 asks for the emulator"; return "vm6747"; }
+    if (envSet("RIDE_DEBUG_SIM6747")) {
+        if (!sim.empty() && path::exists(out)) return "sim6747";
+        if (why) *why = sim.empty() ? "RIDE_DEBUG_SIM6747 asks for sim6747, and none is beside " + std::string(product::kName)
+                                    : "RIDE_DEBUG_SIM6747 asks for sim6747, and the build left no " + path::filename(out);
+        return "vm6747";
+    }
+    if (sim.empty()) { if (why) *why = "no sim6747 beside " + std::string(product::kName); return "vm6747"; }
+    if (!path::exists(out)) { if (why) *why = "the build left no " + path::filename(out) + " (asm6x, lnk6x and RTS6x make one)"; return "vm6747"; }
+    long long builtOut = 0, builtAsm = 0;
+    if (modifiedAt(out, &builtOut) && modifiedAt(executable, &builtAsm) && builtOut < builtAsm) {
+        if (why) *why = path::filename(out) + " is older than the assembly: not this build's";
+        return "vm6747";
+    }
+    std::string lines;
+    if (!dbg_imageHasLines(out, &lines)) { if (why) *why = lines; return "vm6747"; }
+    return "sim6747";
+}
 
 const char* dbg_program(DebuggerKind kind) {
     if (kind == DebuggerC6x) {
@@ -857,16 +948,14 @@ bool Debugger::start(DebuggerKind kind, const std::string& executable,
     std::string run = program.empty() ? dbg_program(kind_) : program;
 
     std::string command = quoted(run) + " " + quoted(executable);
+    backend_.clear(); backendWhy_.clear();
     if (kind_ == DebuggerC6x) {
-        // The emulator on the assembly, or - asked for by RIDE_DEBUG_SIM6747 and given a .out beside it - the
-        // simulator on the linked image. Either speaks gdb's words from here on.
-        const char* wantSim = std::getenv("RIDE_DEBUG_SIM6747");
-        const std::string out = tiProgramOf(executable), sim = simulatorProgram();
-        if (wantSim && *wantSim && *wantSim != '0' && !sim.empty() && path::exists(out))
-            command = quoted(sim) + " --run --debug " + quoted(out);
-        else
-            command = quoted(run) + " --debug " + quoted(executable);
-    }
+        // The simulator on the linked image when it is this build's and carries the program's lines, else
+        // the emulator on the assembly (dbg_c6xBackend). Either speaks gdb's words from here on.
+        backend_ = dbg_c6xBackend(executable, &backendWhy_);
+        if (backend_ == "sim6747") command = quoted(simulatorProgram()) + " --run --debug " + quoted(tiProgramOf(executable));
+        else command = quoted(run) + " --debug " + quoted(executable);
+    } else backend_ = dbg_name(kind_);
     if (kind_ == DebuggerCdb) {
 
         command = quoted(run) + " -y " + quoted(path::parent(executable)) +

@@ -2670,7 +2670,76 @@ void debuggingOnTheEmulator() {
     debugger.clearBreakpoints();
     editor::Stop done = debugger.resume();
     check(done.exited && done.status == 12, "running on, the program ends with main's return");
+    checkEqual(debugger.backend(), "vm6747", "with no .out beside the assembly the emulator was the backend");
     debugger.stop();
+
+    // The choice between the two (dbg_c6xBackend): with no image, the emulator and the reason; with an image
+    // the build left carrying the program's lines, the simulator; forced either way by the environment; and
+    // an image built without -g sends the session back to the emulator, saying the image has no lines.
+    std::string why;
+    checkEqual(editor::dbg_c6xBackend(program, &why), "vm6747", "no .out: the emulator");
+    check(why.find("no stepped.out") != std::string::npos || why.find("no sim6747") != std::string::npos, "and the reason names what is missing: " + why);
+    const char* asm6x = std::getenv("ASM6X");
+    const char* lnk6x = std::getenv("LNK6X");
+    const char* tirts = std::getenv("TIRTS");
+    const char* sim = std::getenv("SIM6747");
+    if (!asm6x || !*asm6x || !lnk6x || !*lnk6x || !tirts || !*tirts || !sim || !*sim ||
+        !editor::path::exists(asm6x) || !editor::path::exists(lnk6x) || !editor::path::exists(sim)) {
+        skipped("no $ASM6X, $LNK6X, $TIRTS and $SIM6747, so no image is linked to choose sim6747 by");
+        editor::path::removeTree(dir);
+        return;
+    }
+    std::string cmd = editor::path::join(dir, "link.cmd");
+    writeSource(cmd, "--rom_model\n--stack_size=0x100000\n--heap_size=0x100000\n"
+                     "MEMORY { RAM : origin = 0xC0000000, length = 0x04000000 }\nSECTIONS\n{\n"
+                     "    .text > RAM  .const > RAM  .data > RAM  .bss > RAM  .far > RAM  .fardata > RAM\n"
+                     "    .neardata > RAM  .rodata > RAM  .cinit > RAM  .init_array > RAM  .switch > RAM\n"
+                     "    .cio > RAM  .stack > RAM  .sysmem > RAM  .vm6747.eh > RAM\n}\n");
+    std::string obj = editor::path::join(dir, "stepped.obj"), image = editor::path::join(dir, "stepped.out");
+    std::string link = "\"" + std::string(asm6x) + "\" \"" + program + "\" -o \"" + obj + "\" && \"" + std::string(lnk6x) +
+                       "\" -mv6740 --abi=eabi -i \"" + tirts + "\" \"" + cmd + "\" \"" + obj + "\" -l rts6x.lib -o \"" + image + "\"" + kNowhere;
+    if (std::system(shellCommand(link).c_str()) != 0 || !editor::path::exists(image)) {
+        skipped("asm6x and lnk6x made no stepped.out to choose sim6747 by");
+        editor::path::removeTree(dir);
+        return;
+    }
+    check(editor::dbg_imageHasLines(image, &why), "the -g image carries a .debug_line with rows in the program's code: " + why);
+    checkEqual(editor::dbg_c6xBackend(program, &why), "sim6747", "and with it beside the assembly the simulator is chosen");
+
+    editor::Debugger onImage;
+    check(onImage.start(editor::DebuggerC6x, program), "sim6747 --run --debug starts on the image");
+    checkEqual(onImage.backend(), "sim6747", "and the session says so");
+    if (onImage.running()) {
+        check(onImage.breakAt(source, 11), "a breakpoint on a line of C++, in the image");
+        editor::Stop there = onImage.run();
+        check(there.stopped && there.line == 11 && there.function == "main", "and the simulator stops on it, in main");
+        editor::Stop in = onImage.stepInto();
+        check(in.stopped && in.line == 3, "stepping into the call lands on its first statement, on the image too");
+        onImage.stop();
+    }
+
+#ifdef _WIN32
+    _putenv_s("RIDE_DEBUG_VM6747", "1");
+#else
+    setenv("RIDE_DEBUG_VM6747", "1", 1);
+#endif
+    checkEqual(editor::dbg_c6xBackend(program, &why), "vm6747", "RIDE_DEBUG_VM6747 forces the emulator");
+    check(why.find("RIDE_DEBUG_VM6747") != std::string::npos, "and says so");
+#ifdef _WIN32
+    _putenv_s("RIDE_DEBUG_VM6747", "");
+#else
+    unsetenv("RIDE_DEBUG_VM6747");
+#endif
+
+    // Without -g: the same chain, no .dwpsn, no .debug_line - the emulator, for a reason that names it.
+    std::string plain = editor::path::join(dir, "plain.s"), plainObj = editor::path::join(dir, "plain.obj"), plainOut = editor::path::join(dir, "plain.out");
+    std::string again = "\"" + std::string(cxx1) + "\" -S -arch tms6747 -nologo \"" + source + "\" -o \"" + plain + "\" && \"" + std::string(asm6x) + "\" \"" + plain +
+                        "\" -o \"" + plainObj + "\" && \"" + std::string(lnk6x) + "\" -mv6740 --abi=eabi -i \"" + tirts + "\" \"" + cmd + "\" \"" + plainObj + "\" -l rts6x.lib -o \"" + plainOut + "\"" + kNowhere;
+    if (std::system(shellCommand(again).c_str()) == 0 && editor::path::exists(plainOut)) {
+        check(!editor::dbg_imageHasLines(plainOut, &why) && why.find("no .debug_line") != std::string::npos, "an image built without -g has no line table: " + why);
+        checkEqual(editor::dbg_c6xBackend(plain, &why), "vm6747", "so the emulator is chosen for it");
+        check(why.find("no .debug_line") != std::string::npos, "and the reason is the missing line table");
+    } else skipped("no plain image was linked for the fallback");
     editor::path::removeTree(dir);
 }
 
