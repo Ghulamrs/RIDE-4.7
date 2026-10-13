@@ -12,7 +12,7 @@
 # for the package code, which is new per build as VS makes it; a diff of two shows
 # what the installer gained or lost. What is left out - the dialogs - is the
 # template's default, which VS fills in when it loads the project.
-param([Parameter(Mandatory = $true)][string]$Stage, [string]$Version = "5.12")
+param([Parameter(Mandatory = $true)][string]$Stage, [string]$Version = "5.13")
 $ErrorActionPreference = "Stop"
 
 $Product = "RIDE"
@@ -133,7 +133,7 @@ Block 3 ($SpecialFolder + ":" + (Key "special|programs")) @(@("Name", "8:#1919")
     Line 4 "}"
 }
 Line 2 "}"
-# A product code per version, so 5.12 replaces 5.1 (RemovePreviousVersions); a package code per build.
+# A product code per version, so 5.13 replaces 5.1 (RemovePreviousVersions); a package code per build.
 Block 2 "Product" @(@("Name", "8:Microsoft Visual Studio"), @("ProductName", "8:$Name"),
     @("ProductCode", "8:" + (Guid ("product|" + $Version))), @("PackageCode", "8:{" + ([System.Guid]::NewGuid().ToString().ToUpperInvariant()) + "}"),
     @("UpgradeCode", "8:$UpgradeCode"), @("AspNetVersion", "8:2.0.50727.0"), @("RestartWWWService", "11:FALSE"),

@@ -1,7 +1,7 @@
-©2026 G. R. Akhtar - RIDE 5.12, the editor
-Release seal, version 5.12, sealed 13-10-2026
+©2026 G. R. Akhtar - RIDE 5.13, the editor
+Release seal, version 5.13, sealed 13-10-2026
 Written by tools/seal; check it with `tools/seal check`.
-CRC32  size  file - 80 files, seal A5C258A0
+CRC32  size  file - 80 files, seal BC95B34E
 ------------------------------------------------------------------
 1DBB2FBC      2412  macos/CodeView.h
 02B3F91E     14632  macos/CodeView.mm
@@ -9,9 +9,9 @@ CRC32  size  file - 80 files, seal A5C258A0
 A7F98CCC      5957  macos/LineNumbers.mm
 7E2C43FD      2767  macos/Text.h
 AEF649AE      1693  macos/WindowController.h
-3BB6EDDC    201879  macos/WindowController.mm
+B969F670    201879  macos/WindowController.mm
 18F9EFDC      4599  macos/main.mm
-9E9B7059     15888  src/about.cpp
+F4EECD68     15888  src/about.cpp
 ABC4FB50      1108  src/about.h
 634B7DB9      8502  src/buffer.cpp
 985593C8      2268  src/buffer.h
@@ -49,10 +49,10 @@ D12A8855      1365  src/json.h
 623BE189      1421  src/path.h
 AA505B11     36918  src/process.cpp
 AAB34DCA      1876  src/process.h
-64591D86      1371  src/product.h
+2416C361      1371  src/product.h
 35B50FB6     43117  src/project.cpp
 8E08B320      8561  src/project.h
-78936499     27465  src/settings.cpp
+B91E7494     27471  src/settings.cpp
 3E0AC86E      6626  src/settings.h
 4B7E8748      9069  src/shalimar/channel.cpp
 22E40405       577  src/shalimar/channel.h
@@ -76,7 +76,7 @@ D93038C5       572  src/utf8.h
 F35C52A2      2086  src/workspace.h
 6C3EEE85     11320  winforms/DebugView.h
 1FF1F4DF      5110  winforms/ErrorList.h
-9F2CAA27    270892  winforms/MainForm.h
+881D8522    270892  winforms/MainForm.h
 6BA8DA64      2289  winforms/Marshal.h
 3D89F3C4      6415  winforms/Program.cpp
 B2EA0EE1      4860  winforms/TextFile.h
