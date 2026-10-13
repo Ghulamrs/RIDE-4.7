@@ -576,7 +576,9 @@ void routing() {
     // The words the panel says are the core's, and they follow the target
     // rather than being written out once and left.
     std::vector<std::string> carries = editor::debugNote(editor::ToolCc1, kDarwin);
-    std::vector<std::string> carriesNot = editor::debugNote(editor::ToolCc1, "tms6747");
+    // Every one of c90's targets carries a line table now (tms6747's is cl6x's .dwpsn, since 2026-10-13); the
+    // compiler that writes none, by its own decision, is shalimar.
+    std::vector<std::string> carriesNot = editor::debugNote(editor::ToolShc, kDarwin);
     check(!carries.empty() && !carriesNot.empty(), "the panel is told something either way");
     check(carries != carriesNot, "and not the same thing about both targets");
     check(joined(carries).find("DWARF") != std::string::npos &&
@@ -2111,7 +2113,7 @@ void whatTheC6xEmulatorSays() {
 
     checkEqual(editor::dbg_name(editor::DebuggerC6x), "vm6747", "the C6x kind is named after the emulator");
     check(editor::emitsDebugInfo(editor::ToolCxx1, "tms6747"), "cpp11 writes a line table for tms6747 now");
-    check(!editor::emitsDebugInfo(editor::ToolCc1, "tms6747"), "and c90 does not yet");
+    check(editor::emitsDebugInfo(editor::ToolCc1, "tms6747"), "and so does c90, since 2026-10-13");
 }
 
 void whatADebuggerSays() {
@@ -2605,6 +2607,98 @@ void stoppingTheHostsOwnCompiler() {
 // The C6747 emulator as a debugger, for real: cpp11 -g's assembly, vm6747 --debug started by Debugger, and
 // the stops, steps and frames read back through the gdb parser. $CXX1 and $VM6747 name the two; a cpp11
 // that still refuses -g for tms6747 is a skip that says so.
+// The same on a C program: c90 -g's .dwpsn, the Debug session on vm6747 and, with the image linked, on
+// sim6747 - one session each way, driven by $CC1 beside the tools debuggingOnTheEmulator names.
+void debuggingCOnTheEmulator() {
+    std::printf("stopping and stepping C on the C6747 emulator and simulator, for real\n");
+
+    const char* cc1 = std::getenv("CC1");
+    const char* vm = std::getenv("VM6747");
+    if (!cc1 || !*cc1 || !editor::path::exists(cc1)) { skipped("no $CC1, so no C is built for the emulator"); return; }
+    if (!vm || !*vm || !editor::path::exists(vm)) { skipped("no $VM6747, so there is no emulator to stop"); return; }
+
+    std::string dir = editor::path::join(editor::path::tempDir(), "ride-c6x-c-debug-test");
+    editor::path::removeTree(dir);
+    editor::path::makeDirectories(dir);
+    std::string source = editor::path::join(dir, "stepped.c");
+    writeSource(source,
+              "static int twice(int n)\n"
+              "{\n"
+              "    int doubled = n * 2;\n"
+              "    return doubled;\n"
+              "}\n"
+              "\n"
+              "int main(void)\n"
+              "{\n"
+              "    int total = 0;\n"
+              "    for (int i = 1; i <= 3; ++i) {\n"
+              "        total = total + twice(i);\n"
+              "    }\n"
+              "    return total;\n"
+              "}\n");
+    std::string program = editor::path::join(dir, "stepped.s");
+    std::string build = "\"" + std::string(cc1) + "\" -S -arch tms6747 -g \"" + source + "\" -o \"" + program + "\"" + kNowhere;
+    if (std::system(shellCommand(build).c_str()) != 0 || !editor::path::exists(program)) {
+        skipped("c90 built nothing with -g for tms6747 (a c90 before .dwpsn, 2026-10-13)");
+        editor::path::removeTree(dir);
+        return;
+    }
+
+    check(editor::dbg_for(editor::ToolCc1, "tms6747") == editor::DebuggerC6x, "C on tms6747 with a vm6747 named is the C6x kind");
+    editor::Debugger debugger;
+    check(debugger.start(editor::DebuggerC6x, program), "vm6747 --debug starts on what c90 built");
+    if (!debugger.running()) { editor::path::removeTree(dir); return; }
+    check(debugger.breakAt(source, 11), "a breakpoint is set on a line of C");
+    editor::Stop at = debugger.run();
+    check(at.stopped && at.line == 11 && at.function == "main", "C: running stops on it, in main");
+    editor::Stop into = debugger.stepInto();
+    check(into.stopped && into.line == 3 && into.function == "twice", "C: stepping into the call arrives on its first statement, in twice");
+    editor::Stop out = debugger.stepOut();
+    check(out.stopped && out.function == "main", "C: finishing the call lands back in main");
+    checkEqual(debugger.backend(), "vm6747", "C: with no .out beside the assembly the emulator was the backend");
+    debugger.stop();
+
+    const char* asm6x = std::getenv("ASM6X");
+    const char* lnk6x = std::getenv("LNK6X");
+    const char* tirts = std::getenv("TIRTS");
+    const char* sim = std::getenv("SIM6747");
+    if (!asm6x || !*asm6x || !lnk6x || !*lnk6x || !tirts || !*tirts || !sim || !*sim ||
+        !editor::path::exists(asm6x) || !editor::path::exists(lnk6x) || !editor::path::exists(sim)) {
+        skipped("no $ASM6X, $LNK6X, $TIRTS and $SIM6747, so no C image is linked to choose sim6747 by");
+        editor::path::removeTree(dir);
+        return;
+    }
+    std::string cmd = editor::path::join(dir, "link.cmd");
+    writeSource(cmd, "--rom_model\n--stack_size=0x100000\n--heap_size=0x100000\n"
+                     "MEMORY { RAM : origin = 0xC0000000, length = 0x04000000 }\nSECTIONS\n{\n"
+                     "    .text > RAM  .const > RAM  .data > RAM  .bss > RAM  .far > RAM  .fardata > RAM\n"
+                     "    .neardata > RAM  .rodata > RAM  .cinit > RAM  .init_array > RAM  .switch > RAM\n"
+                     "    .cio > RAM  .stack > RAM  .sysmem > RAM  .vm6747.eh > RAM\n}\n");
+    std::string obj = editor::path::join(dir, "stepped.obj"), image = editor::path::join(dir, "stepped.out");
+    std::string link = "\"" + std::string(asm6x) + "\" \"" + program + "\" -o \"" + obj + "\" && \"" + std::string(lnk6x) +
+                       "\" -mv6740 --abi=eabi -i \"" + tirts + "\" \"" + cmd + "\" \"" + obj + "\" -l rts6x.lib -o \"" + image + "\"" + kNowhere;
+    if (std::system(shellCommand(link).c_str()) != 0 || !editor::path::exists(image)) {
+        skipped("asm6x and lnk6x made no C image to choose sim6747 by");
+        editor::path::removeTree(dir);
+        return;
+    }
+    std::string why;
+    check(editor::dbg_imageHasLines(image, &why), "the C image carries a .debug_line with rows in the program's code: " + why);
+    checkEqual(editor::dbg_c6xBackend(program, &why), "sim6747", "and with it beside the assembly the simulator is chosen for C");
+    editor::Debugger onImage;
+    check(onImage.start(editor::DebuggerC6x, program), "sim6747 --run --debug starts on the C image");
+    checkEqual(onImage.backend(), "sim6747", "and the session says so");
+    if (onImage.running()) {
+        check(onImage.breakAt(source, 11), "a breakpoint on a line of C, in the image");
+        editor::Stop there = onImage.run();
+        check(there.stopped && there.line == 11 && there.function == "main", "and the simulator stops on it, in main");
+        editor::Stop in = onImage.stepInto();
+        check(in.stopped && in.line == 3, "stepping into the call lands on its first statement, on the C image too");
+        onImage.stop();
+    }
+    editor::path::removeTree(dir);
+}
+
 void debuggingOnTheEmulator() {
     std::printf("stopping and stepping on the C6747 emulator, for real\n");
 
@@ -5532,7 +5626,7 @@ static void compilerOptions() {
     options::Store store;
     checkEqual(options::flags(store, ToolCxx1, ConfigRelease, "x86_64-linux"), " -O2 -DNDEBUG=1", "cpp11 release defaults");
     checkEqual(options::flags(store, ToolCc1, ConfigDebug, "x86_64-linux"), " -g -D_DEBUG=1", "c90 debug defaults");
-    checkEqual(options::flags(store, ToolCc1, ConfigDebug, "tms6747"), " -D_DEBUG=1", "no -g where there is no line table (c90 on the C6000)");
+    checkEqual(options::flags(store, ToolCc1, ConfigDebug, "tms6747"), " -g -D_DEBUG=1", "-g where there is a line table (c90 on the C6000: .dwpsn, since 2026-10-13)");
     checkEqual(options::flags(store, ToolCxx1, ConfigDebug, "tms6747"), " -g -D_DEBUG=1", "and -g where there is one (cpp11 on the C6000: .dwpsn)");
     checkEqual(options::flags(store, ToolShc, ConfigDebug, "x86_64-linux"), " --debug", "shalimar debug runtime");
     checkEqual(options::flags(store, ToolShc, ConfigDebug, "tms6747"), "", "no debug runtime on the emulator");
@@ -5561,7 +5655,7 @@ static void compilerOptions() {
     checkEqual(options::environment(store, ConfigDebug)["CPP11_DECLINES"], "1", "CPP11_DECLINES asked for");
     checkEqual(options::environment(store, ConfigRelease)["CPP11_DECLINES"], "", "CPP11_DECLINES removed");
     std::string why;
-    check(!options::available("c90.g", "tms6747", why) && !why.empty(), "-g unavailable on tms6747, with a reason");
+    check(options::available("c90.g", "tms6747", why), "-g available on tms6747 (c90's .dwpsn, since 2026-10-13)");
     check(options::find("cpp11.masm") == 0 && options::find("shc.with") == 0, "what a menu decides is not an option");
     size_t onTabs = 0;
     for (size_t t = 0; t < options::tabCount(); ++t)
@@ -6550,6 +6644,7 @@ int main(int argc, char** argv) {
     whatACallStackLooksLike();
     debuggingForReal();
     debuggingOnTheEmulator();
+    debuggingCOnTheEmulator();
     stoppingTheHostsOwnCompiler();
     debuggingCppForReal();
     theSeamTheWindowUses();

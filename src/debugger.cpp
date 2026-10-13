@@ -501,8 +501,8 @@ std::string dbg_whyNot(ToolchainKind kind, const std::string& arch) {
         return "vm6747 is not beside " + std::string(product::kName) + " and not on the PATH - the VM6747 emulator is the "
                "debugger for " + arch + " (vm6747 --debug); name one with $VM6747";
     if (isEmulated(arch))
-        return std::string(toolchainName(kind)) + " writes no line table for " + arch + " yet - cpp11 -g writes "
-               "cl6x's .dwpsn, which vm6747 --debug stops on; c90 does not";
+        return std::string(toolchainName(kind)) + " writes no line table for " + arch + " - c90 -g and cpp11 -g write "
+               "cl6x's .dwpsn, which vm6747 --debug and sim6747 stop on";
     if (kind == ToolMsvc || (emitsDebugInfo(kind, arch) && arch == "x86_64-windows"))
         return std::string(toolchainName(kind)) + " writes a .pdb and cdb reads one, but cdb is not installed - "
                "add Debugging Tools for Windows";

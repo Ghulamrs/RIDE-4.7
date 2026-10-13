@@ -1210,9 +1210,13 @@ void emulatedTarget(const std::string& ride, const std::string& cc1,
     check(message(ran).find("tms6747") != std::string::npos || onScreen(ran, "tms6747"),
           "and the target is named");
 
-    // Debug of a C program is refused, c90 writing no line table for the C6000 (cpp11 does, below).
-    Screen debug = drive(ride, withCc1, kF8 + ctrl('q'), dir);
-    check(wasShown(debug, "writes no line table"), "F8 on C is turned away: c90 writes no line table for tms6747 yet");
+    // F8 on the C project: c90 -g's .dwpsn make a line table (since 2026-10-13), and the Debug session starts
+    // sim6747 on the linked image where asm6x, lnk6x and RTS6x are beside the editor, vm6747 on the assembly
+    // otherwise (dbg_c6xBackend) - the console's start line read after View > Console, Ctrl-W twice and End.
+    Screen debug = drive(ride, withCc1, kF8 + kF10 + times(kRight, 5) + times(kDown, 2) + kEnter + ctrl('w') + ctrl('w') + "\x1b[F" + ctrl('q'), dir);
+    check(wasShown(debug, ti ? "started sim6747" : "started vm6747"),
+          ti ? "F8 on a C project starts sim6747 on the linked image, which carries the program's lines"
+             : "F8 on a C project starts vm6747 on the assembly, there being no image to carry lines");
 
     if (!cxx1.empty()) {
         file::path cpp = dir / "src" / "throws.cpp";
