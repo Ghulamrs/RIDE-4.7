@@ -1441,8 +1441,8 @@ ifeq ($(HOST),Darwin)
 else
 	$(MAKE) -C $(CC1_DIR) test
 endif
-	cd $(CC1_DIR) && CC1=$(OUT)/c90.exe VM=$(OUT)/vm6747.exe ./tests/tms6747.sh
-	cd $(CXX1_DIR) && CXX1=$(OUT)/cpp11.exe VM=$(OUT)/vm6747.exe ./tests/tms6747.sh
+	cd $(CC1_DIR) && CC1=$(OUT)/c90.exe VM=$(OUT)/vm6747.exe ASM6X=$(OUT)/asm6x.exe LNK6X=$(OUT)/lnk6x.exe SIM6747=$(OUT)/sim6747.exe TIRTS=$(OUT)/lib/rts6x-tms6747 ./tests/tms6747.sh
+	cd $(CXX1_DIR) && CXX1=$(OUT)/cpp11.exe VM=$(OUT)/vm6747.exe ASM6X=$(OUT)/asm6x.exe LNK6X=$(OUT)/lnk6x.exe SIM6747=$(OUT)/sim6747.exe TIRTS=$(OUT)/lib/rts6x-tms6747 ./tests/tms6747.sh
 # The assembler against asm6x's recorded objects, python3 alone.
 	cd $(ASM_DIR) && ASM=$(OUT)/asm6x.exe sh tests/run.sh
 # And the x86-64 one against ml64's recorded objects, the same way.

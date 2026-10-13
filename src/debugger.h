@@ -24,6 +24,15 @@ enum DebuggerKind {
 // gdb, or an engine that speaks as gdb does: the C6747 emulator and simulator.
 bool dbg_gdbLike(DebuggerKind kind);
 
+// Whether a linked C6747 image (.out) carries a .debug_line whose rows reach the program's own code - a
+// unit with a set_address inside an executable section - which is what sim6747 --run --debug stops on.
+bool dbg_imageHasLines(const std::string& out, std::string* why = 0);
+
+// Which program debugs a tms6747 build: "sim6747" on the .out beside the assembly when it exists, is no
+// older than the build and has lines, else "vm6747" on the assembly; RIDE_DEBUG_SIM6747=1 and
+// RIDE_DEBUG_VM6747=1 force one. why says what decided it when the fallback was taken.
+std::string dbg_c6xBackend(const std::string& executable, std::string* why = 0);
+
 DebuggerKind dbg_here();
 const char* dbg_name(DebuggerKind kind);
 const char* dbg_program(DebuggerKind kind);
@@ -96,6 +105,9 @@ public:
                const std::string& program = std::string());
     bool running() const { return kind_ != DebuggerNone && child_.running(); }
     DebuggerKind kind() const { return kind_; }
+    // The program behind the C6x kind - "vm6747" or "sim6747" - and why vm6747 when the simulator was not chosen.
+    const std::string& backend() const { return backend_; }
+    const std::string& backendWhy() const { return backendWhy_; }
     void stop();
 
     bool breakAt(const std::string& file, size_t line);
@@ -142,6 +154,7 @@ private:
 
     Process child_;
     DebuggerKind kind_;
+    std::string backend_, backendWhy_;
     bool onConsole_;
     std::string executable_;
 

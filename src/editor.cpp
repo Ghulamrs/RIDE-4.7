@@ -3242,9 +3242,14 @@ void Editor::debug(bool project) {
     if (project)
         debugBuilt_ = buildParts(toolFor(), parts, kArches[arch_], config_,
                                  project_.targetProgram(), consoleSink, this);
-    else
-        debugBuilt_ = buildProgram(toolFor(), kind, buf_.path(), parts[0].lang, kArches[arch_],
+    else {
+        // A single file's debug build links the .out beside its .s as its Run does (R5): on tms6747 that is
+        // the image the Debug session chooses sim6747 by when it carries the program's lines (dbg_c6xBackend).
+        Toolchain linking = toolFor();
+        linking.linkSingleFile = isEmulated(kArches[arch_]);
+        debugBuilt_ = buildProgram(linking, kind, buf_.path(), parts[0].lang, kArches[arch_],
                                    config_, consoleSink, this);
+    }
     lastDiag_ = debugBuilt_.diag;
     if (!debugBuilt_.ok) {
         if (debugBuilt_.diag.present) {
@@ -3292,9 +3297,12 @@ void Editor::debug(bool project) {
             if (stopsItself ? shm_.breakAt(file->second.path, *line)
                             : debugger_.breakAt(file->second.path, *line)) ++set;
 
+    // On tms6747 the backend is a choice (dbg_c6xBackend): which one, and why the emulator when the
+    // simulator was passed over, go in the line.
     console_.push_back(std::string("started ") +
-                       (stopsItself ? "the program itself" : dbg_name(debugger_.kind())) +
-                       " with " + number(set) + " breakpoint" + (set == 1 ? "" : "s"));
+                       (stopsItself ? "the program itself" : debugger_.backend()) +
+                       " with " + number(set) + " breakpoint" + (set == 1 ? "" : "s") +
+                       (debugger_.backendWhy().empty() ? std::string() : " (" + debugger_.backendWhy() + ")"));
     showStop(stopsItself ? shm_.run() : debugger_.run());
 }
 
