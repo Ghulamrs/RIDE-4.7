@@ -2062,6 +2062,58 @@ const char* const kLldbInFactDeeper =
     "-> 1   \tint fact(int n) { return n <= 1 ? 1 : n * fact(n - 1); }\n"
     "Target 0: (r) stopped.\n";
 
+// vm6747 --debug and sim6747 --run --debug answer in gdb's shapes (VM6747 src/Debug.h), and the gdb parsers
+// read them: these are the emulator's own lines, from VM6747's tests/debug/step.expected.
+void whatTheC6xEmulatorSays() {
+    std::printf("what the C6747 emulator says, read as gdb\n");
+
+    check(editor::dbg_gdbLike(editor::DebuggerC6x), "the C6x kind speaks as gdb does");
+    check(!editor::dbg_gdbLike(editor::DebuggerCdb), "and cdb does not");
+
+    editor::Stop hit = editor::dbg_readStop(editor::DebuggerC6x,
+        "Starting program: step.s\n\nBreakpoint 1, main () at step.cpp:18\n18\t    int x = add(1, 2);\n");
+    check(hit.stopped && !hit.exited, "a breakpoint hit is a stop");
+    checkEqual(hit.function, "main", "C6x: in the function the emulator names");
+    checkEqual(hit.file, "step.cpp", "C6x: in the file the .dwpsn named");
+    check(hit.line == 18, "C6x: on its line");
+
+    editor::Stop stepped = editor::dbg_readStop(editor::DebuggerC6x, "19\t    printf(\"x=%d\\n\", x);\n");
+    check(stepped.stopped && stepped.line == 19, "C6x: a step within the function is the echo alone, and its line is read");
+
+    editor::Stop into = editor::dbg_readStop(editor::DebuggerC6x, "_Z3addii () at step.cpp:11\n11\t    int c = a + b;\n");
+    checkEqual(into.function, "_Z3addii", "C6x: a step into a function names it (as mangled, which is what the label is)");
+    check(into.line == 11, "C6x: at its first statement");
+
+    editor::Stop done = editor::dbg_readStop(editor::DebuggerC6x, "y=14\n[Inferior 1 (process 1) exited with code 06]\n");
+    check(done.exited && !done.stopped, "C6x: the end is an exit");
+    check(done.status == 6, "C6x: with the status main returned, read as gdb's octal");
+
+    editor::Stop clean = editor::dbg_readStop(editor::DebuggerC6x, "[Inferior 1 (process 1) exited normally]\n");
+    check(clean.exited && clean.status == 0, "C6x: and a zero status is 'normally'");
+
+    std::vector<editor::StackFrame> stack = editor::dbg_readFrames(editor::DebuggerC6x,
+        "#0  _ZL5twicei () at step.cpp:5\n#1  0x000010c0 in _Z3addii () at step.cpp:12\n#2  0x00001148 in main () at step.cpp:18\n");
+    check(stack.size() == 3, "C6x: three frames read");
+    if (stack.size() == 3) {
+        checkEqual(stack[1].function, "_Z3addii", "C6x: the caller, past its address");
+        check(stack[2].line == 18, "C6x: main's line");
+    }
+
+    std::vector<editor::Variable> none = editor::dbg_readVariables(editor::DebuggerC6x, "No symbol table info available.\n");
+    check(none.empty(), "C6x: no locals - the emulator has no variable information to give");
+
+    checkEqual(editor::dbg_readValue(editor::DebuggerC6x, "$1 = 10\n"), "10", "C6x: a register's value, as gdb prints one");
+    checkEqual(editor::dbg_readType(editor::DebuggerC6x, "type = int\n"), "int", "C6x: and its type");
+
+    std::string output = editor::dbg_programOutput(editor::DebuggerC6x,
+        "Continuing.\nx=6\n20\t    int y = add(x, 4);\n\nBreakpoint 2, _ZL5twicei () at step.cpp:3\n3\tstatic int twice(int n)\n<<ride-done>>\n");
+    checkEqual(output, "x=6\n", "C6x: the program's own output, the emulator's lines and the echo taken out");
+
+    checkEqual(editor::dbg_name(editor::DebuggerC6x), "vm6747", "the C6x kind is named after the emulator");
+    check(editor::emitsDebugInfo(editor::ToolCxx1, "tms6747"), "cpp11 writes a line table for tms6747 now");
+    check(!editor::emitsDebugInfo(editor::ToolCc1, "tms6747"), "and c90 does not yet");
+}
+
 void whatADebuggerSays() {
     std::printf("where a debugger says it stopped\n");
 
@@ -2547,6 +2599,78 @@ void stoppingTheHostsOwnCompiler() {
     asBuilt.program = recipe.assemblyPath;
     asBuilt.leftovers = recipe.leftovers;
     editor::removeProgram(asBuilt);
+    editor::path::removeTree(dir);
+}
+
+// The C6747 emulator as a debugger, for real: cpp11 -g's assembly, vm6747 --debug started by Debugger, and
+// the stops, steps and frames read back through the gdb parser. $CXX1 and $VM6747 name the two; a cpp11
+// that still refuses -g for tms6747 is a skip that says so.
+void debuggingOnTheEmulator() {
+    std::printf("stopping and stepping on the C6747 emulator, for real\n");
+
+    const char* cxx1 = std::getenv("CXX1");
+    const char* vm = std::getenv("VM6747");
+    if (!cxx1 || !*cxx1 || !editor::path::exists(cxx1)) { skipped("no $CXX1, so nothing is built for the emulator"); return; }
+    if (!vm || !*vm || !editor::path::exists(vm)) { skipped("no $VM6747, so there is no emulator to stop"); return; }
+
+    std::string dir = editor::path::join(editor::path::tempDir(), "ride-c6x-debug-test");
+    editor::path::removeTree(dir);
+    editor::path::makeDirectories(dir);
+    std::string source = editor::path::join(dir, "stepped.cpp");
+    writeSource(source,
+              "static int twice(int n)\n"
+              "{\n"
+              "    int doubled = n * 2;\n"
+              "    return doubled;\n"
+              "}\n"
+              "\n"
+              "int main()\n"
+              "{\n"
+              "    int total = 0;\n"
+              "    for (int i = 1; i <= 3; ++i) {\n"
+              "        total = total + twice(i);\n"
+              "    }\n"
+              "    return total;\n"
+              "}\n");
+    std::string program = editor::path::join(dir, "stepped.s");
+    std::string build = "\"" + std::string(cxx1) + "\" -S -arch tms6747 -g -nologo \"" + source + "\" -o \"" + program + "\"" + kNowhere;
+    if (std::system(shellCommand(build).c_str()) != 0 || !editor::path::exists(program)) {
+        skipped("cpp11 built nothing with -g for tms6747 (a cpp11 before .dwpsn, 2026-10-13)");
+        editor::path::removeTree(dir);
+        return;
+    }
+
+    editor::Debugger debugger;
+    check(editor::dbg_for(editor::ToolCxx1, "tms6747") == editor::DebuggerC6x, "tms6747 with a vm6747 named is the C6x kind");
+    check(debugger.start(editor::DebuggerC6x, program), "vm6747 --debug starts on what cpp11 built");
+    if (!debugger.running()) { editor::path::removeTree(dir); return; }
+
+    check(debugger.breakAt(source, 11), "a breakpoint is set on a line of C++");
+    editor::Stop at = debugger.run();
+    check(at.stopped, "and running stops on it");
+    check(at.line == 11, "on the line it was asked for");
+    check(at.function == "main", "in the function that line is in");
+
+    editor::Stop into = debugger.stepInto();
+    check(into.stopped && into.line == 3, "stepping into the call arrives on its first statement");
+    check(into.function == "_ZL5twicei", "in the callee, named as its label is");
+    std::vector<editor::StackFrame> stack = debugger.frames();
+    check(stack.size() == 2 && stack[1].function == "main" && stack[1].line == 11, "and the stack says main called it");
+
+    editor::Stop out = debugger.stepOut();
+    check(out.stopped && out.function == "main", "finishing the call lands back in main");
+    editor::Stop over = debugger.stepOver();
+    check(over.stopped && over.line == 10, "a step over goes to the loop's next turn");
+
+    bool ok = false;
+    std::string b15 = debugger.evaluate("$B15", &ok);
+    check(ok && !b15.empty(), "a register reads");
+    check(debugger.locals().empty(), "and there are no locals to show: the assembly carries none");
+
+    debugger.clearBreakpoints();
+    editor::Stop done = debugger.resume();
+    check(done.exited && done.status == 12, "running on, the program ends with main's return");
+    debugger.stop();
     editor::path::removeTree(dir);
 }
 
@@ -5339,7 +5463,8 @@ static void compilerOptions() {
     options::Store store;
     checkEqual(options::flags(store, ToolCxx1, ConfigRelease, "x86_64-linux"), " -O2 -DNDEBUG=1", "cpp11 release defaults");
     checkEqual(options::flags(store, ToolCc1, ConfigDebug, "x86_64-linux"), " -g -D_DEBUG=1", "c90 debug defaults");
-    checkEqual(options::flags(store, ToolCxx1, ConfigDebug, "tms6747"), " -D_DEBUG=1", "no -g where there is no line table");
+    checkEqual(options::flags(store, ToolCc1, ConfigDebug, "tms6747"), " -D_DEBUG=1", "no -g where there is no line table (c90 on the C6000)");
+    checkEqual(options::flags(store, ToolCxx1, ConfigDebug, "tms6747"), " -g -D_DEBUG=1", "and -g where there is one (cpp11 on the C6000: .dwpsn)");
     checkEqual(options::flags(store, ToolShc, ConfigDebug, "x86_64-linux"), " --debug", "shalimar debug runtime");
     checkEqual(options::flags(store, ToolShc, ConfigDebug, "tms6747"), "", "no debug runtime on the emulator");
     checkEqual(options::flags(store, ToolShc, ConfigRelease, "x86_64-linux"), "", "shalimar release defaults");
@@ -5353,7 +5478,7 @@ static void compilerOptions() {
     checkEqual(options::flags(store, ToolShc, ConfigDebug, "x86_64-linux"),
                " --debug --no-search", "shalimar options set");
     store.set(ConfigDebug, "cpp11.compress", "0");
-    checkEqual(options::flags(store, ToolCxx1, ConfigDebug, "tms6747"), " --no_compress -D_DEBUG=1",
+    checkEqual(options::flags(store, ToolCxx1, ConfigDebug, "tms6747"), " -g --no_compress -D_DEBUG=1",
                "cpp11 without compact instructions on the C6000");
     checkEqual(options::flags(store, ToolCxx1, ConfigDebug, "x86_64-linux"), " -g -D_DEBUG=1",
                "no --no_compress where there are no compact instructions");
@@ -6351,9 +6476,11 @@ int main(int argc, char** argv) {
     aProgramThatReads();
     theSeamsSmallPromises();
     whatADebuggerSays();
+    whatTheC6xEmulatorSays();
     aStepThatWentNowhere();
     whatACallStackLooksLike();
     debuggingForReal();
+    debuggingOnTheEmulator();
     stoppingTheHostsOwnCompiler();
     debuggingCppForReal();
     theSeamTheWindowUses();

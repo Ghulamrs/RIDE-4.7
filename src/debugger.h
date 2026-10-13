@@ -15,8 +15,14 @@ enum DebuggerKind {
     DebuggerNone = 0,
     DebuggerLldb,
     DebuggerGdb,
-    DebuggerCdb
+    DebuggerCdb,
+    // vm6747 --debug and sim6747 --run --debug: the C6747 emulator and simulator speaking gdb's commands and
+    // answering in gdb's shapes (VM6747 src/Debug.h), so everything below that reads gdb reads them.
+    DebuggerC6x
 };
+
+// gdb, or an engine that speaks as gdb does: the C6747 emulator and simulator.
+bool dbg_gdbLike(DebuggerKind kind);
 
 DebuggerKind dbg_here();
 const char* dbg_name(DebuggerKind kind);

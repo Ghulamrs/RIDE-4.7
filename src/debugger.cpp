@@ -18,7 +18,7 @@ std::string markerStart() { return std::string("<<") + product::kLower; }
 std::string marker() { return markerStart() + "-done>>"; }
 
 std::string markerCommand(DebuggerKind kind) {
-    if (kind == DebuggerGdb) return "echo " + marker() + "\\n";
+    if (dbg_gdbLike(kind)) return "echo " + marker() + "\\n";
     if (kind == DebuggerCdb) {
 
         return ".printf \"" + markerStart() + "%cdone>>\\n\", 0x2d";
@@ -52,7 +52,7 @@ bool onPath(const std::string& name) {
 
 std::vector<std::string> preamble(DebuggerKind kind) {
     std::vector<std::string> said;
-    if (kind == DebuggerGdb) {
+    if (dbg_gdbLike(kind)) {
         said.push_back("set confirm off");
 
         said.push_back("set pagination off");
@@ -60,7 +60,7 @@ std::vector<std::string> preamble(DebuggerKind kind) {
         said.push_back("set width unlimited");
         said.push_back("set breakpoint pending on");
 
-        if (onPath("stdbuf")) said.push_back("set exec-wrapper stdbuf -o0 -e0");
+        if (kind == DebuggerGdb && onPath("stdbuf")) said.push_back("set exec-wrapper stdbuf -o0 -e0");
     } else if (kind == DebuggerCdb) {
 
         said.push_back(".lines -e");
@@ -250,7 +250,7 @@ std::string dbg_programOutput(DebuggerKind kind, const std::string& said) {
         if (sourceEcho(line)) continue;
 
         if (kind == DebuggerLldb && lldbOwn(line)) continue;
-        if (kind == DebuggerGdb && gdbOwn(line)) continue;
+        if (dbg_gdbLike(kind) && gdbOwn(line)) continue;
         if (kind == DebuggerCdb && cdbOwn(line)) continue;
 
         out += line;
@@ -313,11 +313,20 @@ const char* dbg_name(DebuggerKind kind) {
         case DebuggerLldb: return "lldb";
         case DebuggerGdb:  return "gdb";
         case DebuggerCdb:  return "cdb";
+        case DebuggerC6x:  return "vm6747";
         default:           return "none";
     }
 }
 
+bool dbg_gdbLike(DebuggerKind kind) { return kind == DebuggerGdb || kind == DebuggerC6x; }
+
 const char* dbg_program(DebuggerKind kind) {
+    if (kind == DebuggerC6x) {
+        // The emulator beside RIDE or named by $VM6747 (toolchain.h); sim6747 is chosen at start() for a .out.
+        static std::string* emulator = 0;
+        if (!emulator) emulator = new std::string(emulatorProgram());
+        return emulator->c_str();
+    }
     if (kind != DebuggerCdb) return dbg_name(kind);
 
     static std::string* found = 0;
@@ -351,6 +360,14 @@ DebuggerKind dbg_for(ToolchainKind kind, const std::string& arch) {
     // cl's PDB, and since M10 c90's and cpp11's on x86_64-windows: CodeView, which cdb reads.
     if (kind == ToolMsvc || arch == "x86_64-windows")
         return path::exists(dbg_program(DebuggerCdb)) ? DebuggerCdb : DebuggerNone;
+
+    // tms6747: vm6747 --debug on the .s cpp11 -g wrote, with its .dwpsn positions (RIDE_DEBUG_SIM6747=1 asks
+    // for sim6747 --run --debug on the .out beside it instead - which stops on a line only where the image
+    // carries a .debug_line, which ASM6x and LNK6x do not write yet).
+    if (isEmulated(arch)) {
+        const std::string vm = dbg_program(DebuggerC6x);
+        return path::exists(vm) || onPath(path::filename(vm)) ? DebuggerC6x : DebuggerNone;
+    }
 
     return dbg_here();
 }
@@ -389,9 +406,12 @@ std::string dbg_whyNot(ToolchainKind kind, const std::string& arch) {
 
     if (dbg_stopsItself(kind))
         return "a Shalimar program stops itself - it needs no debugger at all";
+    if (isEmulated(arch) && emitsDebugInfo(kind, arch))
+        return "vm6747 is not beside " + std::string(product::kName) + " and not on the PATH - the VM6747 emulator is the "
+               "debugger for " + arch + " (vm6747 --debug); name one with $VM6747";
     if (isEmulated(arch))
-        return arch + " runs on vm6747, the VM6747 emulator, which is not a debugger "
-               "yet - F5 runs it, and vm6747 -t traces every instruction";
+        return std::string(toolchainName(kind)) + " writes no line table for " + arch + " yet - cpp11 -g writes "
+               "cl6x's .dwpsn, which vm6747 --debug stops on; c90 does not";
     if (kind == ToolMsvc || (emitsDebugInfo(kind, arch) && arch == "x86_64-windows"))
         return std::string(toolchainName(kind)) + " writes a .pdb and cdb reads one, but cdb is not installed - "
                "add Debugging Tools for Windows";
@@ -837,6 +857,16 @@ bool Debugger::start(DebuggerKind kind, const std::string& executable,
     std::string run = program.empty() ? dbg_program(kind_) : program;
 
     std::string command = quoted(run) + " " + quoted(executable);
+    if (kind_ == DebuggerC6x) {
+        // The emulator on the assembly, or - asked for by RIDE_DEBUG_SIM6747 and given a .out beside it - the
+        // simulator on the linked image. Either speaks gdb's words from here on.
+        const char* wantSim = std::getenv("RIDE_DEBUG_SIM6747");
+        const std::string out = tiProgramOf(executable), sim = simulatorProgram();
+        if (wantSim && *wantSim && *wantSim != '0' && !sim.empty() && path::exists(out))
+            command = quoted(sim) + " --run --debug " + quoted(out);
+        else
+            command = quoted(run) + " --debug " + quoted(executable);
+    }
     if (kind_ == DebuggerCdb) {
 
         command = quoted(run) + " -y " + quoted(path::parent(executable)) +
@@ -894,7 +924,7 @@ bool Debugger::breakAt(const std::string& file, size_t line) {
     std::snprintf(digitsIn, sizeof digitsIn, "%lu", static_cast<unsigned long>(line));
 
     std::string said;
-    if (kind_ == DebuggerGdb) {
+    if (dbg_gdbLike(kind_)) {
         said = ask("break " + path::filename(file) + ":" + digitsIn);
     } else if (kind_ == DebuggerCdb) {
 
@@ -911,8 +941,8 @@ bool Debugger::breakAt(const std::string& file, size_t line) {
 
 bool Debugger::clearBreakpoints() {
     if (!running()) return false;
-    ask(kind_ == DebuggerGdb ? "delete"
-                             : (kind_ == DebuggerCdb ? "bc *" : "breakpoint delete --force"));
+    ask(dbg_gdbLike(kind_) ? "delete"
+                           : (kind_ == DebuggerCdb ? "bc *" : "breakpoint delete --force"));
     return true;
 }
 
@@ -944,7 +974,7 @@ Stop Debugger::run() {
 
     if (kind_ == DebuggerCdb) return afterMoving("g");
 
-    return afterMoving(kind_ == DebuggerGdb ? "run < /dev/null" : "run");
+    return afterMoving(dbg_gdbLike(kind_) ? "run < /dev/null" : "run");
 }
 
 Stop Debugger::afterStepping(const std::string& command) {
@@ -992,7 +1022,7 @@ std::vector<Variable> Debugger::locals() {
     if (!running()) return std::vector<Variable>();
 
     if (kind_ == DebuggerCdb) return dbg_readVariables(kind_, ask("dv /t /V"));
-    if (kind_ != DebuggerGdb) return dbg_readVariables(kind_, ask("frame variable -L"));
+    if (!dbg_gdbLike(kind_)) return dbg_readVariables(kind_, ask("frame variable -L"));
 
     // gdb lists no addresses, so each variable is asked where it is, one "print &name" apiece.
     std::vector<Variable> found = dbg_readVariables(kind_, ask("info args"));
@@ -1009,7 +1039,7 @@ std::string Debugger::evaluate(const std::string& expression, bool* ok) {
     std::string answer;
     if (kind_ == DebuggerCdb) {
         answer = ask("?? " + expression);
-    } else if (kind_ == DebuggerGdb) {
+    } else if (dbg_gdbLike(kind_)) {
         answer = ask("print " + expression);
     } else {
         answer = ask("expression " + expression);
@@ -1034,7 +1064,7 @@ std::string Debugger::addressOf(const std::string& expression) {
 std::string Debugger::typeOf(const std::string& expression) {
     if (!running() || expression.empty()) return std::string();
     if (kind_ == DebuggerCdb) return dbg_readType(kind_, ask("?? " + expression));
-    if (kind_ == DebuggerGdb) return dbg_readType(kind_, ask("whatis " + expression));
+    if (dbg_gdbLike(kind_)) return dbg_readType(kind_, ask("whatis " + expression));
     return dbg_readType(kind_, ask("expression " + expression));
 }
 
@@ -1052,7 +1082,7 @@ std::string dbg_readType(DebuggerKind kind, const std::string& said) {
             if (value.find_first_of("0123456789") == std::string::npos) continue;
             return trimmed(line.substr(0, space));
         }
-        if (kind == DebuggerGdb) {
+        if (dbg_gdbLike(kind)) {
             if (line.compare(0, 7, "type = ") == 0) return trimmed(line.substr(7));
             continue;
         }
@@ -1132,7 +1162,7 @@ bool Debugger::setVariable(const std::string& name, const std::string& value,
     std::string answer;
     if (kind_ == DebuggerCdb) {
         answer = ask("?? " + name + " = " + value);
-    } else if (kind_ == DebuggerGdb) {
+    } else if (dbg_gdbLike(kind_)) {
         answer = ask("set variable " + name + " = " + value);
     } else {
         answer = ask("expression " + name + " = " + value);
@@ -1156,7 +1186,7 @@ bool Debugger::selectFrame(size_t which) {
     if (kind_ == DebuggerCdb) {
 
         said = ask(".frame " + number);
-    } else if (kind_ == DebuggerGdb) {
+    } else if (dbg_gdbLike(kind_)) {
         said = ask("frame " + number);
     } else {
         said = ask("frame select " + number);
@@ -1174,7 +1204,7 @@ std::vector<StackFrame> Debugger::frames() {
     if (!running()) return std::vector<StackFrame>();
 
     if (kind_ == DebuggerCdb) return dbg_readFrames(kind_, ask("k"));
-    if (kind_ == DebuggerGdb) return dbg_readFrames(kind_, ask("backtrace"));
+    if (dbg_gdbLike(kind_)) return dbg_readFrames(kind_, ask("backtrace"));
     return dbg_readFrames(kind_, ask("thread backtrace"));
 }
 
