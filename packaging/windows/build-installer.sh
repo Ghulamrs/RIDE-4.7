@@ -8,7 +8,7 @@
 #  the deliverable is a relocatable tarball (unpack and run bin/RIDE); use
 #  build-installer.bat on Windows for RIDE-<ver>.msi.
 #
-#  Usage:   ./build-installer.sh [5.16]
+#  Usage:   ./build-installer.sh [5.17]
 #  Env overrides (optional):
 #     CPP    the C++ compiler clone carrying include/ (C++) and lib/ (C) headers
 #            (default: first of <repo>/../Compilers/C++Optimize, <repo>/../Compiler-Cppi, <repo>/../C++)
@@ -20,7 +20,7 @@ set -euo pipefail
 
 VER="${1:-5.1}"
 # The 3.x releases are sealed and built from their own tree, not this one.
-[ "$VER" = 5.16 ] || { echo "build-installer.sh: this tree builds 5.16 only"; exit 2; }
+[ "$VER" = 5.17 ] || { echo "build-installer.sh: this tree builds 5.17 only"; exit 2; }
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 PY="${PY:-python3}"

@@ -1,4 +1,4 @@
-# RIDE 5.16 — The Complete Manual
+# RIDE 5.17 — The Complete Manual
 
 **Part I — What the compilers are, what they eat, and what they make**
 

@@ -1,7 +1,5 @@
 #include "debugger.h"
 
-#include <fstream>
-
 #include <cctype>
 #include <cstdlib>
 #include <cstdio>
@@ -73,6 +71,9 @@ std::vector<std::string> preamble(DebuggerKind kind) {
         // parameters were stored - for cl's programs too - where l+s goes on to the first statement.
         said.push_back("l+s");
         said.push_back("n 10");
+        // A step goes over Shalimar's runtime as it goes over the CRT: shc's code calls shm_ helpers for
+        // its arithmetic, and `t` would stop in one where lldb and gdb, seeing no line table, step over it.
+        said.push_back(".step_filter \"*!shm_*;*!shm::*\"");
     } else {
 
         said.push_back("script lldb.debugger.SetAsync(False)");
@@ -206,7 +207,7 @@ bool ourCommand(const std::string& bare) {
     for (size_t i = 0; i < sizeof said / sizeof said[0]; ++i)
         if (bare == said[i]) return true;
     return startsWith(bare, "bp ") || startsWith(bare, "bu ") ||
-           startsWith(bare, "bc ") || startsWith(bare, ".printf ");
+           startsWith(bare, "bc ") || startsWith(bare, ".printf ") || startsWith(bare, ".step_filter ");
 }
 
 bool cdbOwn(const std::string& line) {
@@ -450,9 +451,16 @@ const char* dbg_program(DebuggerKind kind) {
 // cpp11 wrote from runtime/, as a run on vm6747 is given it (toolchain.cpp). The assembly says what
 // it is: shc opens it with `; <source>.shl` (or .shm), and nothing else does.
 std::string dbg_shalimarRuntime(const std::string& assembly) {
-    std::ifstream in(assembly.c_str());
-    std::string first;
-    if (!in || !std::getline(in, first)) return std::string();
+    // <cstdio> and not <fstream>: the window compiles this file mixed-mode, and an iostream there
+    // killed it before main with STATUS_HEAP_CORRUPTION (2026-10-13), as a native global does.
+    std::FILE* in = std::fopen(assembly.c_str(), "rb");
+    if (!in) return std::string();
+    char head[512];
+    const bool got = std::fgets(head, sizeof head, in) != 0;
+    std::fclose(in);
+    if (!got) return std::string();
+    std::string first(head);
+    while (!first.empty() && first[first.size() - 1] == '\n') first.erase(first.size() - 1);
     while (!first.empty() && (first[first.size() - 1] == '\r' || first[first.size() - 1] == ' ')) first.erase(first.size() - 1);
     if (first.size() < 6 || first.compare(0, 2, "; ") != 0) return std::string();
     const std::string ext = first.substr(first.size() - 4);
@@ -695,11 +703,30 @@ unsigned long long lldbFrameAddress(const std::string& said) {
     return 0;
 }
 
+// Where cdb stands after a move: the line under "module!function+0x..:" in what `t` or `p` printed,
+// "00007ff6`57691124 8b442420 mov ...", whose first word is the address with cdb's backtick in it.
+unsigned long long cdbStopAddress(const std::string& said) {
+    std::vector<std::string> all = lines(said);
+    unsigned long long found = 0;
+    for (size_t i = 0; i + 1 < all.size(); ++i) {
+        const std::string head = trimmed(withoutPrompt(all[i]));
+        if (head.find('!') == std::string::npos || head[head.size() - 1] != ':' || head.find(' ') != std::string::npos)
+            continue;
+        std::string word = trimmed(withoutPrompt(all[i + 1]));
+        word = word.substr(0, word.find_first_of(" \t"));
+        std::string hex;
+        for (size_t k = 0; k < word.size(); ++k) if (word[k] != '`') hex += word[k];
+        if (hex.empty() || !std::isxdigit(static_cast<unsigned char>(hex[0]))) continue;
+        found = std::strtoull(hex.c_str(), 0, 16);
+    }
+    return found;
+}
+
 }
 
 bool dbg_wentNowhere(DebuggerKind kind, const Stop& before, const Stop& after) {
 
-    if (kind != DebuggerLldb) return false;
+    if (kind != DebuggerLldb && kind != DebuggerCdb) return false;
 
     if (!before.stopped || !after.stopped || after.exited) return false;
     if (after.file.empty() || after.function.empty() || after.line == 0) return false;
@@ -708,6 +735,16 @@ bool dbg_wentNowhere(DebuggerKind kind, const Stop& before, const Stop& after) {
     if (after.function != before.function) return false;
 
     if (after.said.find("stop reason = breakpoint") != std::string::npos) return false;
+
+    // cdb too, since Shalimar's step filter (2026-10-13): `t` over a line that calls a shm_ helper
+    // first steps over the helper and stops further on in the same line, and only then into the callee.
+    if (kind == DebuggerCdb) {
+        if (after.said.find("Breakpoint ") != std::string::npos && after.said.find(" hit") != std::string::npos)
+            return false;
+        unsigned long long was = cdbStopAddress(before.said);
+        unsigned long long now = cdbStopAddress(after.said);
+        return was != 0 && now > was;
+    }
 
     unsigned long long was = lldbFrameAddress(before.said);
     unsigned long long now = lldbFrameAddress(after.said);

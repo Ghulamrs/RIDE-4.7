@@ -31,13 +31,13 @@ NAME = "MASTER.SEAL"
 
 # (the program, the project directory beside RIDE, its seal file) - workspace.mk's order.
 PROJECTS = [
-    ("RIDE", ".", "ride-5.16.dat"),
+    ("RIDE", ".", "ride-5.17.dat"),
     ("c90", "../Compilers/Compiler-Ci", "c90-1.3.dat"),
     ("cpp11", "../Compilers/C++Optimize", "cxx1-1.8.dat"),
     ("shalimar", "../Compilers/Compiler-Si", "shalimar-1.3.dat"),
     ("c2s", "../Compilers/Converter-C2S", "c2s-1.2.dat"),
     ("vm6747", "../TI/VM6747", "vm6747-1.1.dat"),
-    ("asm6x", "../TI/ASM6x", "asm6x-1.3.dat"),
+    ("asm6x", "../TI/ASM6x", "asm6x-1.4.dat"),
     ("masm", "../Windows/MASM", "masm-1.0.dat"),
     ("link", "../Windows/LINK", "link-1.1.dat"),
     ("lnk6x", "../TI/LNK6x", "lnk6x-1.2.dat"),
@@ -91,7 +91,7 @@ def write():
     today = datetime.date.today().strftime("%d-%m-%Y")
     kept = artefact_section()
     with open(os.path.join(ROOT, NAME), "w", encoding="utf-8") as fh:
-        fh.write("©2026 G. R. Akhtar - RIDE 5.16 and the programs it drives\n")
+        fh.write("©2026 G. R. Akhtar - RIDE 5.17 and the programs it drives\n")
         fh.write("Master seal: each project's seal, listed and combined into one\n")
         fh.write("Written by tools/master-seal; check it with `tools/master-seal check`.\n")
         fh.write("%d projects, %d files, master seal %08X\n"

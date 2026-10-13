@@ -1,4 +1,4 @@
-# RIDE 5.16 — the manual
+# RIDE 5.17 — the manual
 
 Ten pages about the editor, and one about each language it drives. Every page
 stands on its own; read them in order the first time and out of order after

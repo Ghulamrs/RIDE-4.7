@@ -7,7 +7,7 @@ export MSYS_NO_PATHCONV=1
 export PATH="$(cygpath -u "$VCToolsInstallDir")bin/Hostx64/x64:$PATH"
 RC=${RC_DIR:-/c/meas0923/rc}
 rm -f $RC/progs/._*
-BIN="${RIDE_BIN:-C:/Program Files/RIDE 5.16/bin}"
+BIN="${RIDE_BIN:-C:/Program Files/RIDE 5.17/bin}"
 P=$RC/progs; W=$RC/w; rm -rf $W; mkdir -p $W; R=$RC/results.txt; : > $R; : > $R.detail
 TI=C:/ti/ccsv7/tools/compiler/ti-cgt-c6000_8.2.2; TILIB=C:/Users/GRA/Documents/VM6747/tilib
 tool() { case $1 in c) echo c90 C90;; cpp) echo cpp11 CPP11;; shl) echo shalimar SHALIMAR;; esac; }

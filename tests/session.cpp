@@ -1940,7 +1940,7 @@ void aDirectoryWithNoProject(const std::string& ride) {
     // downs since Contents and then Environment joined this menu above About - counted in the one place that walks them.
     Screen about = drive(ride, "--project \"" + dir.string() + "\"",
                          kF10 + times(kRight, 9) + times(kDown, 3) + kEnter + ctrl('q'), dir);
-    check(onScreen(about, "RIDE 5.16"), "About names the product and version");
+    check(onScreen(about, "RIDE 5.17"), "About names the product and version");
     check(onScreen(about, "cpp11"), "and the fourth compiler is on its list");
     check(onScreen(about, "G. R. Akhtar"), "and who it belongs to");
     check(onScreen(about, "Islamabad"), "and where they are, which the last line must not lose");
@@ -2296,9 +2296,21 @@ void aShalimarProject(const std::string& ride, const std::string& shc) {
     file::remove_all(dir);
 }
 
-// Stopping a Shalimar program from the Debug menu, a different thing from stopping a C one. There
-// is no gdb, lldb or cdb here: the program stops itself, so this runs on every machine the suite
-// does - including Windows, where cc1's target cannot be debugged and every check in stoppingAndStepping is skipped.
+// Whether a Shalimar Debug build stops itself here, read off a stop screen. Since D1 (2026-10-13)
+// lldb on a Mac, gdb on Linux and cdb on a Windows box drive a Debug build directly, reading the
+// DWARF (or CodeView) -g wrote; where none of the three is present - a Windows box without cdb -
+// the in-process session still does, and its own words appear. The checks below take whichever
+// path is live, so this runs honestly on every machine, and the session's half stays measured
+// where it runs. shalimar::Session's protocol is unit-tested on its own in tests/test.cpp.
+static bool shalimarStopsItself(const Screen& stop) {
+    return onScreen(stop, "not what is in it");
+}
+
+// Stopping a Shalimar program from the Debug menu, a different thing from stopping a C one. On a
+// machine with a host debugger the program is driven by it - variables by name, a named stack, the
+// step sequence the debugger takes; where there is none the program stops itself and says only
+// where it is. This runs on every machine the suite does - including Windows, where cc1's target
+// cannot be debugged and every check in stoppingAndStepping is skipped.
 void stoppingShalimar(const std::string& ride, const std::string& shc) {
     std::printf("stopping a Shalimar program from the editor\n");
 
@@ -2329,23 +2341,33 @@ void stoppingShalimar(const std::string& ride, const std::string& shc) {
 
     Screen stopped = drive(ride, arguments, toTheCall + kF9 + kF8 + ctrl('q'), dir);
     check(onScreen(stopped, "stopped at steps.shl:8"),
-          "F8 runs it and it stops on the line, with no debugger anywhere near it");
+          "F8 runs it and it stops on the line");
     check(onScreen(stopped, "> 8"), "the gutter marks where it is standing");
 
-    // What it says in place of variables, which is the one thing this cannot
-    // do and the one thing worth saying out loud. An empty list would have
-    // read as "this line has none" rather than "there are none to have".
-    check(onScreen(stopped, "not what is in it"),
-          "and the tab says why there are no variables, rather than showing none");
+    const bool bySession = shalimarStopsItself(stopped);
+
+    // What stands in the variables pane. A host debugger reads the DWARF -g wrote and shows the
+    // locals by name and type; the session cannot, and says why rather than showing an empty list
+    // that would read as "this line has none" rather than "there are none to have".
+    if (bySession)
+        check(onScreen(stopped, "not what is in it"),
+              "the session says why it shows no variables, rather than showing none");
+    else
+        check(onScreen(stopped, "a = 1") && onScreen(stopped, "[int]"),
+              "the debugger shows the variables in scope by name and type");
 
     Screen inside = drive(ride, arguments, toTheCall + kF9 + kF8 + kF6 + ctrl('q'), dir);
     check(onScreen(inside, "steps.shl:2"), "F6 steps into the call");
 
-    // Out of the call is the statement *after* the one that made it: the call's
-    // own statement was entered before the call was made, and stepping out
-    // looks for the next statement shallower than where it is.
+    // Stepping over the call's body and its return. The session steps out to the statement after
+    // the call, line 9; a host debugger returns control to the caller, so it lands back in main
+    // on the call's own line (line 8) and a further step reaches line 9. Either way it is back in
+    // main past the body of twice, which is what this measures.
     Screen back = drive(ride, arguments, toTheCall + kF9 + kF8 + kF6 + kF7 + kF7 + ctrl('q'), dir);
-    check(onScreen(back, "steps.shl:9"), "and stepping on comes back past the call");
+    if (bySession)
+        check(onScreen(back, "steps.shl:9"), "and stepping on comes back past the call, to line 9");
+    else
+        check(onScreen(back, "in main"), "and stepping over the call's body comes back into main");
 
     // The program's own printing reaches the console, which is the point of the channel keeping the
     // two streams apart: a #stop in the middle of a half-written line would have been unreadable
@@ -2354,12 +2376,17 @@ void stoppingShalimar(const std::string& ride, const std::string& shc) {
                            toTheCall + kF9 + kF8 + kF8 + ctrl('q'), dir);
     check(wasShown(printed, "returned"), "carrying on to the end says so");
 
-    // Release links a runtime with no debugger in it, so F8 has nothing to stop; the message says
-    // that rather than "built without -g", which shc has never had. Ctrl-D is a toggle and debug is
-    // where a project starts, so one press is release.
+    // What a release build says when F8 has nothing to stop. Driven by a host debugger it is
+    // "built without -g", like the other three toolchains; left to stop itself it links a runtime
+    // with no debugger in it and says so, which shc has never had to say any other way. Ctrl-D is
+    // a toggle and debug is where a project starts, so one press is release.
     Screen release = drive(ride, arguments, ctrl('d') + toTheCall + kF9 + kF8 + ctrl('q'), dir);
-    check(wasShown(release, "no debugger in it"),
-          "and a release build says what it has not got, not what shc has never had");
+    if (bySession)
+        check(wasShown(release, "no debugger in it"),
+              "and a release build that stops itself says what it has not got");
+    else
+        check(wasShown(release, "built without -g"),
+              "and a release build says it was built without -g, as for the other toolchains");
 
     file::remove_all(dir);
 }
@@ -2535,10 +2562,11 @@ void theMenuSaysWhereYouAre(const std::string& ride) {
     file::remove_all(dir);
 }
 
-// The Debug menu, grouped - and the three things a Shalimar program cannot do,
-// greyed while one is stopped.
+// The Debug menu, grouped - and what is offered while a Shalimar program is stopped. A host
+// debugger can walk the stack and watch an expression, so those items are live; where the program
+// stops itself it cannot, and the three that need a stack or a variable are drawn faint.
 void theDebugMenuGroups(const std::string& ride, const std::string& shc) {
-    std::printf("the Debug menu's rules, and what Shalimar cannot do\n");
+    std::printf("the Debug menu's rules, and what Shalimar can and cannot do\n");
 
     file::path dir = freshProject("debug-menu");
     file::path file = dir / "src" / "steps.shl";
@@ -2568,16 +2596,25 @@ void theDebugMenuGroups(const std::string& ride, const std::string& shc) {
         return;
     }
 
-    // With a Shalimar program stopped, the three that need a stack or a
-    // variable are not offered. Line 8 is the call.
+    // With a Shalimar program stopped. The items are listed either way; whether the three that
+    // need a stack or a variable are offered depends on whether a host debugger drives it. Line 8
+    // is the call.
     const std::string stop = times(kDown, 7) + kF9 + kF8;
+    Screen stopped = drive(ride, arguments, stop + ctrl('q'), dir);
+    const bool bySession = shalimarStopsItself(stopped);
+
     Screen running = drive(ride, arguments, stop + toDebug + ctrl('q'), dir);
     check(onScreen(running, "Up the stack"), "the items are still listed while it is stopped");
     check(onScreen(running, "Watch expression"), "including the watch");
 
-    // Greyed is drawn faint, which is the one escape that says so.
-    check(wasShown(running, "\x1b[2m"),
-          "and what Shalimar cannot do is drawn faint rather than offered");
+    // Greyed is drawn faint, which is the one escape that says so. A host debugger offers all
+    // three, so nothing in the menu is faint; the session cannot, so they are.
+    if (bySession)
+        check(wasShown(running, "\x1b[2m"),
+              "and what a self-stopping Shalimar program cannot do is drawn faint rather than offered");
+    else
+        check(!wasShown(running, "\x1b[2m"),
+              "and under a host debugger the stack and watch are offered rather than drawn faint");
 
     file::remove_all(dir);
 }

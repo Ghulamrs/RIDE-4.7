@@ -2303,7 +2303,26 @@ void aStepThatWentNowhere() {
     check(!editor::dbg_wentNowhere(editor::DebuggerGdb, gdbBreak, gdbBreak),
           "gdb is never asked again, even for the very same stop");
     check(!editor::dbg_wentNowhere(editor::DebuggerCdb, atBreak, still),
-          "nor is cdb");
+          "nor is cdb, on what is not cdb's");
+
+    // cdb's own, from a Shalimar program on the Windows box (2026-10-13): stopped on line 8, `t` steps over
+    // the shm_ helper the line calls and stops further on in it, and the next `t` is in twice.
+    const char* cdbAtBreak = "Breakpoint 0 hit\n>    8:   int b : twice(a)\nsteps!main+0x41:\n00007ff6`57691111 c744242001000000 mov dword ptr [rsp+20h],1\n"
+                             "C:\\w\\steps.shl(8)\n(00007ff6`576910d0)   steps!main+0x41   |  (00007ff6`57691170)   steps!other\n";
+    const char* cdbStill = ">    8:   int b : twice(a)\nsteps!main+0x54:\n00007ff6`57691124 8b442420        mov     eax,dword ptr [rsp+20h]\n"
+                           "C:\\w\\steps.shl(8)+0x13\n(00007ff6`576910d0)   steps!main+0x54   |  (00007ff6`57691170)   steps!other\n";
+    const char* cdbInside = ">    1: fun <int> = twice(n: int) {\nsteps!twice:\n00007ff6`57691040 55              push    rbp\n"
+                            "C:\\w\\steps.shl(1)\n(00007ff6`57691040)   steps!twice   |  (00007ff6`576910d0)   steps!main\n";
+    editor::Stop cBreak = editor::dbg_readStop(editor::DebuggerCdb, cdbAtBreak);
+    editor::Stop cStill = editor::dbg_readStop(editor::DebuggerCdb, cdbStill);
+    editor::Stop cInside = editor::dbg_readStop(editor::DebuggerCdb, cdbInside);
+    check(cStill.line == 8 && cStill.function == "main", "cdb's stop further on in line 8 is read as main, line 8");
+    check(editor::dbg_wentNowhere(editor::DebuggerCdb, cBreak, cStill),
+          "and for cdb too the same line at a later address is a step that went nowhere");
+    check(!editor::dbg_wentNowhere(editor::DebuggerCdb, cStill, cInside),
+          "but cdb arriving in the callee is not");
+    check(!editor::dbg_wentNowhere(editor::DebuggerCdb, cStill, cBreak),
+          "nor is a stop on a breakpoint");
 
     // Recursion on one line: the same file, the same line and the same
     // function every time, and only some of them a move. Nothing here is a
@@ -4336,6 +4355,20 @@ void theWindowsRuleAboutStatics() {
         }
     }
     check(offenders == 0, "and none of them holds a function-local static of class type");
+
+    // The same death from a header: <fstream> in debugger.cpp (2026-10-13) killed the window on every
+    // start, 0xC0000374 or 0xE0434352, until the file was read with <cstdio>. No iostream there.
+    int streams = 0;
+    const char* const banned[] = { "<fstream>", "<iostream>", "<sstream>", "<istream>", "<ostream>" };
+    for (size_t i = 0; i < sources.size(); ++i) {
+        std::string text = readWholeFile("winforms/" + sources[i]);
+        for (size_t b = 0; b < sizeof banned / sizeof banned[0]; ++b)
+            if (text.find(std::string("#include ") + banned[b]) != std::string::npos) {
+                ++streams;
+                std::printf("  %s includes %s\n", sources[i].c_str(), banned[b]);
+            }
+    }
+    check(streams == 0, "and none of them includes an iostream header");
 }
 
 // The fourth compiler, driven for real. Everything above about cxx1 is the editor's own rules and
@@ -6432,7 +6465,7 @@ void aboutSelf() {
     const std::string self = editor::path::programFile();
     check(!self.empty(), "the program knows its own file");
     const std::string named = std::string(editor::about::name()) + " " + editor::about::version() + "  ";
-    check(last.compare(0, named.size(), named) == 0, "About's last line names the release, RIDE 5.16");
+    check(last.compare(0, named.size(), named) == 0, "About's last line names the release, RIDE 5.17");
     check(last.find(" PKT") != std::string::npos, "and the time it was written, in PKT");
     const size_t at = last.find("CRC32 ");
     check(at != std::string::npos && last.size() >= at + 14 && last.find_first_not_of("0123456789ABCDEF", at + 6) == at + 14,
