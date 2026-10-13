@@ -409,7 +409,7 @@ bool emitsDebugInfo(ToolchainKind kind, const std::string& arch) {
                isEmulated(arch);
 
     // cc1 and cxx1 alike: DWARF on the two GNU targets, CodeView on x86_64-windows (M10). For the
-    // C6000, cxx1 -g writes cl6x's .dwpsn source positions, which vm6747 --debug stops on; cc1 does not yet.
+    // C6000, both write cl6x's .dwpsn source positions under -g (cpp11 since 1.8, c90 since 1.3).
     if (kind != ToolCc1 && kind != ToolCxx1) return false;
     if (isEmulated(arch)) return true;      /* cpp11 since 1.8, c90 since 2026-10-13: cl6x's .dwpsn under -g */
     return arch == "x86_64-linux" || arch == "arm64-darwin" || arch == "x86_64-windows";

@@ -576,16 +576,15 @@ void routing() {
     // The words the panel says are the core's, and they follow the target
     // rather than being written out once and left.
     std::vector<std::string> carries = editor::debugNote(editor::ToolCc1, kDarwin);
-    // Every one of c90's targets carries a line table now (tms6747's is cl6x's .dwpsn, since 2026-10-13); the
-    // compiler that writes none, by its own decision, is shalimar.
-    std::vector<std::string> carriesNot = editor::debugNote(editor::ToolShc, kDarwin);
-    check(!carries.empty() && !carriesNot.empty(), "the panel is told something either way");
-    check(carries != carriesNot, "and not the same thing about both targets");
+    // Since 2026-10-13 every compiler RIDE drives carries a line table on every target - c90 and cpp11 on the
+    // C6000 through cl6x's .dwpsn, shalimar through its rungs D1 to D5 - so no target is said to carry none.
+    std::vector<std::string> shalimar = editor::debugNote(editor::ToolShc, kDarwin);
+    check(!carries.empty() && !shalimar.empty(), "the panel is told something either way");
     check(joined(carries).find("DWARF") != std::string::npos &&
               joined(carries).find(kDarwin) != std::string::npos,
           "the target that carries DWARF is said to, by name");
-    check(joined(carriesNot).find("no debug information") != std::string::npos,
-          "and the one that does not is said not to");
+    check(joined(shalimar).find("no debug information") == std::string::npos,
+          "and shalimar is no longer said to carry none");
 
     // Compiling is one question and running is another. Every target compiles
     // to assembly anywhere; only the host's own goes on to a program, because
@@ -5645,7 +5644,7 @@ static void compilerOptions() {
     checkEqual(options::flags(store, ToolCc1, ConfigDebug, "tms6747"), " -g -D_DEBUG=1", "-g where there is a line table (c90 on the C6000: .dwpsn, since 2026-10-13)");
     checkEqual(options::flags(store, ToolCxx1, ConfigDebug, "tms6747"), " -g -D_DEBUG=1", "and -g where there is one (cpp11 on the C6000: .dwpsn)");
     checkEqual(options::flags(store, ToolShc, ConfigDebug, "x86_64-linux"), " --debug -g", "shalimar debug runtime, and -g since D1");
-    checkEqual(options::flags(store, ToolShc, ConfigDebug, "tms6747"), "", "no debug runtime on the emulator");
+    checkEqual(options::flags(store, ToolShc, ConfigDebug, "tms6747"), " -g", "-g on the emulator (the .dwpsn of D5), and no debug runtime there");
     checkEqual(options::flags(store, ToolShc, ConfigRelease, "x86_64-linux"), "", "shalimar release defaults");
     store.set(ConfigRelease, "cpp11.opt", "-O1");
     store.set(ConfigRelease, "cpp11.defines", "NDEBUG=1; TRACE");
@@ -6433,7 +6432,7 @@ void aboutSelf() {
     const std::string self = editor::path::programFile();
     check(!self.empty(), "the program knows its own file");
     const std::string named = std::string(editor::about::name()) + " " + editor::about::version() + "  ";
-    check(last.compare(0, named.size(), named) == 0, "About's last line names the release, RIDE 5.15");
+    check(last.compare(0, named.size(), named) == 0, "About's last line names the release, RIDE 5.16");
     check(last.find(" PKT") != std::string::npos, "and the time it was written, in PKT");
     const size_t at = last.find("CRC32 ");
     check(at != std::string::npos && last.size() >= at + 14 && last.find_first_not_of("0123456789ABCDEF", at + 6) == at + 14,

@@ -967,19 +967,19 @@ bool Debugger::start(DebuggerKind kind, const std::string& executable,
     executable_ = executable;
     std::string run = program.empty() ? dbg_program(kind_) : program;
 
-    std::string command = quoted(run) + " " + quoted(executable);
+    std::string command = editor::quoted(run) + " " + editor::quoted(executable);
     backend_.clear(); backendWhy_.clear();
     if (kind_ == DebuggerC6x) {
         // The simulator on the linked image when it is this build's and carries the program's lines, else
         // the emulator on the assembly (dbg_c6xBackend). Either speaks gdb's words from here on.
         backend_ = dbg_c6xBackend(executable, &backendWhy_);
-        if (backend_ == "sim6747") command = quoted(simulatorProgram()) + " --run --debug " + quoted(tiProgramOf(executable));
-        else command = quoted(run) + " --debug " + quoted(executable) + dbg_shalimarRuntime(executable);
+        if (backend_ == "sim6747") command = editor::quoted(simulatorProgram()) + " --run --debug " + editor::quoted(tiProgramOf(executable));
+        else command = editor::quoted(run) + " --debug " + editor::quoted(executable) + dbg_shalimarRuntime(executable);
     } else backend_ = dbg_name(kind_);
     if (kind_ == DebuggerCdb) {
 
-        command = quoted(run) + " -y " + quoted(path::parent(executable)) +
-                  " " + quoted(executable);
+        command = editor::quoted(run) + " -y " + editor::quoted(path::parent(executable)) +
+                  " " + editor::quoted(executable);
     }
 
     onConsole_ = false;
