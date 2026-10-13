@@ -399,10 +399,12 @@ bool emitsDebugInfo(ToolchainKind kind, const std::string& arch) {
 
     if (kind == ToolCxx) return true;
 
-    // shalimar since D1 (2026-10-13, Compiler-Si's CLAUDE.md "Debug information for the debuggers RIDE
-    // drives"): DWARF on the two GNU targets - the lines and the frames; Windows and the C6000 are rungs
-    // D4 and D5, not landed, and there a Shalimar program still stops itself.
-    if (kind == ToolShc) return arch == "x86_64-linux" || arch == "arm64-darwin";
+    // shalimar since D1 to D4 (2026-10-13, Compiler-Si's CLAUDE.md "Debug information for the debuggers
+    // RIDE drives"): DWARF on the two GNU targets, CodeView on x86_64-windows through clang's assembler
+    // and link.exe /DEBUG, as c90's and cpp11's; the C6000 is rung D5, and there a Shalimar program
+    // still stops itself.
+    if (kind == ToolShc)
+        return arch == "x86_64-linux" || arch == "arm64-darwin" || arch == "x86_64-windows";
 
     // cc1 and cxx1 alike: DWARF on the two GNU targets, CodeView on x86_64-windows (M10). For the
     // C6000, cxx1 -g writes cl6x's .dwpsn source positions, which vm6747 --debug stops on; cc1 does not yet.
@@ -413,7 +415,7 @@ bool emitsDebugInfo(ToolchainKind kind, const std::string& arch) {
 
 bool debugsWithCodeView(ToolchainKind kind, const std::string& arch, Configuration config) {
     return config == ConfigDebug && arch == "x86_64-windows" &&
-           (kind == ToolCc1 || kind == ToolCxx1) && emitsDebugInfo(kind, arch);
+           (kind == ToolCc1 || kind == ToolCxx1 || kind == ToolShc) && emitsDebugInfo(kind, arch);
 }
 
 std::string configFlags(ToolchainKind kind, Configuration config,
@@ -469,8 +471,8 @@ std::vector<std::string> debugNote(ToolchainKind kind, const std::string& arch) 
         said.push_back("behind is the assembly, and this is what is in it.");
     } else if (kind == ToolShc) {
         said.push_back("shalimar writes no debug information for " + arch + " yet - that is");
-        said.push_back("rung D4 (x86_64-windows) or D5 (tms6747) of Compiler-Si's debugger work,");
-        said.push_back("not landed. Here a Shalimar program carries its own position instead -");
+        said.push_back("rung D5 (tms6747) of Compiler-Si's debugger work, not landed. Here a");
+        said.push_back("Shalimar program carries its own position instead -");
         said.push_back("shm_line before every statement, in every build - which is what names");
         said.push_back("the line of a runtime error and what F8 stops on. What it cannot do is");
         said.push_back("read a variable. This is the assembly the build produced, read back");
@@ -970,7 +972,8 @@ bool nativeToolsAvailable(const std::string& arch) {
 std::string assemblerFlag(ToolchainKind kind, const std::string& arch, Configuration config) {
     // **A Debug build's CodeView goes through clang's assembler**, whatever assembler is named:
     // the project's masm carries no CodeView (M10, RIDE docs/M10-ANALYSIS.md).
-    if (debugsWithCodeView(kind, arch, config)) return " -masm=gnu";
+    // shalimar has no -masm: its -g alone chooses the GNU spelling and clang on this target (D4).
+    if (debugsWithCodeView(kind, arch, config) && kind != ToolShc) return " -masm=gnu";
     if (kind == ToolCxx1 && arch == "x86_64-windows" && !settings::assembler().empty())
         return " -masm=masm";
     return std::string();

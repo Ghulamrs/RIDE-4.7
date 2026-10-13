@@ -45,7 +45,8 @@ line comes back to the stop.
 | `cl` | cdb, reading CodeView from the `.pdb` |
 | `clang++`, `g++` | lldb or gdb |
 | `shalimar` on `arm64-darwin`, `x86_64-linux` | lldb or gdb, reading the DWARF a Debug build carries — since Compiler-Si's rungs D1 to D3 (2026-10-13): a breakpoint on a line, stepping, the stack, the parameters, locals and globals by name, an array as the runtime's `{count, element, data}`, and the blocks a name hides inside |
-| `shalimar` on `x86_64-windows`, `tms6747` | the program stops **itself** — no debugger at all, until rungs D4 and D5 |
+| `shalimar` on `x86_64-windows` | cdb, reading the CodeView a Debug build carries — since rung D4 (2026-10-13), by the road c90 and cpp11 took: clang's assembler and `link.exe /DEBUG` |
+| `shalimar` on `tms6747` | the program stops **itself** — no debugger at all, until rung D5 |
 
 **Debug information does not mix.** A program linked from two compilers has a
 debugger that can see part of it. The editor starts the first debugger any part
@@ -74,8 +75,9 @@ and the globals, and the lexical blocks — and a Debug build asks for it, so th
 lldb or gdb drives a Shalimar program exactly as it drives a c90 one: `F9`, `F8`,
 `F7`, `F6`, the stack, the variables, and a watch. An array shows as what it is
 at run time, the runtime's `{count, element, data}`: `a->count` is its capacity
-and `a->data[i]` an element. The rest of this section is `x86_64-windows` and
-`tms6747`, where nothing has landed yet.
+and `a->data[i]` an element. On Windows a Debug build of shalimar goes the way a
+c90 one does - clang's assembler and `link.exe /DEBUG`, cdb reading the `.pdb` -
+since rung D4. The rest of this section is `tms6747`, where nothing has landed yet.
 
 A Shalimar program **stops itself**. The compiler already emits
 `shm_line(unit, line)` before every statement so a runtime error can name where

@@ -4589,8 +4589,14 @@ void theThirdLanguage() {
     check(editor::emitsDebugInfo(editor::ToolShc, "x86_64-linux") &&
               editor::emitsDebugInfo(editor::ToolShc, "arm64-darwin"),
           "shalimar writes DWARF for the two GNU targets (D1)");
-    check(!editor::emitsDebugInfo(editor::ToolShc, "x86_64-windows"),
-          "and nothing for x86_64-windows until D4");
+    check(editor::emitsDebugInfo(editor::ToolShc, "x86_64-windows"),
+          "and CodeView for x86_64-windows (D4)");
+    check(!editor::emitsDebugInfo(editor::ToolShc, "tms6747"),
+          "and nothing for tms6747 until D5");
+    check(editor::debugsWithCodeView(editor::ToolShc, "x86_64-windows", editor::ConfigDebug),
+          "so a Windows Debug build of shalimar goes through clang and link.exe /DEBUG");
+    checkEqual(editor::assemblerFlag(editor::ToolShc, "x86_64-windows", editor::ConfigDebug), "",
+               "with no -masm flag, which shalimar has not: its -g alone chooses the spelling");
     // A debug build links the runtime that can stop the program AND carries -g: --debug chooses the
     // archive, and only the debug one has any code in it for stopping the program; -g adds the sections
     // lldb and gdb read and changes no instruction.
@@ -4610,11 +4616,11 @@ void theThirdLanguage() {
         for (size_t i = 0; i < said.size(); ++i) all += said[i] + " ";
         check(all.find("writes DWARF") != std::string::npos && all.find("since D1") != std::string::npos,
               "the Debug panel says shc writes DWARF for arm64-darwin, since D1");
-        said = editor::debugNote(editor::ToolShc, "x86_64-windows");
+        said = editor::debugNote(editor::ToolShc, "tms6747");
         all.clear();
         for (size_t i = 0; i < said.size(); ++i) all += said[i] + " ";
-        check(all.find("no debug information") != std::string::npos && all.find("D4") != std::string::npos,
-              "and that it writes none for x86_64-windows yet, naming the rung");
+        check(all.find("no debug information") != std::string::npos && all.find("D5") != std::string::npos,
+              "and that it writes none for tms6747 yet, naming the rung");
     }
 
     // The command, and the one place it differs from cc1's.
@@ -4875,13 +4881,13 @@ void theWindowStoppingShalimar() {
     check(ride_debugger_for(editor::ToolShc, editor::hostArch()) ==
               static_cast<int>(editor::dbg_for(editor::ToolCc1, editor::hostArch())),
           "and on this host the debugger that reads c90's DWARF reads shalimar's too (D1)");
-    check(ride_debugger_for(editor::ToolShc, "x86_64-windows") == 0,
-          "while for x86_64-windows there is no gdb, lldb or cdb in it yet");
+    check(ride_debugger_for(editor::ToolShc, "tms6747") == 0,
+          "while for tms6747 there is no gdb, lldb or cdb in it yet");
 
     // And when something does ask in the wrong order, what it is told names
     // shc rather than the compiler that has nothing to do with it. This used
     // to answer with cc1's MASM, which is a sentence about another language.
-    check(std::string(ride_no_debugger_because(editor::ToolShc, "x86_64-windows"))
+    check(std::string(ride_no_debugger_because(editor::ToolShc, "tms6747"))
               .find("stops itself") != std::string::npos,
           "and asking why there is no debugger says so, naming no other compiler");
 
@@ -4893,7 +4899,7 @@ void theWindowStoppingShalimar() {
     check(std::string(ride_release_cannot_stop(editor::ToolCc1)).find("-g") !=
               std::string::npos,
           "where a C build says what was left out of it");
-    check(std::string(ride_why_it_did_not_start(editor::ToolShc, "x86_64-windows"))
+    check(std::string(ride_why_it_did_not_start(editor::ToolShc, "tms6747"))
               .find("did not arm") != std::string::npos,
           "and a start that failed is a program that did not arm, not a debugger to install");
     check(std::string(ride_why_it_did_not_start(editor::ToolShc, editor::hostArch()))
