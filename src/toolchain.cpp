@@ -454,11 +454,12 @@ std::vector<std::string> debugNote(ToolchainKind kind, const std::string& arch) 
         said.push_back("objects - which link.exe /DEBUG makes a .pdb of and cdb reads. What");
         said.push_back("is below is the assembly the build produced, read back out of itself.");
     } else if (kind == ToolShc && emitsDebugInfo(kind, arch)) {
-        said.push_back("shalimar writes DWARF for " + arch + " since D1 (2026-10-13) - a line");
-        said.push_back("table and each function's frame - so lldb or gdb stops a Shalimar");
-        said.push_back("program on a line, steps it and walks its stack; shm_line is still");
-        said.push_back("there, and still names the line of a runtime error. This editor is not");
-        said.push_back("that debugger: it builds to assembly and stops, and this is what is in it.");
+        said.push_back("shalimar writes DWARF for " + arch + " since D1 (2026-10-13) - the line");
+        said.push_back("table, each function's frame, its parameters, locals and the globals by");
+        said.push_back("name and type (D2), and the blocks a name hides inside (D3) - so lldb or");
+        said.push_back("gdb stops a Shalimar program on a line, steps it, walks its stack and");
+        said.push_back("reads or sets a variable; an array is the runtime's {count, element,");
+        said.push_back("data}. shm_line is still there, and still names a runtime error's line.");
     } else if (emitsDebugInfo(kind, arch)) {
         said.push_back(std::string(toolchainName(kind)) + " writes DWARF for " + arch +
                        " - line tables, types, objects and");
