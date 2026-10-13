@@ -1,23 +1,23 @@
-©2026 G. R. Akhtar - RIDE 5.13 and the programs it drives
+©2026 G. R. Akhtar - RIDE 5.14 and the programs it drives
 Master seal: each project's seal, listed and combined into one
 Written by tools/master-seal; check it with `tools/master-seal check`.
-12 projects, 852 files, master seal 2610B1E2
+12 projects, 853 files, master seal D493A882
 ------------------------------------------------------------------------
 program   seal     file CRC  files  seal file
-RIDE      BC95B34E 169CD22A     80  ride-5.13.dat
+RIDE      E8472363 3815CC8F     80  ride-5.14.dat
 c90       8D82BAA5 1458A8D0     54  ../Compilers/Compiler-Ci/c90-1.2.dat
 cpp11     4B4CB0B6 07C3D671    160  ../Compilers/C++Optimize/cxx1-1.8.dat
 shalimar  5B9B1954 8A94E383     52  ../Compilers/Compiler-Si/shalimar-1.2.dat
 c2s       4BA1604B D72D192D     46  ../Compilers/Converter-C2S/c2s-1.2.dat
 vm6747    C33FD5EC 85239ACD     14  ../TI/VM6747/vm6747-1.1.dat
-asm6x     708246FD 5FC3A2EC     10  ../TI/ASM6x/asm6x-1.2.dat
+asm6x     71F68573 391AC04A     11  ../TI/ASM6x/asm6x-1.3.dat
 masm      5E4155D7 4FB584F1     11  ../Windows/MASM/masm-1.0.dat
 link      DB133712 64B8CFD7      6  ../Windows/LINK/link-1.1.dat
-lnk6x     1D45D6CE 52EC032F      8  ../TI/LNK6x/lnk6x-1.1.dat
+lnk6x     F1F52AED 247A041C      8  ../TI/LNK6x/lnk6x-1.2.dat
 sim6747   688C37C8 F0BD0FAC     33  ../TI/SIM6747/sim6747-1.3.dat
 rts6x     040CE785 0D069FBC    378  ../TI/RTS6x/rts6x-1.2.dat
 ------------------------------------------------------------------------
-Master seal 2610B1E2
+Master seal D493A882
 Sealed on 13-10-2026
 ========================================================================
 Shipped artefacts: the SHA-256 of what one release packaged, from master seal 146ACCE4
