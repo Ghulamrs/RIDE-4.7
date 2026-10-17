@@ -32,16 +32,16 @@ NAME = "MASTER.SEAL"
 # (the program, the project directory beside RIDE, its seal file) - workspace.mk's order.
 PROJECTS = [
     ("RIDE", ".", "ride-5.17.dat"),
-    ("c90", "../Compilers/Compiler-Ci", "c90-1.3.dat"),
+    ("c90", "../Compilers/Compiler-Ci", "c90-1.4.dat"),
     ("cpp11", "../Compilers/C++Optimize", "cxx1-1.10.dat"),
-    ("shalimar", "../Compilers/Compiler-Si", "shalimar-1.3.dat"),
+    ("shalimar", "../Compilers/Compiler-Si", "shalimar-1.4.dat"),
     ("c2s", "../Compilers/Converter-C2S", "c2s-1.2.dat"),
-    ("vm6747", "../TI/VM6747", "vm6747-1.2.dat"),
+    ("vm6747", "../TI/VM6747", "vm6747-1.3.dat"),
     ("asm6x", "../TI/ASM6x", "asm6x-1.5.dat"),
     ("masm", "../Windows/MASM", "masm-1.0.dat"),
     ("link", "../Windows/LINK", "link-1.1.dat"),
-    ("lnk6x", "../TI/LNK6x", "lnk6x-1.2.dat"),
-    ("sim6747", "../TI/SIM6747", "sim6747-1.3.dat"),
+    ("lnk6x", "../TI/LNK6x", "lnk6x-1.3.dat"),
+    ("sim6747", "../TI/SIM6747", "sim6747-1.4.dat"),
     ("rts6x", "../TI/RTS6x", "rts6x-1.2.dat"),
 ]
 
