@@ -1,7 +1,7 @@
 ©2026 G. R. Akhtar - RIDE 5.17 and the programs it drives
 Master seal: each project's seal, listed and combined into one
 Written by tools/master-seal; check it with `tools/master-seal check`.
-12 projects, 862 files, master seal 8BBD8498
+12 projects, 862 files, master seal A8901DFD
 ------------------------------------------------------------------------
 program   seal     file CRC  files  seal file
 RIDE      4A551AB6 2E60C451     80  ride-5.17.dat
@@ -9,15 +9,15 @@ c90       33EC3AED 383B60B6     54  ../Compilers/Compiler-Ci/c90-1.4.dat
 cpp11     5066EB58 13A55F82    160  ../Compilers/C++Optimize/cxx1-1.10.dat
 shalimar  CC2C716A 49921C31     61  ../Compilers/Compiler-Si/shalimar-1.4.dat
 c2s       4BA1604B D72D192D     46  ../Compilers/Converter-C2S/c2s-1.2.dat
-vm6747    1AC07393 C756280B     14  ../TI/VM6747/vm6747-1.3.dat
+vm6747    54DF9FB6 A48F8F04     14  ../TI/VM6747/vm6747-1.4.dat
 asm6x     BAB4880E 1B3984DA     11  ../TI/ASM6x/asm6x-1.5.dat
 masm      5E4155D7 4FB584F1     11  ../Windows/MASM/masm-1.0.dat
 link      DB133712 64B8CFD7      6  ../Windows/LINK/link-1.1.dat
 lnk6x     8D06FF9B 5DF3E1C9      8  ../TI/LNK6x/lnk6x-1.3.dat
-sim6747   835910DC 5F4390F3     33  ../TI/SIM6747/sim6747-1.4.dat
+sim6747   4850EFB4 192FF3AF     33  ../TI/SIM6747/sim6747-1.5.dat
 rts6x     040CE785 0D069FBC    378  ../TI/RTS6x/rts6x-1.2.dat
 ------------------------------------------------------------------------
-Master seal 8BBD8498
+Master seal A8901DFD
 Sealed on 17-10-2026
 ========================================================================
 Shipped artefacts: the SHA-256 of what one release packaged, from master seal 1F7A79A8
